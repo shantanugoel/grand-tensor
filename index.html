@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Grand Tensor — the machine grandmaster circuit</title>
+    <meta name="description" content="Watch two language models fight it out over 64 squares." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>♟️</text></svg>" />
+  </head>
+  <body>
+    <div id="stage"></div>
+
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">▚</span>
+        <span class="brand-name">GRAND TENSOR</span>
+        <span class="brand-sub">the machine grandmaster circuit</span>
+      </div>
+      <div class="topbar-right">
+        <div id="status-chip" class="chip">IDLE</div>
+        <button id="btn-settings" class="btn ghost">⚙ Settings</button>
+      </div>
+    </header>
+
+    <aside class="panel panel-left">
+      <div id="player-cards"></div>
+
+      <section class="card">
+        <h3>Series</h3>
+        <div class="rows">
+          <div class="row"><span>Game</span><b id="s-game">—</b></div>
+          <div class="row"><span>Score</span><b id="s-score">0 – 0</b></div>
+          <div class="row"><span>Move</span><b id="s-ply">0</b></div>
+          <div class="row"><span>Total cost</span><b id="s-cost">$0.0000</b></div>
+        </div>
+        <div class="score-bar"><i id="score-fill"></i></div>
+        <div id="pips" class="pips"></div>
+        <div id="champion" class="champion hidden"></div>
+      </section>
+    </aside>
+
+    <aside class="panel panel-right">
+      <section class="card grow">
+        <h3>Battle log</h3>
+        <ol id="log" class="log"></ol>
+      </section>
+    </aside>
+
+    <footer class="dock">
+      <button id="btn-run" class="btn primary">▶ Start series</button>
+      <button id="btn-pause" class="btn" disabled>❚❚ Pause</button>
+      <button id="btn-reset" class="btn ghost">↺ Reset</button>
+      <label class="slider">
+        <span>Turn speed</span>
+        <input id="speed" type="range" min="0" max="6" step="1" value="3" />
+        <b id="speed-label">Normal</b>
+      </label>
+      <label class="toggle"><input id="rotate" type="checkbox" /> <span>Orbit</span></label>
+    </footer>
+
+    <div id="modal" class="modal hidden">
+      <div class="modal-body">
+        <div class="modal-head">
+          <h2>Settings</h2>
+          <button id="btn-close" class="btn ghost">✕</button>
+        </div>
+        <div id="settings-form" class="settings"></div>
+        <p class="note">
+          Keys are stored in this browser's localStorage only and are sent straight to the endpoint you configure.
+          Any OpenAI-compatible <code>/chat/completions</code> endpoint works. Set a model id to
+          <code>random</code> to run a local no-API demo match.
+        </p>
+        <div class="modal-foot">
+          <button id="btn-defaults" class="btn ghost">Restore defaults</button>
+          <button id="btn-save" class="btn primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
