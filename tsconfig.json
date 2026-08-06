@@ -14,5 +14,5 @@
     "allowImportingTsExtensions": true,
     "types": ["bun"]
   },
-  "include": ["src", "dev.ts", "preview.ts"]
+  "include": ["src", "build.ts", "build-id.ts", "deploy-worker.ts", "dev.ts", "preview.ts"]
 }

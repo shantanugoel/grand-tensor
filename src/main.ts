@@ -1,4 +1,5 @@
 import './style.css'
+import './build-info'
 import { Arena } from './three/arena'
 import { material, MAX_MATERIAL } from './adjudication'
 import { Series, type GameRecord, type PlayerStats } from './series'

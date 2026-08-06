@@ -5,12 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "bun run dev.ts",
-    "build": "tsc --noEmit && rm -rf dist && bun build ./index.html --outdir=dist --minify --public-path=./ && touch dist/.nojekyll",
+    "build": "bun run build.ts",
     "preview": "bun run preview.ts",
     "test": "bun test",
     "typecheck:worker": "tsc -p worker/tsconfig.json",
     "leaderboard:dev": "wrangler dev",
-    "leaderboard:deploy": "wrangler deploy",
+    "leaderboard:deploy": "bun run deploy-worker.ts",
     "leaderboard:migrate:local": "wrangler d1 migrations apply grand-tensor-leaderboard --local",
     "leaderboard:migrate:remote": "wrangler d1 migrations apply grand-tensor-leaderboard --remote"
   },

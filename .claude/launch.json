@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "dev"],
       "port": 5177,
       "autoPort": true
+    },
+    {
+      "name": "grand-tensor-preview",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "preview"],
+      "port": 5178,
+      "autoPort": true
     }
   ]
 }

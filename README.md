@@ -119,6 +119,22 @@ bun run preview
 Bun does the bundling itself from the HTML entrypoint, so there is no bundler config to keep in
 sync — `bun run dev` serves the same graph with hot reloading, and `bun run build` writes it out.
 
+### Which build is live
+
+Both deployables stamp themselves with the commit they were built from, because nothing else
+answers the question reliably. Asset filenames are content hashes, so any commit that misses the
+client bundle — every test-only and Worker-only one — redeploys the site byte-identical and looks
+like nothing shipped. The stamp moves every commit.
+
+```bash
+curl -s https://grandtensor.shantanugoel.com/ | grep 'name="build"'
+curl -s https://leaderboard.grandtensor.shantanugoel.com/version
+```
+
+The site's stamp is also on `window.__BUILD__` and is logged once at startup, so a live tab's
+console answers it too. A build made outside CI is marked `-dirty` when the tree had uncommitted
+changes; the dev server reports `dev`.
+
 ## How it works
 
 | File | Job |
@@ -134,6 +150,7 @@ sync — `bun run dev` serves the same graph with hot reloading, and `bun run bu
 | [src/leaderboard.ts](src/leaderboard.ts) | Optional submission flow, Turnstile, and standings UI |
 | [worker/](worker/) | Cloudflare Worker API, PGN validation, abuse controls, and D1 migrations |
 | [dev.ts](dev.ts) / [preview.ts](preview.ts) | `Bun.serve` for development with HMR, and for serving the built `dist/` |
+| [build.ts](build.ts) / [deploy-worker.ts](deploy-worker.ts) | Type-check and bundle the site, and deploy the Worker — both stamping the commit from [build-id.ts](build-id.ts) |
 
 Models with no reasoning levels at all get a disabled dropdown that says so; a model the endpoint
 doesn't list falls back to offering the full set. If a saved or shared setting names an effort the

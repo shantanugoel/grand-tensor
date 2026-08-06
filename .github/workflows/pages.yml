@@ -30,7 +30,9 @@ jobs:
 
       - run: bun test
 
-      # Type-checks the client, cleans dist/, bundles, and writes .nojekyll.
+      # Type-checks the client, cleans dist/, bundles, writes .nojekyll, and
+      # stamps GITHUB_SHA into the build meta tag so the live site can say
+      # which commit it is.
       - run: bun run build
 
       # Keeps the custom domain attached to every deploy, independent of the

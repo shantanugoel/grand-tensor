@@ -15,6 +15,12 @@ import { MIN_OPPONENTS, rateEntrants, sortStandings, type SeriesResult } from '.
 import { ClientError } from './errors'
 import { sha256, validateConfig, validateSubmission } from './validation'
 
+/** Substituted at deploy time by the `leaderboard:deploy` script. A bare
+ *  `wrangler deploy` or `wrangler dev` performs no substitution and leaves the
+ *  identifier undeclared, so it can only be read through `typeof`. */
+declare const BUILD_SHA: string
+const BUILD = typeof BUILD_SHA === 'undefined' ? 'unknown' : BUILD_SHA
+
 type Env = {
   DB: D1Database
   SUBMIT_RATE_LIMITER: RateLimit
@@ -517,6 +523,11 @@ export default {
     // opaque runtime 500 instead of the 400 and the message it was written to
     // give, and every route here is async.
     try {
+      // The Worker deploys by hand, separately from the site, so it needs its
+      // own way to answer which commit is live. `no-store` because a cached
+      // answer to that question is a wrong one.
+      if (request.method === 'GET' && url.pathname === '/version')
+        return json({ build: BUILD }, 200, origin, 'no-store')
       if (request.method === 'GET' && url.pathname === '/v1/config')
         return json({ siteKey: env.TURNSTILE_SITE_KEY, circuits: CIRCUITS }, 200, origin, 'public, max-age=3600')
       if (request.method === 'GET' && url.pathname === '/v1/standings')

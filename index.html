@@ -20,6 +20,12 @@
                frame-src https://challenges.cloudflare.com;
                connect-src 'self' https: http://localhost:* http://127.0.0.1:*"
     />
+    <!-- `bun run build` rewrites this to the commit it built from; the dev
+         server leaves it alone. The bundle's own filename is a content hash, so
+         it says nothing about which commit shipped — a change confined to the
+         tests or the Worker rebuilds this site byte-identical. This tag is what
+         `curl -s <site> | grep 'name="build"'` reads. -->
+    <meta name="build" content="dev" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#060810" />
     <meta name="mobile-web-app-capable" content="yes" />
