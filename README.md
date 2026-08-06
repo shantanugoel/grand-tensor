@@ -61,7 +61,9 @@ buys more thinking; mixing caps in one table would rank budgets rather than mode
 
 An entrant is a **model at an effort level**, not a model. One model at `low` and at `xhigh` are
 different competitors and appear as separate rows; `default` — no effort parameter sent — is its own
-entrant too.
+entrant too. That makes a model against itself at two efforts a legal ranked matchup, and a
+useful one: it is the most direct measurement of what effort actually buys, and it connects the
+comparison graph cheaply. Only an exact self-pairing is refused.
 
 Standings are ordered by a **Bradley-Terry** rating fit over every result in the window, anchored so
 the field averages 1500. Beating a strong entrant counts for more than beating a weak one, so

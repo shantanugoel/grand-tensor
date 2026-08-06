@@ -205,6 +205,20 @@ describe('leaderboard submission validation', () => {
     await expect(validateSubmission(value)).rejects.toThrow('does not match its settings')
   })
 
+  test('lets one model face itself at a different effort', async () => {
+    const value = await submission()
+    value.config.players[1] = { ...value.config.players[0], effort: 'low' }
+    const result = await validateSubmission(value)
+    expect(result.config.players[0].effort).toBe('default')
+    expect(result.config.players[1].effort).toBe('low')
+  })
+
+  test('still refuses an exact self-pairing', async () => {
+    const value = await submission()
+    value.config.players[1] = { ...value.config.players[0] }
+    await expect(validateSubmission(value)).rejects.toThrow('cannot play itself')
+  })
+
   test('rejects extra fields rather than silently trusting them', async () => {
     const value = (await submission()) as LeaderboardSubmission & { cost: number }
     value.cost = 0

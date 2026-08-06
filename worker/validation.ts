@@ -2,6 +2,7 @@ import { Chess } from 'chess.js'
 import { adjudicate } from '../src/adjudication'
 import {
   circuitFor,
+  entrantKey,
   isRankedGameCount,
   LEADERBOARD_APP_VERSION,
   RANKED_GAMES_MAX,
@@ -116,7 +117,12 @@ export async function validateConfig(value: unknown): Promise<{ config: Protocol
     return { model: player.model, effort: player.effort, temperature: player.temperature }
   }) as ProtocolConfig['players']
 
-  if (players[0].model === players[1].model) throw new Error('A model cannot play itself in a ranked match.')
+  // Compared as entrants, not as models. The ranking entity is (model, effort),
+  // so one model at two efforts is two competitors — and that pairing is the most
+  // direct evidence there is about what effort buys, as well as a cheap way to
+  // connect the comparison graph. Only a genuine self-pairing is refused.
+  if (entrantKey(players[0]) === entrantKey(players[1]))
+    throw new Error('An entrant cannot play itself in a ranked match.')
 
   return {
     circuit,

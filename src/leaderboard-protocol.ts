@@ -264,8 +264,14 @@ export function inspectEligibility(settings: Settings): Eligibility {
     if (player.model.trim().toLowerCase() === 'random')
       issues.push({ field: model, reason: 'The local random mover is a demo opponent and cannot affect standings.' })
   })
-  if (settings.players[0].model.trim() === settings.players[1].model.trim())
-    issues.push({ field: 'p1_model', reason: 'A model cannot play itself in a ranked match.' })
+  // An entrant is (model, effort), so the same model at two efforts is a legal
+  // and unusually informative pairing. Only an exact self-match is refused.
+  const entrants = settings.players.map((player) => entrantKey({ model: player.model.trim(), effort: player.effort }))
+  if (entrants[0] === entrants[1])
+    issues.push({
+      field: 'p1_model',
+      reason: 'An entrant cannot play itself. The same model at two different efforts is allowed.',
+    })
 
   return { circuit, issues, eligible: issues.length === 0 }
 }
