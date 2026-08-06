@@ -29,6 +29,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .wrangler
 .dev.vars
 .dev.vars.*
+# ...except the committed template of what those files must contain.
+!.dev.vars.example
 
 # IntelliJ based IDEs
 .idea

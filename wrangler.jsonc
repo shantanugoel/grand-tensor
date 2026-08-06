@@ -10,9 +10,15 @@
       "custom_domain": true
     }
   ],
+  // Production values. Anything permitting a local origin or a locally solved
+  // Turnstile token belongs in the ignored .dev.vars (see .dev.vars.example),
+  // which Wrangler layers over these for `leaderboard:dev` only — the Turnstile
+  // hostname is the sole check a non-browser caller cannot forge, so shipping
+  // localhost in it would let anyone serving the app submit to the real board.
   "vars": {
     "TURNSTILE_SITE_KEY": "0x4AAAAAAEHyFhblcq5hQ2vP",
-    "CORS_ORIGINS": "https://grandtensor.shantanugoel.com,http://localhost:5177,http://127.0.0.1:5177"
+    "TURNSTILE_HOSTNAMES": "grandtensor.shantanugoel.com",
+    "CORS_ORIGINS": "https://grandtensor.shantanugoel.com"
   },
   "d1_databases": [
     {

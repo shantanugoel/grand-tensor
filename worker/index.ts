@@ -19,6 +19,8 @@ type Env = {
   SUBMIT_RATE_LIMITER: RateLimit
   TURNSTILE_SITE_KEY: string
   TURNSTILE_SECRET: string
+  /** Comma-separated hostnames a Turnstile token may have been solved on. */
+  TURNSTILE_HOSTNAMES: string
   RUN_TICKET_SECRET: string
   ABUSE_HASH_SECRET: string
   CORS_ORIGINS: string
@@ -110,14 +112,15 @@ async function verifyTicket(env: Env, ticket: string, config: ProtocolConfig) {
   )
 }
 
+const list = (value: string) =>
+  value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+
 function allowedOrigin(request: Request, env: Env) {
   const origin = request.headers.get('Origin') ?? ''
-  return env.CORS_ORIGINS.split(',')
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .includes(origin)
-    ? origin
-    : null
+  return list(env.CORS_ORIGINS).includes(origin) ? origin : null
 }
 
 function corsHeaders(origin: string | null) {
@@ -174,8 +177,16 @@ async function verifyTurnstile(request: Request, env: Env, token: string) {
   })
   if (!response.ok) return false
   const result = (await response.json()) as { success?: boolean; action?: string; hostname?: string }
-  const validHostnames = new Set(['grandtensor.shantanugoel.com', 'localhost', '127.0.0.1'])
-  return result.success === true && result.action === 'leaderboard_submit' && validHostnames.has(result.hostname ?? '')
+  // The hostname a token was solved on is the one gate here that a caller cannot
+  // forge: Origin is a request header, so anything outside a browser sets it to
+  // whatever it likes. Which hostnames count is therefore environment config, not
+  // a constant — production must not carry the localhost entries that let anyone
+  // serving the app on their own machine submit to the real board.
+  return (
+    result.success === true &&
+    result.action === 'leaderboard_submit' &&
+    list(env.TURNSTILE_HOSTNAMES).includes(result.hostname ?? '')
+  )
 }
 
 async function anonymizedHash(secret: string, value: string) {

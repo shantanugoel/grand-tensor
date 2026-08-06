@@ -91,7 +91,15 @@ bun run leaderboard:deploy
 
 Wrangler is pinned as a development dependency. Production values for `TURNSTILE_SECRET`,
 `RUN_TICKET_SECRET`, and `ABUSE_HASH_SECRET` belong in Cloudflare Worker secret storage, never in
-the repository. Local values live in the ignored `.dev.vars` file; Wrangler state is ignored too.
+the repository. Copy `.dev.vars.example` to the ignored `.dev.vars` for local runs; Wrangler
+layers it over `wrangler.jsonc` so the committed vars can stay production-only. Wrangler state is
+ignored too.
+
+That split matters for two of them. `CORS_ORIGINS` and `TURNSTILE_HOSTNAMES` both widen who may
+submit, and only the second is worth anything on its own: `Origin` is a request header, so
+anything that isn't a browser sets it to whatever it likes, while the hostname a Turnstile token
+was solved on cannot be forged. Production listing `localhost` there would let anyone serving the
+app on their own machine submit to the real board.
 
 ## Build & deploy
 

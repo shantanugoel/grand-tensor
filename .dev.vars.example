@@ -1,0 +1,17 @@
+# Copy to `.dev.vars` (ignored by Git) for `bun run leaderboard:dev`.
+#
+# These values exist so the leaderboard can be exercised locally. They are all
+# overrides of production settings that must never reach production:
+# TURNSTILE_HOSTNAMES and CORS_ORIGINS both widen who may submit, and the
+# Turnstile pair below are Cloudflare's public always-passes test keys.
+#
+# The real TURNSTILE_SECRET, RUN_TICKET_SECRET and ABUSE_HASH_SECRET live in
+# Cloudflare Worker secret storage (`wrangler secret put NAME`), never here and
+# never in wrangler.jsonc.
+
+TURNSTILE_SITE_KEY=1x00000000000000000000AA
+TURNSTILE_SECRET=1x0000000000000000000000000000000AA
+TURNSTILE_HOSTNAMES=localhost,127.0.0.1
+CORS_ORIGINS=http://localhost:5177,http://127.0.0.1:5177
+RUN_TICKET_SECRET=local-run-ticket-secret-not-for-production
+ABUSE_HASH_SECRET=local-abuse-hash-secret-not-for-production
