@@ -118,9 +118,22 @@ export const DEFAULTS: Settings = {
   commentary: true,
   promptTemplate: DEFAULT_PROMPT_TEMPLATE,
   includePreviousGames: true,
-  // Generous by default: reasoning models spend most of this before they answer.
-  maxTokens: 8000,
+  // On OpenRouter the reasoning budget is a fraction of this — 80% at high
+  // effort, 95% at max — so the cap sets how long a model gets to think, not
+  // just how long it may answer. Reasoning models average well over 8k tokens
+  // on a chess position, which the old default truncated mid-thought.
+  maxTokens: 16000,
 }
+
+/** 8,000 was the old stock cap, persisted like a customization by anyone who has
+ *  ever opened Settings — and it now belongs to no circuit, so leaving it in
+ *  place would quietly make every returning player ineligible. Upgrade that one
+ *  value and preserve any other, the same bargain the prompt template strikes:
+ *  someone who deliberately picked 8,000 gets moved too. */
+const LEGACY_DEFAULT_MAX_TOKENS = 8000
+
+export const currentMaxTokens = (saved?: number): number =>
+  saved === undefined || saved === LEGACY_DEFAULT_MAX_TOKENS ? DEFAULTS.maxTokens : saved
 
 const KEY = 'grand-tensor:settings'
 
@@ -138,6 +151,7 @@ export function loadSettings(): Settings {
       ...saved,
       players,
       promptTemplate: currentPromptTemplate(saved.promptTemplate),
+      maxTokens: currentMaxTokens(saved.maxTokens),
     }
   } catch {
     return structuredClone(DEFAULTS)

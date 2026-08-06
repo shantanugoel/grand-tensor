@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import {
+  CIRCUITS,
+  DEFAULT_CIRCUIT,
   LEADERBOARD_APP_VERSION,
-  LEADERBOARD_PROTOCOL,
   type LeaderboardSubmission,
   type ProtocolConfig,
 } from '../src/leaderboard-protocol'
@@ -15,7 +16,7 @@ async function config(): Promise<ProtocolConfig> {
     retries: 3,
     commentary: true,
     includePreviousGames: true,
-    maxTokens: 8000,
+    maxTokens: DEFAULT_CIRCUIT.maxTokens,
     promptHash: await expectedPromptHash(),
     players: [
       { model: 'vendor/model-a', effort: 'default', temperature: 0.2 },
@@ -28,7 +29,7 @@ async function submission(): Promise<LeaderboardSubmission> {
   return {
     schemaVersion: 1,
     appVersion: LEADERBOARD_APP_VERSION,
-    protocol: LEADERBOARD_PROTOCOL,
+    protocol: DEFAULT_CIRCUIT.id,
     installationId: '0198a530-7b3c-7d21-8f47-6381c9d9d643',
     ticket: 'ticket',
     turnstileToken: 'token',
@@ -77,7 +78,28 @@ describe('leaderboard submission validation', () => {
   test('rejects non-standard settings', async () => {
     const value = await submission()
     value.config.games = 6
-    await expect(validateSubmission(value)).rejects.toThrow('Standard Circuit')
+    await expect(validateSubmission(value)).rejects.toThrow('ranked protocol')
+  })
+
+  test('routes a submission to the circuit its completion cap belongs to', async () => {
+    const extended = CIRCUITS.find((circuit) => circuit.id !== DEFAULT_CIRCUIT.id)!
+    const value = await submission()
+    value.config.maxTokens = extended.maxTokens
+    value.protocol = extended.id
+    expect((await validateSubmission(value)).circuit.id).toBe(extended.id)
+  })
+
+  test('rejects a cap that belongs to no circuit', async () => {
+    const value = await submission()
+    value.config.maxTokens = 8000
+    await expect(validateSubmission(value)).rejects.toThrow('ranked completion budget')
+  })
+
+  test('refuses a submission that claims a circuit its settings contradict', async () => {
+    const extended = CIRCUITS.find((circuit) => circuit.id !== DEFAULT_CIRCUIT.id)!
+    const value = await submission()
+    value.protocol = extended.id
+    await expect(validateSubmission(value)).rejects.toThrow('does not match its settings')
   })
 
   test('rejects extra fields rather than silently trusting them', async () => {

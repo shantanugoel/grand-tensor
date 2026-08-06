@@ -1,7 +1,8 @@
 import { Chess } from 'chess.js'
 import {
+  circuitFor,
   LEADERBOARD_APP_VERSION,
-  LEADERBOARD_PROTOCOL,
+  type Circuit,
   type ProtocolConfig,
   type SubmittedGame,
 } from '../src/leaderboard-protocol'
@@ -19,6 +20,7 @@ export type ValidatedSubmission = {
   ticket: string
   turnstileToken: string
   config: ProtocolConfig
+  circuit: Circuit
   games: SubmittedGame[]
   scoreAX2: number
   scoreBX2: number
@@ -48,7 +50,9 @@ export async function expectedPromptHash() {
   return sha256(DEFAULT_PROMPT_TEMPLATE)
 }
 
-export async function validateConfig(value: unknown): Promise<ProtocolConfig> {
+/** Validates a config and reports which circuit its completion cap places it in.
+ *  Everything else is pinned identically across circuits. */
+export async function validateConfig(value: unknown): Promise<{ config: ProtocolConfig; circuit: Circuit }> {
   const cfg = object(value)
   if (
     !cfg ||
@@ -64,7 +68,10 @@ export async function validateConfig(value: unknown): Promise<ProtocolConfig> {
       'players',
     ])
   )
-    throw new Error('Invalid Standard Circuit configuration.')
+    throw new Error('Invalid ranked match configuration.')
+
+  const circuit = typeof cfg.maxTokens === 'number' ? circuitFor(cfg.maxTokens) : null
+  if (!circuit) throw new Error('This match does not use a ranked completion budget.')
 
   if (
     cfg.baseUrl !== 'https://openrouter.ai/api/v1' ||
@@ -73,10 +80,9 @@ export async function validateConfig(value: unknown): Promise<ProtocolConfig> {
     cfg.retries !== 3 ||
     cfg.commentary !== true ||
     cfg.includePreviousGames !== true ||
-    cfg.maxTokens !== 8000 ||
     cfg.promptHash !== (await expectedPromptHash())
   )
-    throw new Error('This match does not use the Standard Circuit protocol.')
+    throw new Error('This match does not use a ranked protocol.')
 
   if (!Array.isArray(cfg.players) || cfg.players.length !== 2)
     throw new Error('Exactly two models are required.')
@@ -89,22 +95,25 @@ export async function validateConfig(value: unknown): Promise<ProtocolConfig> {
       throw new Error('Invalid model identifier.')
     if (typeof player.effort !== 'string' || !EFFORT_RE.test(player.effort))
       throw new Error('Invalid reasoning effort.')
-    if (player.temperature !== 0.2) throw new Error('Standard Circuit temperature must be 0.2.')
+    if (player.temperature !== 0.2) throw new Error('Ranked temperature must be 0.2.')
     return { model: player.model, effort: player.effort, temperature: 0.2 }
   }) as ProtocolConfig['players']
 
   if (players[0].model === players[1].model) throw new Error('A model cannot play itself in a ranked match.')
 
   return {
-    baseUrl: 'https://openrouter.ai/api/v1',
-    games: 4,
-    maxPlies: 200,
-    retries: 3,
-    commentary: true,
-    includePreviousGames: true,
-    maxTokens: 8000,
-    promptHash: cfg.promptHash as string,
-    players,
+    circuit,
+    config: {
+      baseUrl: 'https://openrouter.ai/api/v1',
+      games: 4,
+      maxPlies: 200,
+      retries: 3,
+      commentary: true,
+      includePreviousGames: true,
+      maxTokens: circuit.maxTokens,
+      promptHash: cfg.promptHash as string,
+      players,
+    },
   }
 }
 
@@ -209,7 +218,7 @@ export async function validateSubmission(value: unknown): Promise<ValidatedSubmi
     ])
   )
     throw new Error('Invalid submission.')
-  if (body.schemaVersion !== 1 || body.protocol !== LEADERBOARD_PROTOCOL)
+  if (body.schemaVersion !== 1 || typeof body.protocol !== 'string')
     throw new Error('Unsupported leaderboard protocol.')
   if (body.appVersion !== LEADERBOARD_APP_VERSION)
     throw new Error('Please refresh Grand Tensor before submitting.')
@@ -220,7 +229,10 @@ export async function validateSubmission(value: unknown): Promise<ValidatedSubmi
   if (typeof body.turnstileToken !== 'string' || body.turnstileToken.length > 2048)
     throw new Error('Invalid anti-bot token.')
 
-  const config = await validateConfig(body.config)
+  // The bucket comes from the config's own cap, so a submission cannot claim a
+  // circuit it didn't play in — it can only disagree with itself and be refused.
+  const { config, circuit } = await validateConfig(body.config)
+  if (body.protocol !== circuit.id) throw new Error('Submission protocol does not match its settings.')
   if (!Array.isArray(body.games) || body.games.length !== 4)
     throw new Error('A ranked submission must contain four games.')
   const games = body.games.map(validateGame)
@@ -259,6 +271,7 @@ export async function validateSubmission(value: unknown): Promise<ValidatedSubmi
     ticket: body.ticket,
     turnstileToken: body.turnstileToken,
     config,
+    circuit,
     games,
     scoreAX2,
     scoreBX2: 8 - scoreAX2,

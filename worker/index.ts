@@ -1,5 +1,9 @@
 import {
-  LEADERBOARD_PROTOCOL,
+  CIRCUITS,
+  circuitById,
+  circuitFor,
+  DEFAULT_CIRCUIT,
+  type Circuit,
   type ProtocolConfig,
   type Standing,
 } from '../src/leaderboard-protocol'
@@ -48,11 +52,11 @@ async function hmac(secret: string, value: string) {
   return new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(value)))
 }
 
-async function signTicket(env: Env, config: ProtocolConfig) {
+async function signTicket(env: Env, config: ProtocolConfig, circuit: Circuit) {
   const now = Date.now()
   const payload: TicketPayload = {
     version: 1,
-    protocol: LEADERBOARD_PROTOCOL,
+    protocol: circuit.id,
     configHash: await sha256(JSON.stringify(config)),
     issuedAt: now,
     expiresAt: now + TICKET_LIFETIME_MS,
@@ -82,7 +86,7 @@ async function verifyTicket(env: Env, ticket: string, config: ProtocolConfig) {
   const now = Date.now()
   return (
     payload.version === 1 &&
-    payload.protocol === LEADERBOARD_PROTOCOL &&
+    payload.protocol === circuitFor(config.maxTokens)?.id &&
     payload.issuedAt <= now &&
     payload.expiresAt >= now &&
     payload.expiresAt - payload.issuedAt === TICKET_LIFETIME_MS &&
@@ -163,13 +167,13 @@ async function anonymizedHash(secret: string, value: string) {
 }
 
 async function issueTicket(request: Request, env: Env, origin: string) {
-  const config = await validateConfig(await readJson(request))
+  const { config, circuit } = await validateConfig(await readJson(request))
   await validateKnownModels(config)
   const network = request.headers.get('CF-Connecting-IP') ?? 'unknown'
   const burstKey = await anonymizedHash(env.ABUSE_HASH_SECRET, network)
   const { success } = await env.SUBMIT_RATE_LIMITER.limit({ key: `ticket:${burstKey}` })
   if (!success) return json({ error: 'Too many leaderboard requests. Try again shortly.' }, 429, origin)
-  return json({ ticket: await signTicket(env, config), protocol: LEADERBOARD_PROTOCOL }, 201, origin)
+  return json({ ticket: await signTicket(env, config, circuit), protocol: circuit.id }, 201, origin)
 }
 
 async function submit(request: Request, env: Env, origin: string) {
@@ -250,10 +254,12 @@ async function submit(request: Request, env: Env, origin: string) {
     throw error
   }
 
-  return json({ id, deleteToken, message: 'Result added to the Standard Circuit.' }, 201, origin)
+  return json({ id, deleteToken, message: `Result added to the ${submission.circuit.name}.` }, 201, origin)
 }
 
-async function standings(env: Env, origin: string | null) {
+async function standings(env: Env, origin: string | null, circuitId: string | null) {
+  const circuit = circuitId ? circuitById(circuitId) : DEFAULT_CIRCUIT
+  if (!circuit) return json({ error: 'Unknown circuit.' }, 400, origin)
   const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000
   const result = await env.DB.prepare(
     `WITH model_results AS (
@@ -275,7 +281,7 @@ async function standings(env: Env, origin: string | null) {
     ORDER BY (CAST(SUM(points_x2) AS REAL) / (2 * SUM(games))) DESC, SUM(games) DESC, model ASC
     LIMIT 100`,
   )
-    .bind(LEADERBOARD_PROTOCOL, cutoff, LEADERBOARD_PROTOCOL, cutoff)
+    .bind(circuit.id, cutoff, circuit.id, cutoff)
     .all<{
       model: string
       points_x2: number
@@ -299,7 +305,8 @@ async function standings(env: Env, origin: string | null) {
   }))
   return json(
     {
-      protocol: LEADERBOARD_PROTOCOL,
+      protocol: circuit.id,
+      circuit: { id: circuit.id, name: circuit.name, maxTokens: circuit.maxTokens, blurb: circuit.blurb },
       windowDays: 30,
       disclosure: 'Community-reported matches. PGN legality and board results are checked; model identity is not cryptographically verified.',
       standings: rows,
@@ -331,13 +338,9 @@ export default {
 
     try {
       if (request.method === 'GET' && url.pathname === '/v1/config')
-        return json(
-          { siteKey: env.TURNSTILE_SITE_KEY, protocol: LEADERBOARD_PROTOCOL },
-          200,
-          origin,
-          'public, max-age=3600',
-        )
-      if (request.method === 'GET' && url.pathname === '/v1/standings') return standings(env, origin)
+        return json({ siteKey: env.TURNSTILE_SITE_KEY, circuits: CIRCUITS }, 200, origin, 'public, max-age=3600')
+      if (request.method === 'GET' && url.pathname === '/v1/standings')
+        return standings(env, origin, url.searchParams.get('circuit'))
       if (request.method === 'POST' && url.pathname === '/v1/run-ticket') return issueTicket(request, env, origin!)
       if (request.method === 'POST' && url.pathname === '/v1/submissions') return submit(request, env, origin!)
       const deletion = url.pathname.match(/^\/v1\/submissions\/([0-9a-f-]{36})$/i)

@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'bun:test'
-import { currentPromptTemplate, DEFAULT_PROMPT_TEMPLATE, DEFAULTS, effectiveSpeedIndex } from './settings'
+import { CIRCUITS } from './leaderboard-protocol'
+import {
+  currentMaxTokens,
+  currentPromptTemplate,
+  DEFAULT_PROMPT_TEMPLATE,
+  DEFAULTS,
+  effectiveSpeedIndex,
+} from './settings'
 
 describe('currentPromptTemplate', () => {
   test('upgrades the previous stock prompt but preserves custom prompts', () => {
@@ -11,6 +18,19 @@ describe('currentPromptTemplate', () => {
     expect(currentPromptTemplate(previousStock)).toBe(DEFAULT_PROMPT_TEMPLATE)
     expect(currentPromptTemplate('My custom {{fen}} prompt')).toBe('My custom {{fen}} prompt')
     expect(currentPromptTemplate('')).toBe('')
+  })
+})
+
+describe('currentMaxTokens', () => {
+  test('upgrades the previous stock cap but preserves a chosen one', () => {
+    expect(currentMaxTokens(8000)).toBe(DEFAULTS.maxTokens)
+    expect(currentMaxTokens(undefined)).toBe(DEFAULTS.maxTokens)
+    expect(currentMaxTokens(4096)).toBe(4096)
+    expect(currentMaxTokens(32000)).toBe(32000)
+  })
+
+  test('lands returning players on a circuit rather than outside every one', () => {
+    expect(CIRCUITS.some((circuit) => circuit.maxTokens === currentMaxTokens(8000))).toBe(true)
   })
 })
 

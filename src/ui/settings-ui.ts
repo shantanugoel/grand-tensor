@@ -6,6 +6,7 @@
 
 import { fetchModels, FALLBACK_EFFORTS, type ModelInfo } from '../llm'
 import { PROMPT_VARIABLES, systemPrompt } from '../prompt'
+import { CIRCUITS } from '../leaderboard-protocol'
 import { DEFAULTS, NO_EFFORT, type Settings } from '../settings'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
@@ -52,7 +53,7 @@ export function renderSettings(s: Settings) {
         ${num('games', 'Games in series', s.games, 1, 50)}
         ${num('maxPlies', 'Ply limit (draw)', s.maxPlies, 20, 600, 10)}
         ${num('retries', 'Retries before forfeit', s.retries, 0, 10, 1, 'Spent on illegal moves and token-capped replies alike.')}
-        ${num('maxTokens', 'Max tokens / move', s.maxTokens, 32, 32000, 32, 'Reasoning counts against this. Both models are told the number.')}
+        ${num('maxTokens', 'Max tokens / move', s.maxTokens, 32, 32000, 32, `Reasoning counts against this — on OpenRouter high effort thinks in 80% of it. Both models are told the number. ${CIRCUITS.map((c) => `${c.maxTokens.toLocaleString('en-US')} = ${c.name}`).join('; ')}.`)}
         <label class="field check">
           <input name="commentary" type="checkbox" ${s.commentary ? 'checked' : ''}/>
           <span>Ask for trash talk with each move</span>

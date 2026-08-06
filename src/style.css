@@ -741,6 +741,34 @@ body {
   width: min(860px, 100%);
 }
 
+.circuit-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.circuit-tab {
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--dim);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.circuit-tab:hover {
+  color: var(--text);
+}
+
+.circuit-tab.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+
 .leaderboard-note,
 .leaderboard-empty {
   color: var(--dim);

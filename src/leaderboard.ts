@@ -1,9 +1,11 @@
 import {
+  CIRCUITS,
+  DEFAULT_CIRCUIT,
   LEADERBOARD_API,
   LEADERBOARD_APP_VERSION,
-  LEADERBOARD_PROTOCOL,
   protocolConfig,
   submissionReason,
+  type Circuit,
   type LeaderboardSubmission,
   type ProtocolConfig,
   type Standing,
@@ -14,13 +16,14 @@ import type { Settings } from './settings'
 
 type PreparedRun = {
   config?: ProtocolConfig
+  circuit?: Circuit
   ticket?: string
   reason?: string
 }
 
 type LeaderboardConfig = {
   siteKey: string
-  protocol: string
+  circuits: Circuit[]
 }
 
 type TurnstileApi = {
@@ -95,6 +98,7 @@ export class Leaderboard {
   private completed: { series: Series; prepared: PreparedRun } | null = null
   private configPromise: Promise<LeaderboardConfig> | null = null
   private widgetId: string | null = null
+  private standingsCircuit: Circuit = DEFAULT_CIRCUIT
 
   constructor(private toast: (message: string) => void) {
     $('#btn-leaderboard').addEventListener('click', () => void this.openStandings())
@@ -103,26 +107,27 @@ export class Leaderboard {
     $('#leaderboard-modal').addEventListener('click', (event) => {
       if (event.target === $('#leaderboard-modal')) this.close()
     })
-    this.setSubmitState(false, 'Finish an eligible Standard Circuit match to submit it.')
+    this.setSubmitState(false, 'Finish an eligible ranked match to submit it.')
   }
 
   async prepare(settings: Settings): Promise<PreparedRun> {
     this.completed = null
     this.setSubmitState(false, 'Match in progress.')
     const eligibility = await protocolConfig(settings)
-    if (!eligibility.config) {
+    if (!eligibility.config || !eligibility.circuit) {
       this.prepared = { reason: eligibility.reason }
       return this.prepared
     }
 
+    const circuit = eligibility.circuit
     try {
       const result = await api<{ ticket: string; protocol: string }>('/v1/run-ticket', {
         method: 'POST',
         body: JSON.stringify(eligibility.config),
       })
       this.prepared =
-        result.protocol === LEADERBOARD_PROTOCOL
-          ? { config: eligibility.config, ticket: result.ticket }
+        result.protocol === circuit.id
+          ? { config: eligibility.config, circuit, ticket: result.ticket }
           : { reason: 'The leaderboard protocol is temporarily incompatible with this version.' }
     } catch (error) {
       this.prepared = {
@@ -136,13 +141,16 @@ export class Leaderboard {
     if (series.status !== 'done') return
     this.completed = { series, prepared }
     const ready = Boolean(prepared.config && prepared.ticket)
-    this.setSubmitState(ready, prepared.reason ?? 'Submit this anonymous result to the Standard Circuit.')
+    this.setSubmitState(
+      ready,
+      prepared.reason ?? `Submit this anonymous result to the ${prepared.circuit?.name ?? 'leaderboard'}.`,
+    )
   }
 
   clear() {
     this.prepared = null
     this.completed = null
-    this.setSubmitState(false, 'Finish an eligible Standard Circuit match to submit it.')
+    this.setSubmitState(false, 'Finish an eligible ranked match to submit it.')
   }
 
   private setSubmitState(enabled: boolean, title: string) {
@@ -167,33 +175,64 @@ export class Leaderboard {
     $('#leaderboard-modal').classList.add('hidden')
   }
 
+  /** Each circuit is its own ranking, so the modal is a tab per circuit over a
+   *  shared body rather than one merged table. */
   private async openStandings() {
-    this.open('Standard Circuit')
+    this.open('Standings')
     const content = $('#leaderboard-content')
+
+    const tabs = document.createElement('div')
+    tabs.className = 'circuit-tabs'
+    const body = document.createElement('div')
+    content.append(tabs, body)
+
+    const buttons = CIRCUITS.map((circuit) => {
+      const tab = document.createElement('button')
+      tab.className = 'circuit-tab'
+      tab.textContent = circuit.name
+      tab.title = circuit.blurb
+      tab.addEventListener('click', () => void select(circuit))
+      tabs.appendChild(tab)
+      return tab
+    })
+
+    const select = async (circuit: Circuit) => {
+      this.standingsCircuit = circuit
+      buttons.forEach((tab, i) => tab.classList.toggle('active', CIRCUITS[i].id === circuit.id))
+      await this.renderStandings(body, circuit)
+    }
+
+    await select(this.standingsCircuit)
+  }
+
+  private async renderStandings(body: HTMLElement, circuit: Circuit) {
+    body.replaceChildren()
     const loading = document.createElement('p')
     loading.className = 'leaderboard-note'
     loading.textContent = 'Loading community standings…'
-    content.appendChild(loading)
+    body.appendChild(loading)
 
     try {
       const result = await api<{
-        protocol: string
         windowDays: number
         disclosure: string
         standings: Standing[]
-      }>('/v1/standings')
-      content.replaceChildren()
+      }>(`/v1/standings?circuit=${encodeURIComponent(circuit.id)}`)
+      // A slow response for a tab the user has since left must not overwrite the
+      // one they're actually looking at.
+      if (this.standingsCircuit.id !== circuit.id) return
+      body.replaceChildren()
 
       const note = document.createElement('p')
       note.className = 'leaderboard-note'
-      note.textContent = `${result.disclosure} Results cover the last ${result.windowDays} days.`
-      content.appendChild(note)
+      note.textContent = `${circuit.blurb} ${result.disclosure} Results cover the last ${result.windowDays} days.`
+      body.appendChild(note)
 
       if (!result.standings.length) {
         const empty = document.createElement('p')
         empty.className = 'leaderboard-empty'
-        empty.textContent = 'No Standard Circuit results yet. The first legal submission will inaugurate the board.'
-        content.appendChild(empty)
+        empty.textContent = `No ${circuit.name} results yet. The first legal submission will inaugurate the board.`
+        body.appendChild(empty)
         return
       }
 
@@ -222,8 +261,9 @@ export class Leaderboard {
       }
       table.appendChild(tbody)
       wrap.appendChild(table)
-      content.appendChild(wrap)
+      body.appendChild(wrap)
     } catch (error) {
+      if (this.standingsCircuit.id !== circuit.id) return
       loading.textContent = error instanceof Error ? error.message : 'Could not load standings.'
       loading.classList.add('error')
     }
@@ -246,17 +286,18 @@ export class Leaderboard {
 
   private async openSubmission() {
     const completed = this.completed
-    if (!completed?.prepared.config || !completed.prepared.ticket) {
-      this.toast(completed?.prepared.reason ?? 'This match is not eligible for the Standard Circuit.')
+    if (!completed?.prepared.config || !completed.prepared.ticket || !completed.prepared.circuit) {
+      this.toast(completed?.prepared.reason ?? 'This match is not eligible for ranked standings.')
       return
     }
+    const circuit = completed.prepared.circuit
 
-    this.open('Submit result')
+    this.open(`Submit to the ${circuit.name}`)
     const content = $('#leaderboard-content')
     const intro = document.createElement('p')
     intro.className = 'leaderboard-note'
     intro.textContent =
-      'This is optional. Grand Tensor uploads exact model IDs, Standard Circuit settings, results and PGNs. It never uploads API keys, player labels, prompts, commentary, token usage, latency or cost.'
+      `This is optional. Grand Tensor uploads exact model IDs, ${circuit.name} settings, results and PGNs. It never uploads API keys, player labels, prompts, commentary, token usage, latency or cost.`
     const matchup = document.createElement('div')
     matchup.className = 'leaderboard-matchup'
     matchup.textContent = `${completed.prepared.config.players[0].model}  ${completed.series.stats[0].score}–${completed.series.stats[1].score}  ${completed.prepared.config.players[1].model}`
@@ -281,7 +322,8 @@ export class Leaderboard {
 
     try {
       const [turnstile, config] = await Promise.all([loadTurnstile(), this.leaderboardConfig()])
-      if (config.protocol !== LEADERBOARD_PROTOCOL) throw new Error('Leaderboard protocol mismatch.')
+      if (!config.circuits.some((known) => known.id === circuit.id && known.maxTokens === circuit.maxTokens))
+        throw new Error('Leaderboard protocol mismatch.')
       let token = ''
       this.widgetId = turnstile.render(widget, {
         sitekey: config.siteKey,
@@ -313,7 +355,7 @@ export class Leaderboard {
           const payload: LeaderboardSubmission = {
             schemaVersion: 1,
             appVersion: LEADERBOARD_APP_VERSION,
-            protocol: LEADERBOARD_PROTOCOL,
+            protocol: circuit.id,
             installationId: installationId(),
             ticket: completed.prepared.ticket!,
             turnstileToken: token,
