@@ -99,13 +99,21 @@ export class Hud {
     this.renderKoMeter(series)
 
     // One pip per game in the series: who won, or grey for a draw / not played yet.
-    $('#pips').innerHTML = Array.from({ length: series.totalGames }, (_, i) => {
+    const pips = Array.from({ length: series.totalGames }, (_, i) => {
+      const pip = document.createElement('i')
+      pip.className = 'pip'
+      pip.title = `Game ${i + 1}`
+
       const rec = series.games[i]
-      if (!rec) return `<i class="pip" title="Game ${i + 1}"></i>`
+      if (!rec) return pip
+
       const winner = rec.result === '1/2-1/2' ? null : rec.result === '1-0' ? rec.white : 1 - rec.white
       const cls = winner === null ? 'draw' : winner === 0 ? 'w0' : 'w1'
-      return `<i class="pip ${cls}" title="Game ${i + 1}: ${rec.result} — ${rec.reason}"></i>`
-    }).join('')
+      pip.classList.add(cls)
+      pip.title = `Game ${i + 1}: ${rec.result} — ${rec.reason}`
+      return pip
+    })
+    $('#pips').replaceChildren(...pips)
 
     const done = series.status === 'done'
     $('#result-card').classList.toggle('hidden', !done)
