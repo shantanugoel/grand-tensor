@@ -28,19 +28,38 @@
       </div>
     </header>
 
+    <!-- Street-Fighter-style vitality bars. "Health" is the side's remaining material. -->
+    <section class="ko" id="ko">
+      <div class="ko-side ko-p0">
+        <div class="ko-head"><span class="ko-name" id="ko-name-0">Player 1</span><span class="ko-hp" id="ko-hp-0">39</span></div>
+        <div class="ko-bar"><i class="ko-chip" id="ko-chip-0"></i><i class="ko-fill" id="ko-fill-0"></i></div>
+        <div class="ko-stars" id="ko-stars-0"></div>
+      </div>
+
+      <div class="ko-center">
+        <div class="ko-round" id="ko-round">ROUND 1</div>
+        <div class="ko-score" id="ko-score">0–0</div>
+        <div class="pips" id="pips"></div>
+      </div>
+
+      <div class="ko-side ko-p1">
+        <div class="ko-head"><span class="ko-hp" id="ko-hp-1">39</span><span class="ko-name" id="ko-name-1">Player 2</span></div>
+        <div class="ko-bar"><i class="ko-chip" id="ko-chip-1"></i><i class="ko-fill" id="ko-fill-1"></i></div>
+        <div class="ko-stars" id="ko-stars-1"></div>
+      </div>
+    </section>
+
+    <div id="announce" class="announce hidden"><span></span></div>
+
     <aside class="panel panel-left">
       <div id="player-cards"></div>
 
       <section class="card">
         <h3>Series</h3>
         <div class="rows">
-          <div class="row"><span>Game</span><b id="s-game">—</b></div>
-          <div class="row"><span>Score</span><b id="s-score">0 – 0</b></div>
           <div class="row"><span>Move</span><b id="s-ply">0</b></div>
           <div class="row"><span>Total cost</span><b id="s-cost">$0.0000</b></div>
         </div>
-        <div class="score-bar"><i id="score-fill"></i></div>
-        <div id="pips" class="pips"></div>
         <div id="champion" class="champion hidden"></div>
       </section>
     </aside>

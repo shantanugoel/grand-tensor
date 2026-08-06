@@ -113,9 +113,210 @@ body {
   border-color: rgba(255, 107, 107, 0.45);
 }
 
+/* ---------- KO meter ---------- */
+
+.ko {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(980px, calc(100vw - 36px));
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: start;
+  gap: 14px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.ko-side {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.ko-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--pixel);
+  font-size: 8px;
+  line-height: 1.4;
+}
+
+.ko-p1 .ko-head {
+  justify-content: flex-end;
+}
+
+.ko-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ko-p0 .ko-name {
+  color: var(--p0);
+}
+
+.ko-p1 .ko-name {
+  color: var(--p1);
+}
+
+.ko-hp {
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+  flex: none;
+}
+
+/* The bar itself: a dark socket holding a slow "chip damage" layer and the
+   fast vitality layer on top, exactly like an arcade fighter. */
+.ko-bar {
+  position: relative;
+  height: 18px;
+  border: 2px solid #0d1120;
+  border-radius: 3px;
+  background: #10152a;
+  box-shadow: 0 0 0 1px rgba(122, 160, 255, 0.18), inset 0 2px 0 rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.ko-fill,
+.ko-chip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+}
+
+.ko-fill {
+  background: linear-gradient(180deg, #ffe97a 0%, #ffc93c 42%, #f59218 43%, #e0620c 100%);
+  transition: width 0.22s cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+.ko-chip {
+  background: linear-gradient(180deg, #ff8a8a 0%, #e03636 100%);
+  transition: width 0.75s ease-out 0.35s;
+}
+
+.ko-p0 .ko-fill,
+.ko-p0 .ko-chip {
+  left: 0;
+}
+
+.ko-p1 .ko-fill,
+.ko-p1 .ko-chip {
+  right: 0;
+}
+
+/* Danger: drop to a red pulse under a quarter health. */
+.ko-bar.danger .ko-fill {
+  background: linear-gradient(180deg, #ff9a6a 0%, #ff4d4d 45%, #b81616 100%);
+  animation: danger 0.55s steps(2, end) infinite;
+}
+
+@keyframes danger {
+  50% {
+    filter: brightness(1.55);
+  }
+}
+
+.ko-stars {
+  display: flex;
+  gap: 4px;
+  min-height: 9px;
+}
+
+.ko-p1 .ko-stars {
+  justify-content: flex-end;
+}
+
+.star {
+  width: 11px;
+  height: 11px;
+  clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.star.won {
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(255, 213, 74, 0.7);
+}
+
+.star.half {
+  background: linear-gradient(90deg, var(--gold) 50%, rgba(255, 255, 255, 0.16) 50%);
+}
+
+.ko-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 0 4px;
+}
+
+.ko-round {
+  font-family: var(--pixel);
+  font-size: 7px;
+  color: var(--dim);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.ko-score {
+  font-family: var(--pixel);
+  font-size: 22px;
+  color: var(--gold);
+  text-shadow: 0 0 16px rgba(255, 213, 74, 0.45);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- KO / round announcement ---------- */
+
+.announce {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 15;
+  pointer-events: none;
+}
+
+.announce span {
+  font-family: var(--pixel);
+  font-size: clamp(28px, 8vw, 76px);
+  color: #fff3c4;
+  letter-spacing: 4px;
+  text-shadow: 0 0 24px rgba(255, 120, 40, 0.9), 0 6px 0 #b03000, 0 0 60px rgba(255, 60, 0, 0.6);
+  animation: slam 1.9s cubic-bezier(0.15, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes slam {
+  0% {
+    transform: scale(4) rotate(-6deg);
+    opacity: 0;
+  }
+  18% {
+    transform: scale(1) rotate(-6deg);
+    opacity: 1;
+  }
+  24% {
+    transform: scale(1.12) rotate(-6deg);
+  }
+  30%,
+  72% {
+    transform: scale(1) rotate(-6deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.35) rotate(-6deg);
+    opacity: 0;
+  }
+}
+
 .panel {
   position: fixed;
-  top: 64px;
+  top: 158px;
   bottom: 82px;
   width: 300px;
   display: flex;
@@ -292,33 +493,18 @@ body {
 
 /* ---------- score bar / champion ---------- */
 
-.score-bar {
-  margin-top: 10px;
-  height: 6px;
-  border-radius: 999px;
-  background: var(--p1);
-  overflow: hidden;
-}
-
-.score-bar i {
-  display: block;
-  height: 100%;
-  width: 50%;
-  background: var(--p0);
-  transition: width 0.4s ease;
-}
-
 .pips {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 4px;
-  margin-top: 8px;
+  margin-top: 2px;
 }
 
 .pip {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid var(--line);
 }

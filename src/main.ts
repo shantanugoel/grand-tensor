@@ -1,6 +1,6 @@
 import './style.css'
 import { Arena } from './three/arena'
-import { Series } from './series'
+import { material, MAX_MATERIAL, Series } from './series'
 import { loadSettings, saveSettings, isFirstVisit, DEFAULTS, SPEEDS, type Settings } from './settings'
 import { Hud } from './ui/hud'
 import { readSettings, renderSettings } from './ui/settings-ui'
@@ -22,8 +22,15 @@ function newSeries(): Series {
     },
     onMove: (e) => arena.animateMove(e.move, series!.chess, { check: e.check, mate: e.mate }),
     onGameEnd: (rec) => {
-      const banner = rec.result === '1/2-1/2' ? 'DRAW' : rec.result === '1-0' ? 'WHITE WINS' : 'BLACK WINS'
-      arena.announce(banner, rec.result === '1/2-1/2' ? '#8fa5d6' : '#ffd54a')
+      if (rec.result === '1/2-1/2') {
+        arena.announce('DRAW', '#8fa5d6')
+        hud.announce('DRAW')
+        return
+      }
+      arena.announce(rec.result === '1-0' ? 'WHITE WINS' : 'BLACK WINS', '#ffd54a')
+      // Winning without conceding a single piece earns the arcade "PERFECT".
+      const winnerColor = rec.result === '1-0' ? 'w' : 'b'
+      hud.announce(material(series!.chess, winnerColor) === MAX_MATERIAL ? 'PERFECT' : 'K.O.')
     },
     onThinking: (player) => {
       hud.setThinking(player)
@@ -81,6 +88,11 @@ $('#btn-run').addEventListener('click', async () => {
   if (series.status === 'error') hud.toast(series.errorMessage)
   setControls()
   syncStatus()
+  // Let the round's K.O. slam clear before the match verdict lands on top of it.
+  if (series.status === 'done') {
+    const leader = series.leader
+    setTimeout(() => hud.announce(leader === null ? 'DRAW MATCH' : 'CHAMPION'), 1500)
+  }
 })
 
 $('#btn-pause').addEventListener('click', () => {

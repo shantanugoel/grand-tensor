@@ -1,12 +1,24 @@
 /** Runs a series of model-vs-model games and keeps the score.
  *  Pure logic + events: it knows nothing about three.js or the DOM. */
 
-import { Chess, type Move } from 'chess.js'
+import { Chess, type Color, type Move } from 'chess.js'
 import { addUsage, chat, emptyUsage, type Usage } from './llm'
 import { movePrompt, parseMove, retryPrompt, systemPrompt, type LegalMove } from './prompt'
 import { SPEEDS, type Settings } from './settings'
 
 export type PlayerIdx = 0 | 1
+
+/** Standard piece values. Kings are excluded, so a full army is worth 39 —
+ *  which is what the vitality bars use as "full health". */
+const VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
+export const MAX_MATERIAL = 39
+
+export function material(chess: Chess, color: Color): number {
+  let sum = 0
+  for (const row of chess.board())
+    for (const cell of row) if (cell && cell.color === color) sum += VALUES[cell.type] ?? 0
+  return sum
+}
 
 export type PlayerStats = {
   wins: number

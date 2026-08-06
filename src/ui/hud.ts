@@ -1,6 +1,6 @@
 /** Everything that writes to the DOM overlay: player cards, score, battle log. */
 
-import type { LogEntry, PlayerIdx, Series } from '../series'
+import { material, MAX_MATERIAL, type LogEntry, type PlayerIdx, type Series } from '../series'
 import type { Settings } from '../settings'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
@@ -9,11 +9,13 @@ const fmtTokens = (n: number) => (n >= 10000 ? `${(n / 1000).toFixed(1)}k` : n.t
 const fmtCost = (n: number) => (n > 0 ? `$${n < 0.01 ? n.toFixed(5) : n.toFixed(4)}` : '—')
 const fmtMs = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}s` : `${Math.round(n)}ms`)
 
+
 export class Hud {
   private cards: HTMLElement[] = []
   private logEl = $('#log')
   private thinking: PlayerIdx | null = null
   private toastTimer: ReturnType<typeof setTimeout> | undefined
+  private announceTimer: ReturnType<typeof setTimeout> | undefined
 
   constructor(private settings: Settings) {
     this.buildCards()
@@ -87,16 +89,10 @@ export class Hud {
       say.textContent = isThinking ? 'thinking' : series.lastSay[i as PlayerIdx] || ''
     })
 
-    $('#s-game').textContent =
-      series.status === 'idle' && series.games.length === 0
-        ? '—'
-        : `${Math.min(series.gameIndex + 1, series.totalGames)} / ${series.totalGames}`
-    $('#s-score').textContent = `${a.score} – ${b.score}`
     $('#s-ply').textContent = String(series.chess.history().length)
     $('#s-cost').textContent = fmtCost(a.usage.cost + b.usage.cost)
 
-    const total = a.score + b.score
-    $('#score-fill').style.width = `${total === 0 ? 50 : (a.score / total) * 100}%`
+    this.renderKoMeter(series)
 
     // One pip per game in the series: who won, or grey for a draw / not played yet.
     $('#pips').innerHTML = Array.from({ length: series.totalGames }, (_, i) => {
@@ -118,6 +114,49 @@ export class Hud {
     } else {
       champ.classList.add('hidden')
     }
+  }
+
+  /** Vitality bars, round counter and win stars — the arcade header. */
+  private renderKoMeter(series: Series) {
+    const white = series.white
+
+    series.stats.forEach((st, i) => {
+      const color = i === white ? 'w' : 'b'
+      const hp = material(series.chess, color)
+      const pct = (hp / MAX_MATERIAL) * 100
+
+      $(`#ko-name-${i}`).textContent = this.settings.players[i].label
+      $(`#ko-hp-${i}`).textContent = String(hp)
+      $(`#ko-fill-${i}`).style.width = `${pct}%`
+      $(`#ko-chip-${i}`).style.width = `${pct}%`
+      $(`#ko-fill-${i}`).parentElement!.classList.toggle('danger', pct < 25)
+
+      // Half-stars keep drawn games visible rather than rounding them away.
+      const full = Math.floor(st.score)
+      const half = st.score % 1 !== 0
+      $(`#ko-stars-${i}`).innerHTML = Array.from({ length: series.totalGames }, (_, n) =>
+        n < full ? '<i class="star won"></i>' : n === full && half ? '<i class="star half"></i>' : '<i class="star"></i>',
+      ).join('')
+    })
+
+    const idle = series.status === 'idle' && series.games.length === 0
+    $('#ko-round').textContent = idle
+      ? `BEST OF ${series.totalGames}`
+      : `ROUND ${Math.min(series.gameIndex + 1, series.totalGames)} OF ${series.totalGames}`
+    $('#ko-score').textContent = `${series.stats[0].score}–${series.stats[1].score}`
+  }
+
+  /** Big arcade slam text. Auto-clears when the animation ends. */
+  announce(text: string) {
+    const el = $('#announce')
+    const span = el.querySelector('span')!
+    el.classList.remove('hidden')
+    // Re-trigger the CSS animation on repeat announcements.
+    span.textContent = ''
+    void span.offsetWidth
+    span.textContent = text
+    clearTimeout(this.announceTimer)
+    this.announceTimer = setTimeout(() => el.classList.add('hidden'), 2000)
   }
 
   log(entry: LogEntry) {
