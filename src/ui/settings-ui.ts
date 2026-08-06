@@ -52,7 +52,7 @@ export function renderSettings(s: Settings) {
       <legend>MATCH</legend>
       <div class="grid">
         ${num('games', 'Games in series', s.games, 1, 50, 1, 'Colors alternate, so an even count gives both models the same number of Whites.')}
-        ${num('maxPlies', 'Ply limit (draw)', s.maxPlies, 20, 600, 10)}
+        ${num('maxPlies', 'Ply limit', s.maxPlies, 20, 600, 10, 'A game this long is adjudicated on material: five points ahead takes the point, closer is a draw.')}
         ${num('retries', 'Retries before forfeit', s.retries, 0, 10, 1, 'Spent on illegal moves and token-capped replies alike.')}
         ${num('networkRetries', 'Connection retry cap', s.networkRetries, 0, 100, 1, 'Connection failures ridden out before the series parks and waits for you. <code>0</code> keeps retrying, backing off to once a minute — nothing is lost either way.')}
         ${num('maxTokens', 'Max tokens / move', s.maxTokens, 32, 32000, 32, `Both models are told the number. ${CIRCUITS.map((c) => `${c.maxTokens.toLocaleString('en-US')} = ${c.name}`).join('; ')}.`)}

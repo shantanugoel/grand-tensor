@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test'
+import { Chess } from 'chess.js'
+import { DEFAULT_PROMPT_TEMPLATE } from './settings'
 import {
   capRetryPrompt,
   movePrompt,
@@ -11,6 +13,7 @@ import {
 
 const args: MovePromptArgs = {
   fen: 'test-fen',
+  board: 'test-board',
   pgn: '1. e4 e5',
   legal: [
     { san: 'Nf3', lan: 'g1f3' },
@@ -57,6 +60,28 @@ describe('movePrompt', () => {
 
   test('does not render history when the setting is off', () => {
     expect(movePrompt('{{previousGames}}', { ...args, includePreviousGames: false })).toBe('(not included)')
+  })
+
+  test('draws the board out as well as naming the FEN', () => {
+    const board = new Chess().ascii()
+    expect(movePrompt(DEFAULT_PROMPT_TEMPLATE, { ...args, board })).toContain(board)
+  })
+
+  test('drops the PGN result token rather than calling it a move', () => {
+    // chess.js terminates movetext with a result — `*` while unfinished — which
+    // rendered a fresh game as "Moves so far: *".
+    expect(movePrompt('{{moves}}', { ...args, pgn: new Chess().pgn() })).toBe('(none)')
+    expect(movePrompt('{{moves}}', { ...args, pgn: '1. e4 e5 *' })).toBe('1. e4 e5')
+    expect(movePrompt('{{moves}}', { ...args, pgn: '1. f3 e5 2. g4 Qh4# 0-1' })).toBe('1. f3 e5 2. g4 Qh4#')
+  })
+
+  test('does not repeat a finished result inside that game’s move list', () => {
+    const text = previousGamesPrompt(
+      [{ index: 0, white: 0, result: '1-0', reason: 'checkmate', pgn: '[Event "?"]\n\n1. e4 e5 1-0' }],
+      ['Alpha', 'Beta'],
+    )
+    expect(text).toContain('Moves: 1. e4 e5')
+    expect(text).not.toContain('e5 1-0')
   })
 })
 

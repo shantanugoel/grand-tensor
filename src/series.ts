@@ -4,7 +4,7 @@
 import { Chess, type Move } from 'chess.js'
 import { adjudicate, adjudicationReason } from './adjudication'
 import { addUsage, chat, ChatError, emptyUsage, fetchModels, type ChatResult, type ModelInfo, type Usage } from './llm'
-import { capRetryPrompt, movePrompt, parseMove, retryPrompt, systemPrompt, type LegalMove } from './prompt'
+import { capRetryPrompt, cleanPgn, movePrompt, parseMove, retryPrompt, systemPrompt, type LegalMove } from './prompt'
 import { NO_EFFORT, SPEEDS, type PlayerConfig, type Settings } from './settings'
 
 export type PlayerIdx = 0 | 1
@@ -345,7 +345,8 @@ export class Series {
         role: 'user',
         content: movePrompt(this.settings.promptTemplate, {
           fen: this.chess.fen(),
-          pgn: this.chess.pgn().replace(/\[[^\]]*\]\s*/g, '').trim(),
+          board: this.chess.ascii(),
+          pgn: cleanPgn(this.chess.pgn()),
           legal,
           inCheck: this.chess.isCheck(),
           lastMove: history[history.length - 1],

@@ -25,6 +25,9 @@ export const DEFAULT_PROMPT_TEMPLATE = [
   `This is game {{gameNumber}} of {{totalGames}}.`,
   ``,
   `FEN: {{fen}}`,
+  ``,
+  `{{board}}`,
+  ``,
   `Move number: {{moveNumber}}`,
   `Last move: {{lastMove}}`,
   `Check status: {{inCheck}}`,
@@ -39,9 +42,30 @@ export const DEFAULT_PROMPT_TEMPLATE = [
   `Choose your move.`,
 ].join('\n')
 
-/** The original built-in template was persisted like a customization. Upgrade
- *  that exact stock value while preserving every genuinely edited prompt. */
-const LEGACY_DEFAULT_PROMPT_TEMPLATES = [
+/** Every built-in template that has shipped before now. Each was persisted like
+ *  a customization, so a returning player carries one of these and would keep
+ *  playing the old task — and, being off the stock prompt, would be ineligible
+ *  for ranked play through no choice of their own. Upgrade those exact values
+ *  and preserve every genuinely edited prompt. */
+export const LEGACY_DEFAULT_PROMPT_TEMPLATES = [
+  [
+    `You are {{player}}, playing a game of chess as {{color}} against {{opponent}}.`,
+    `This is game {{gameNumber}} of {{totalGames}}.`,
+    ``,
+    `FEN: {{fen}}`,
+    `Move number: {{moveNumber}}`,
+    `Last move: {{lastMove}}`,
+    `Check status: {{inCheck}}`,
+    ``,
+    `Moves so far: {{moves}}`,
+    ``,
+    `Previous games in this series:`,
+    `{{previousGames}}`,
+    ``,
+    `LEGAL MOVES ({{legalMoveCount}}): {{legalMoves}}`,
+    ``,
+    `Choose your move.`,
+  ].join('\n'),
   [
     `You are {{player}}, playing {{color}} against {{opponent}}.`,
     `This is game {{gameNumber}} of {{totalGames}}.`,
@@ -89,7 +113,7 @@ export type Settings = {
   /** Index 0 plays white in game 1, then colors alternate. */
   players: [PlayerConfig, PlayerConfig]
   games: number
-  /** Half-moves before a game is adjudicated as a draw. */
+  /** Half-moves before a game is adjudicated on material. */
   maxPlies: number
   /** Re-prompts allowed after an illegal/unparseable move before forfeiting. */
   retries: number

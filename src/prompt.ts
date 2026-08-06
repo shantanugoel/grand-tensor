@@ -12,6 +12,10 @@ export type PromptGame = {
 
 export type MovePromptArgs = {
   fen: string
+  /** The position drawn out square by square. FEN is exact but compressed, and
+   *  reconstructing a board from it is a parsing exercise the model pays for out
+   *  of the same budget it needs for chess. */
+  board: string
   pgn: string
   legal: LegalMove[]
   inCheck: boolean
@@ -59,6 +63,7 @@ export const PROMPT_VARIABLES = [
   'gameNumber',
   'totalGames',
   'fen',
+  'board',
   'moveNumber',
   'lastMove',
   'inCheck',
@@ -68,7 +73,16 @@ export const PROMPT_VARIABLES = [
   'previousGames',
 ] as const
 
-const cleanPgn = (pgn: string) => pgn.replace(/\[[^\]]*\]\s*/g, '').trim()
+/** Movetext only: no header tags, and no trailing result token.
+ *
+ *  `chess.pgn()` always terminates the movetext with a result — `*` while the
+ *  game is unfinished. Left in, a fresh game rendered as "Moves so far: *", and
+ *  a completed one repeated a result the surrounding line already states. */
+export const cleanPgn = (pgn: string) =>
+  pgn
+    .replace(/\[[^\]]*\]\s*/g, '')
+    .replace(/\s*(?:\*|1-0|0-1|1\/2-1\/2)\s*$/, '')
+    .trim()
 
 /** Completed games rendered with player identities and colors. */
 export function previousGamesPrompt(games: PromptGame[], labels: [string, string]): string {
@@ -95,10 +109,11 @@ export function movePrompt(template: string, args: MovePromptArgs): string {
     gameNumber: String(args.gameNumber),
     totalGames: String(args.totalGames),
     fen: args.fen,
+    board: args.board,
     moveNumber: String(args.moveNumber),
     lastMove: args.lastMove ? `Opponent played ${args.lastMove}.` : 'You are opening the game.',
     inCheck: args.inCheck ? 'YOU ARE IN CHECK — you must resolve it.' : 'You are not in check.',
-    moves: args.pgn || '(none)',
+    moves: cleanPgn(args.pgn) || '(none)',
     legalMoveCount: String(args.legal.length),
     legalMoves: args.legal.map((m) => m.san).join(' '),
     previousGames: args.includePreviousGames ? previousGamesPrompt(args.previousGames, args.playerLabels) : '(not included)',

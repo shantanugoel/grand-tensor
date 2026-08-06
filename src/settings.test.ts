@@ -6,18 +6,23 @@ import {
   DEFAULT_PROMPT_TEMPLATE,
   DEFAULTS,
   effectiveSpeedIndex,
+  LEGACY_DEFAULT_PROMPT_TEMPLATES,
 } from './settings'
 
 describe('currentPromptTemplate', () => {
-  test('upgrades the previous stock prompt but preserves custom prompts', () => {
-    const previousStock = DEFAULT_PROMPT_TEMPLATE.replace(
-      'playing a game of chess as {{color}}',
-      'playing {{color}}',
-    )
+  test('upgrades every stock prompt that has ever shipped', () => {
+    expect(LEGACY_DEFAULT_PROMPT_TEMPLATES.length).toBeGreaterThan(0)
+    for (const stock of LEGACY_DEFAULT_PROMPT_TEMPLATES)
+      expect(currentPromptTemplate(stock)).toBe(DEFAULT_PROMPT_TEMPLATE)
+  })
 
-    expect(currentPromptTemplate(previousStock)).toBe(DEFAULT_PROMPT_TEMPLATE)
+  test('preserves a genuinely edited prompt', () => {
     expect(currentPromptTemplate('My custom {{fen}} prompt')).toBe('My custom {{fen}} prompt')
     expect(currentPromptTemplate('')).toBe('')
+  })
+
+  test('never lists the current template as legacy, which would be a no-op cycle', () => {
+    expect(LEGACY_DEFAULT_PROMPT_TEMPLATES).not.toContain(DEFAULT_PROMPT_TEMPLATE)
   })
 })
 

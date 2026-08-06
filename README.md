@@ -27,7 +27,7 @@ Then open the printed URL, hit **⚙ Settings**, and fill in:
 | Retries before forfeit | A reply that names an illegal move, or that never produces the JSON at all, is re-prompted this many times; then the model loses the game |
 | Connection retry cap | Network and provider failures are retried on their own budget, backing off 2s → 60s, and never count as illegal moves. `0` (the default) keeps retrying; anything else parks the series after that many tries. Either way it stops on the failed move rather than throwing the series away — **Retry** sends it again |
 | Previous games | On by default. Sends every completed game's moves, result and ending reason to both models so they can adapt during a series |
-| Position prompt template | Customize the per-move prompt with variables such as `{{fen}}`, `{{moves}}`, `{{legalMoves}}`, `{{player}}`, and `{{previousGames}}`. The required JSON response rules stay in a separate system message |
+| Position prompt template | Customize the per-move prompt with variables such as `{{fen}}`, `{{board}}`, `{{moves}}`, `{{legalMoves}}`, `{{player}}`, and `{{previousGames}}`. The required JSON response rules stay in a separate system message |
 
 Set a model id to `random` to run a local demo match with no API key at all.
 
@@ -145,6 +145,11 @@ all — truncated, or empty because reasoning ate the whole budget — is re-pro
 instead, since it is a budget failure rather than a chess one. Run out of retries and the model
 forfeits the game. The two counts are tracked and displayed separately, since illegal moves are
 real signal about a model and capped replies are signal about the completion budget.
+
+The position is given twice: as FEN, and as an ASCII board. FEN is exact but compressed, and
+reconstructing eight ranks from it is a parsing exercise the model pays for out of the same
+budget it needs for chess — the diagram costs a couple of hundred tokens a move and buys that
+budget back.
 
 By default, later games also receive the moves, result and ending reason from every completed game
 in the series. This can be disabled in Settings. The position prompt itself is editable there and
