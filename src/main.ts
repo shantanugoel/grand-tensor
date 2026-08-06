@@ -1,14 +1,20 @@
 import './style.css'
 import { Arena } from './three/arena'
-import { material, MAX_MATERIAL, Series } from './series'
+import { material, MAX_MATERIAL, Series, type GameRecord, type PlayerStats } from './series'
 import { loadSettings, saveSettings, isFirstVisit, DEFAULTS, SPEEDS, effectiveSpeedIndex, type Settings } from './settings'
 import { Hud } from './ui/hud'
 import { readSettings, renderSettings } from './ui/settings-ui'
-import { applyMatchHash, canNativeShare, copyText, nativeShare, resultText, shareUrl, tweetUrl } from './share'
+import { applyMatchHash, canNativeShare, copyText, fmtScore, nativeShare, resultText, shareUrl, tweetUrl } from './share'
+import { copyImage, renderResultCard } from './share-image'
 import { dismissRotateHint, setupMobile } from './ui/mobile'
+import { SummaryModal, type SummaryRow, type SummaryView } from './ui/summary'
 import { Leaderboard } from './leaderboard'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
+
+/** How long the K.O. slam gets before the scoreboard slides over it. */
+const VERDICT_MS = 1300
+const COUNTDOWN_SECONDS = 3
 
 const firstVisit = isFirstVisit()
 const settings: Settings = loadSettings()
@@ -17,27 +23,40 @@ const settings: Settings = loadSettings()
 const fromLink = applyMatchHash(settings)
 const arena = new Arena($('#stage'))
 const hud = new Hud(settings)
+const summary = new SummaryModal()
 const leaderboard = new Leaderboard((message) => hud.toast(message))
 let series: Series | null = null
+/** Stats as they stood when the current game began, so the round card can show
+ *  what that game alone cost rather than the running series totals. */
+let statsAtGameStart: [PlayerStats, PlayerStats] | null = null
 
 function newSeries(): Series {
   return new Series(settings, {
     onGameStart: (index, white) => {
+      statsAtGameStart = structuredClone(series!.stats)
       arena.setPosition(series!.chess)
       hud.log({ kind: 'info', text: `Game ${index + 1} — ${settings.players[white].label} has white` })
       hud.render(series!)
     },
     onMove: (e) => arena.animateMove(e.move, series!.chess, { check: e.check, mate: e.mate }),
-    onGameEnd: (rec) => {
+    onGameEnd: async (rec) => {
       if (rec.result === '1/2-1/2') {
         arena.announce('DRAW', '#8fa5d6')
         hud.announce('DRAW')
-        return
+      } else {
+        arena.announce(rec.result === '1-0' ? 'WHITE WINS' : 'BLACK WINS', '#ffd54a')
+        // Winning without conceding a single piece earns the arcade "PERFECT".
+        const winnerColor = rec.result === '1-0' ? 'w' : 'b'
+        hud.announce(material(series!.chess, winnerColor) === MAX_MATERIAL ? 'PERFECT' : 'K.O.')
       }
-      arena.announce(rec.result === '1-0' ? 'WHITE WINS' : 'BLACK WINS', '#ffd54a')
-      // Winning without conceding a single piece earns the arcade "PERFECT".
-      const winnerColor = rec.result === '1-0' ? 'w' : 'b'
-      hud.announce(material(series!.chess, winnerColor) === MAX_MATERIAL ? 'PERFECT' : 'K.O.')
+
+      // The last round rolls straight into the series card instead.
+      if (rec.index >= series!.totalGames - 1) return
+      const active = series
+      await sleep(VERDICT_MS)
+      // A reset during the slam swaps in a fresh series — don't interrupt it.
+      if (series !== active) return
+      await summary.interstitial(roundView(rec), COUNTDOWN_SECONDS)
     },
     onThinking: (player) => {
       hud.setThinking(player)
@@ -49,6 +68,111 @@ function newSeries(): Series {
       syncStatus()
     },
   })
+}
+
+/* ---------- round & series summaries ---------- */
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
+const fmtTokens = (n: number) =>
+  n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)
+const fmtCost = (n: number) => (n > 0 ? `$${n < 0.01 ? n.toFixed(4) : n.toFixed(2)}` : '—')
+const fmtMs = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}s` : `${Math.round(n)}ms`)
+
+/** Lower is better for illegal moves, so the lead flips. */
+const leadHigh = (a: number, b: number) => (a === b ? null : a > b ? 0 : 1)
+const leadLow = (a: number, b: number) => (a === b ? null : a < b ? 0 : 1)
+
+/** What one game cost a player, as the difference against the series totals
+ *  captured when that game kicked off. */
+function gameDelta(now: PlayerStats, before?: PlayerStats) {
+  return {
+    moves: now.moves - (before?.moves ?? 0),
+    illegal: now.illegal - (before?.illegal ?? 0),
+    tokens: now.usage.total - (before?.usage.total ?? 0),
+    cost: now.usage.cost - (before?.usage.cost ?? 0),
+    turns: now.turns - (before?.turns ?? 0),
+    totalMs: now.totalMs - (before?.totalMs ?? 0),
+  }
+}
+
+function roundView(rec: GameRecord): SummaryView {
+  const s = series!
+  const black = (1 - rec.white) as 0 | 1
+  const winner = rec.result === '1/2-1/2' ? null : rec.result === '1-0' ? rec.white : black
+  const [a, b] = s.stats.map((st, i) => gameDelta(st, statsAtGameStart?.[i])) as [
+    ReturnType<typeof gameDelta>,
+    ReturnType<typeof gameDelta>,
+  ]
+  const outcome = (i: 0 | 1) => (winner === null ? 'Drew' : winner === i ? 'Won' : 'Lost')
+  const avg = (d: ReturnType<typeof gameDelta>) => (d.turns ? fmtMs(d.totalMs / d.turns) : '—')
+
+  const rows: SummaryRow[] = [
+    { label: 'SIDE', a: rec.white === 0 ? 'White' : 'Black', b: rec.white === 0 ? 'Black' : 'White' },
+    { label: 'RESULT', a: outcome(0), b: outcome(1), lead: winner },
+    { label: 'MOVES', a: String(a.moves), b: String(b.moves) },
+    { label: 'TOKENS', a: fmtTokens(a.tokens), b: fmtTokens(b.tokens) },
+    { label: 'ILLEGAL', a: String(a.illegal), b: String(b.illegal), lead: leadLow(a.illegal, b.illegal) },
+    { label: 'AVG THINK', a: avg(a), b: avg(b), lead: leadLow(a.turns ? a.totalMs / a.turns : Infinity, b.turns ? b.totalMs / b.turns : Infinity) },
+    { label: 'COST', a: fmtCost(a.cost), b: fmtCost(b.cost) },
+  ]
+
+  return {
+    title: `Round ${rec.index + 1} of ${s.totalGames}`,
+    headline: winner === null ? 'DRAW' : `${settings.players[winner].label.toUpperCase()} WINS`,
+    headlineKind: winner === null ? 'draw' : winner === 0 ? 'p0' : 'p1',
+    detail: `${rec.reason} · ${Math.ceil(rec.plies / 2)} moves`,
+    names: [settings.players[0].label, settings.players[1].label],
+    score: [fmtScore(s.stats[0].score), fmtScore(s.stats[1].score)],
+    scoreLabel: 'Series score',
+    rows,
+  }
+}
+
+function seriesView(): SummaryView {
+  const s = series!
+  const [a, b] = s.stats
+  const leader = s.leader
+  const avg = (st: PlayerStats) => (st.turns ? fmtMs(st.totalMs / st.turns) : '—')
+  const totalCost = a.usage.cost + b.usage.cost
+
+  const rows: SummaryRow[] = [
+    {
+      label: 'W / D / L',
+      a: `${a.wins}/${a.draws}/${a.losses}`,
+      b: `${b.wins}/${b.draws}/${b.losses}`,
+      lead: leadHigh(a.wins, b.wins),
+    },
+    { label: 'MOVES', a: String(a.moves), b: String(b.moves) },
+    { label: 'TOKENS', a: fmtTokens(a.usage.total), b: fmtTokens(b.usage.total) },
+    { label: 'REASONING', a: fmtTokens(a.usage.reasoning), b: fmtTokens(b.usage.reasoning) },
+    { label: 'ILLEGAL', a: String(a.illegal), b: String(b.illegal), lead: leadLow(a.illegal, b.illegal) },
+    { label: 'AVG THINK', a: avg(a), b: avg(b) },
+    { label: 'COST', a: fmtCost(a.usage.cost), b: fmtCost(b.usage.cost) },
+  ]
+
+  return {
+    title: 'Series complete',
+    headline: leader === null ? 'SERIES DRAWN' : `${settings.players[leader].label.toUpperCase()} TAKES THE CROWN`,
+    headlineKind: leader === null ? 'draw' : leader === 0 ? 'p0' : 'p1',
+    detail: `${s.games.length} games · ${a.moves + b.moves} moves · ${fmtTokens(a.usage.total + b.usage.total)} tokens${
+      totalCost > 0 ? ` · ${fmtCost(totalCost)}` : ''
+    }`,
+    names: [settings.players[0].label, settings.players[1].label],
+    score: [fmtScore(a.score), fmtScore(b.score)],
+    scoreLabel: `Best of ${s.totalGames}`,
+    rows,
+  }
+}
+
+/** The summary's Submit button is a stand-in for the verdict card's, so it has
+ *  to carry the same eligibility state. */
+function showSeriesSummary() {
+  const real = $<HTMLButtonElement>('#btn-submit-leaderboard')
+  const proxy = $<HTMLButtonElement>('#summary-share [data-share="submit"]')
+  proxy.disabled = real.disabled
+  proxy.title = real.title
+  summary.final(seriesView())
 }
 
 function syncStatus() {
@@ -99,9 +223,12 @@ $('#btn-run').addEventListener('click', async () => {
   syncStatus()
   // Let the round's K.O. slam clear before the match verdict lands on top of it.
   if (series.status === 'done') {
+    const finishedSeries = series
     leaderboard.complete(series, await leaderboardRun)
     const leader = series.leader
-    setTimeout(() => hud.announce(leader === null ? 'DRAW MATCH' : 'CHAMPION'), 1500)
+    setTimeout(() => hud.announce(leader === null ? 'DRAW MATCH' : 'CHAMPION'), VERDICT_MS)
+    await sleep(VERDICT_MS + 900)
+    if (series === finishedSeries) showSeriesSummary()
   }
 })
 
@@ -114,6 +241,8 @@ $('#btn-pause').addEventListener('click', () => {
 
 function reset() {
   series?.stop()
+  // Frees whatever round is parked on the countdown before the series is swapped.
+  summary.close()
   leaderboard.clear()
   series = newSeries()
   hud.clearLog()
@@ -172,16 +301,50 @@ $('#btn-save').addEventListener('click', () => {
 
 /* ---------- sharing ---------- */
 
-$('#share').addEventListener('click', async (e) => {
-  const action = (e.target as HTMLElement).closest<HTMLElement>('[data-share]')?.dataset.share
-  if (!series || !action) return
+const slug = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'player'
+
+/** Paints the shareable card off the live arena and puts it on the clipboard. */
+async function shareImage() {
+  if (!series) return
+  hud.toast('Rendering result card…')
+  try {
+    const canvas = await renderResultCard(series, settings, arena.snapshot())
+    const name = `grand-tensor-${slug(settings.players[0].label)}-vs-${slug(settings.players[1].label)}.png`
+    const outcome = await copyImage(canvas, name)
+    hud.toast(
+      outcome === 'copied'
+        ? 'Result image copied.'
+        : outcome === 'downloaded'
+          ? 'This browser blocks image copy — saved the card instead.'
+          : 'Could not copy the image.',
+    )
+  } catch {
+    hud.toast('Could not build the result image.')
+  }
+}
+
+async function share(action: string) {
+  if (!series) return
   const text = resultText(series, settings)
 
   if (action === 'result') hud.toast((await copyText(text)) ? 'Result copied.' : 'Copy failed.')
+  else if (action === 'image') await shareImage()
   else if (action === 'link') hud.toast((await copyText(shareUrl(settings))) ? 'Matchup link copied.' : 'Copy failed.')
   else if (action === 'x') open(tweetUrl(text), '_blank', 'noopener')
   else if (action === 'native') await nativeShare(text, shareUrl(settings))
-})
+  else if (action === 'submit') {
+    // The verdict card owns the submission flow; this is just a shortcut to it.
+    summary.close()
+    $('#btn-submit-leaderboard').click()
+  }
+}
+
+for (const row of ['#share', '#summary-share']) {
+  $(row).addEventListener('click', (e) => {
+    const action = (e.target as HTMLElement).closest<HTMLElement>('[data-share]')?.dataset.share
+    if (action) void share(action)
+  })
+}
 
 $('#btn-defaults').addEventListener('click', () => {
   Object.assign(settings, structuredClone(DEFAULTS), { apiKey: settings.apiKey })
@@ -193,7 +356,8 @@ $('#btn-defaults').addEventListener('click', () => {
 speedInput.value = String(settings.speed)
 applySpeed()
 arena.autoRotate = rotateInput.checked
-if (canNativeShare()) $('[data-share="native"]').classList.remove('hidden')
+if (canNativeShare())
+  document.querySelectorAll('[data-share="native"]').forEach((el) => el.classList.remove('hidden'))
 setupMobile()
 reset()
 if (firstVisit || fromLink) openModal()

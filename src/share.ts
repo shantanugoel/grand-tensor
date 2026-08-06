@@ -50,7 +50,7 @@ export function applyMatchHash(s: Settings): boolean {
   return true
 }
 
-const fmtScore = (n: number) => (Number.isInteger(n) ? String(n) : `${Math.floor(n)}½`)
+export const fmtScore = (n: number) => (Number.isInteger(n) ? String(n) : `${Math.floor(n)}½`)
 
 const fmtTokens = (n: number) =>
   n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${Math.round(n / 1000)}k` : String(n)

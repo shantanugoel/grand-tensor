@@ -312,6 +312,18 @@ export class Arena {
     this.fx.shockwave(new THREE.Vector3(0, BOARD_TOP, 0), new THREE.Color(color), 12)
   }
 
+  /** A still of the arena for the shareable result card. The renderer has no
+   *  preserveDrawingBuffer, so the read-back only holds if it happens in the
+   *  same task as the draw — hence the render right here. */
+  snapshot(): string | null {
+    try {
+      this.composer.render()
+      return this.renderer.domElement.toDataURL('image/png')
+    } catch {
+      return null
+    }
+  }
+
   private pulseTile(square: string, amount: number) {
     this.tileGlow.set(square, Math.max(this.tileGlow.get(square) ?? 0, amount))
   }

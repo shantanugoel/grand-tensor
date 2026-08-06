@@ -88,6 +88,7 @@
         <div id="champion" class="champion"></div>
         <div id="share" class="share">
           <button class="btn tiny" data-share="result">⧉ Result</button>
+          <button class="btn tiny" data-share="image">🖼 Image</button>
           <button class="btn tiny" data-share="link">🔗 Link</button>
           <button class="btn tiny" data-share="x">𝕏 Post</button>
           <button class="btn tiny hidden" data-share="native">↗ Share</button>
@@ -125,6 +126,32 @@
         <div class="modal-foot">
           <button id="btn-defaults" class="btn ghost">Restore defaults</button>
           <button id="btn-save" class="btn primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Between-rounds scoreboard (with countdown) and the end-of-series card. -->
+    <div id="summary-modal" class="modal hidden">
+      <div class="modal-body summary-body">
+        <div class="modal-head">
+          <h2 id="summary-title">Game 1</h2>
+          <button id="btn-summary-close" class="btn ghost hidden">✕</button>
+        </div>
+        <div id="summary-content"></div>
+        <div class="summary-foot">
+          <div id="summary-countdown" class="summary-countdown hidden">
+            <span class="summary-next">Next round in</span>
+            <span id="summary-count" class="summary-count">3</span>
+          </div>
+          <div id="summary-share" class="share hidden">
+            <button class="btn tiny" data-share="result">⧉ Result</button>
+            <button class="btn tiny" data-share="image">🖼 Image</button>
+            <button class="btn tiny" data-share="link">🔗 Link</button>
+            <button class="btn tiny" data-share="x">𝕏 Post</button>
+            <button class="btn tiny hidden" data-share="native">↗ Share</button>
+            <button class="btn tiny" data-share="submit">♜ Submit</button>
+          </div>
+          <button id="btn-summary-skip" class="btn ghost hidden">Skip →</button>
         </div>
       </div>
     </div>

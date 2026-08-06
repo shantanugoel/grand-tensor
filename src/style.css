@@ -555,6 +555,161 @@ body {
   background: rgba(255, 213, 74, 0.08);
 }
 
+/* ---------- round / series summary modal ---------- */
+
+.summary-body {
+  width: min(560px, 100%);
+  text-align: center;
+}
+
+.summary-body .modal-head {
+  justify-content: center;
+  position: relative;
+}
+
+.summary-body .modal-head #btn-summary-close {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.summary-verdict {
+  font-family: var(--pixel);
+  font-size: 17px;
+  line-height: 1.5;
+  letter-spacing: 1px;
+  color: var(--gold);
+  text-shadow: 0 0 18px currentColor;
+}
+
+.summary-verdict.p0 { color: var(--p0); }
+.summary-verdict.p1 { color: var(--p1); }
+.summary-verdict.draw { color: var(--text); }
+
+.summary-detail {
+  margin-top: 8px;
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.summary-scoreline {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.summary-name {
+  font-family: var(--pixel);
+  font-size: 10px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.summary-name.p0 { color: var(--p0); text-align: right; }
+.summary-name.p1 { color: var(--p1); text-align: left; }
+
+.summary-score {
+  font-family: var(--pixel);
+  font-size: 26px;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.summary-score-label {
+  margin-top: 8px;
+  color: var(--dim);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.summary-rows {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(122, 160, 255, 0.04);
+  overflow: hidden;
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.summary-row:last-child {
+  border-bottom: none;
+}
+
+.summary-row span {
+  font-family: var(--pixel);
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.summary-a { text-align: right; color: var(--p0); }
+.summary-b { text-align: left; color: var(--p1); }
+
+/* Whoever took the line gets the glow. */
+.summary-a.lead,
+.summary-b.lead {
+  text-shadow: 0 0 12px currentColor;
+}
+
+.summary-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.summary-foot .share {
+  width: 100%;
+  margin-top: 0;
+}
+
+.summary-countdown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-family: var(--pixel);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--dim);
+}
+
+.summary-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 8px;
+  font-family: var(--pixel);
+  font-size: 20px;
+  color: var(--gold);
+  border: 1px solid rgba(255, 213, 74, 0.4);
+  border-radius: 12px;
+  background: rgba(255, 213, 74, 0.08);
+  animation: countpop 0.9s ease-out;
+}
+
+@keyframes countpop {
+  0% { transform: scale(1.5); opacity: 0.2; }
+  35% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 /* ---------- community leaderboard ---------- */
 
 .leaderboard-modal-body {
