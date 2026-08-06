@@ -89,9 +89,11 @@ export async function chat(req: ChatRequest): Promise<ChatResult> {
     body: JSON.stringify(body),
     signal: req.signal,
   })
-  const ms = performance.now() - started
-
+  // `fetch` resolves as soon as the headers land, and providers send those long
+  // before a reasoning model has finished thinking — so the clock only stops
+  // once the body is actually in hand.
   const raw = await res.text()
+  const ms = performance.now() - started
   let json: any
   try {
     json = JSON.parse(raw)

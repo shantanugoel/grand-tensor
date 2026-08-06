@@ -326,8 +326,16 @@ body {
   overflow: hidden;
 }
 
+/* The rail scrolls rather than clipping: a long trash-talk line or a tall
+   window would otherwise squash the cards and slice their bottoms off. The
+   padding keeps the "thinking" glow — which scrolling has to clip on both
+   axes — off the edges. */
 .panel-left {
-  left: 18px;
+  left: 4px;
+  width: 328px;
+  padding: 8px 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .panel-right {
@@ -477,6 +485,13 @@ body {
   border-top: 1px dashed var(--line);
   padding-top: 7px;
   min-height: 14px;
+  /* Models are asked for one line and sometimes give five. Capping it keeps
+     both cards the same shape and the rail short enough not to scroll. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
 }
 
 .thinking-dots::after {
@@ -823,6 +838,10 @@ body {
 @media (max-width: 1180px) {
   .panel {
     width: 224px;
+  }
+  /* Wider by the rail's own padding, so the cards themselves stay at 224px. */
+  .panel-left {
+    width: 252px;
   }
   .card,
   .player {

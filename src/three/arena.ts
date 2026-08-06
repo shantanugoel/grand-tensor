@@ -242,8 +242,8 @@ export class Arena {
     const from = squarePos(move.from)
     const to = squarePos(move.to)
     const dur = 340 * this.speed
-    // Turbo runs the series as fast as the API allows; effects would just pile up.
-    const flashy = this.speed > 0
+    // Every capture is worth watching, even in turbo where the pieces teleport —
+    // Fx caps its own live effect counts, so back-to-back kills can't pile up.
 
     this.pulseTile(move.from, 0.7)
     this.pulseTile(move.to, 1)
@@ -267,20 +267,16 @@ export class Arena {
     }
 
     if (victim) {
-      if (flashy) {
-        const color = victim.userData.color === 'w' ? COLORS.white : COLORS.black
-        this.fx.shatter(squarePos(capturedSquare), pieceVoxels(victim.userData.type), VOXEL, color)
-        this.fx.shockwave(squarePos(capturedSquare), new THREE.Color('#ff5f4d'), 3)
-        this.fx.floatText(
-          squarePos(capturedSquare).setY(BOARD_TOP + 1.2),
-          `+${PIECE_VALUE[move.captured!] ?? 1}`,
-          '#ffd54a',
-        )
-        this.fx.shake(0.75)
-      }
+      this.fx.kill({
+        origin: squarePos(capturedSquare),
+        voxels: pieceVoxels(victim.userData.type),
+        voxelSize: VOXEL,
+        color: victim.userData.color === 'w' ? COLORS.white : COLORS.black,
+        value: PIECE_VALUE[move.captured!] ?? 1,
+      })
       this.scene.remove(victim)
       this.pieces.delete(capturedSquare)
-      if (flashy) this.flashTile(move.to, '#ff8a5c')
+      this.flashTile(move.to, '#ff8a5c')
     }
 
     // Landing squash.
@@ -293,10 +289,10 @@ export class Arena {
     }
 
     if (opts.mate) {
-      this.fx.shake(flashy ? 1.2 : 0)
+      this.fx.shake(1.2)
       this.fx.shockwave(to, new THREE.Color('#ffd54a'), 8)
       this.fx.floatText(to.clone().setY(BOARD_TOP + 1.8), 'CHECKMATE', '#ffd54a', 0.75)
-    } else if (opts.check && flashy) {
+    } else if (opts.check) {
       const king = [...this.pieces.values()].find(
         (p) => p.userData.type === 'k' && p.userData.color !== move.color,
       )

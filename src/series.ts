@@ -30,6 +30,10 @@ export type PlayerStats = {
   usage: Usage
   /** API round trips, including the ones spent retrying an illegal move. */
   calls: number
+  /** Move requests that produced a move — the denominator for the average. */
+  turns: number
+  /** Wall time spent thinking, summed over turns. Retries are part of a turn,
+   *  so this is what the "thinking" indicator has actually been up for. */
   totalMs: number
   lastMs: number
 }
@@ -80,6 +84,7 @@ const newStats = (): PlayerStats => ({
   illegal: 0,
   usage: emptyUsage(),
   calls: 0,
+  turns: 0,
   totalMs: 0,
   lastMs: 0,
 })
@@ -310,6 +315,9 @@ export class Series {
     ]
 
     this.events.onThinking(player)
+    // Timed across the whole turn, retries included, so the reported latency
+    // matches how long the card actually said "thinking".
+    const turnStarted = performance.now()
 
     // "random" is a built-in local opponent so the arena can be demoed with no API key.
     if (cfg.model.trim().toLowerCase() === 'random') {
@@ -341,14 +349,17 @@ export class Series {
 
       this.stats[player].usage = addUsage(this.stats[player].usage, result.usage)
       this.stats[player].calls++
-      this.stats[player].totalMs += result.ms
-      this.stats[player].lastMs = result.ms
+      this.stats[player].lastMs = performance.now() - turnStarted
       this.events.onUpdate()
 
       const parsed = parseMove(result.text, legal)
       if (parsed.san) {
+        const turnMs = performance.now() - turnStarted
+        this.stats[player].turns++
+        this.stats[player].totalMs += turnMs
+        this.stats[player].lastMs = turnMs
         this.events.onThinking(null)
-        return { san: parsed.san, say: parsed.say, ms: result.ms }
+        return { san: parsed.san, say: parsed.say, ms: turnMs }
       }
 
       this.stats[player].illegal++

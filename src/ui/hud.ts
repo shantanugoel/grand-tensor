@@ -86,7 +86,7 @@ export class Hud {
       q('illegal').textContent = String(st.illegal)
       q('cost').textContent = fmtCost(st.usage.cost)
       q('latency').textContent = st.lastMs ? fmtMs(st.lastMs) : '—'
-      q('avg').textContent = st.calls ? fmtMs(st.totalMs / st.calls) : '—'
+      q('avg').textContent = st.turns ? fmtMs(st.totalMs / st.turns) : '—'
       const say = q('say')
       const isThinking = this.thinking === i
       say.className = isThinking ? 'say thinking-dots' : 'say'

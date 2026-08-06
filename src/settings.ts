@@ -59,7 +59,7 @@ export const DEFAULTS: Settings = {
   speed: 3,
   commentary: true,
   // Generous by default: reasoning models spend most of this before they answer.
-  maxTokens: 4000,
+  maxTokens: 8000,
 }
 
 const KEY = 'grand-tensor:settings'
