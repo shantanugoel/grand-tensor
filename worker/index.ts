@@ -38,6 +38,12 @@ const decoder = new TextDecoder()
 const TICKET_LIFETIME_MS = 6 * 60 * 60 * 1000
 const WINDOW_DAYS = 30
 
+/** How long a submitter may withdraw a result. Deletion exists to undo a mistake,
+ *  not to curate a record: an open-ended window lets anyone submit every series
+ *  and then delete the losses, which bends the standings without a single
+ *  fabricated game. Short enough that the only thing it can undo is a misclick. */
+const DELETE_WINDOW_MS = 15 * 60 * 1000
+
 /** Per browser, per model pairing, per day. Sized so a full effort sweep of one
  *  matchup (three levels, both directions) fits in a single sitting. */
 const INSTALL_DAILY_PAIR_QUOTA = 8
@@ -429,11 +435,26 @@ async function entrant(
 async function removeSubmission(request: Request, env: Env, origin: string, id: string) {
   const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '')
   if (!token || token.length > 200) return json({ error: 'Missing deletion token.' }, 401, origin)
-  const result = await env.DB.prepare('DELETE FROM submissions WHERE id = ? AND delete_hash = ?')
-    .bind(id, await sha256(token))
+  const deleteHash = await sha256(token)
+  const result = await env.DB.prepare(
+    'DELETE FROM submissions WHERE id = ? AND delete_hash = ? AND created_at >= ?',
+  )
+    .bind(id, deleteHash, Date.now() - DELETE_WINDOW_MS)
     .run()
-  if (!result.meta.changes) return json({ error: 'Submission not found.' }, 404, origin)
-  return json({ deleted: true }, 200, origin)
+  if (result.meta.changes) return json({ deleted: true }, 200, origin)
+
+  // Separated so an expired window doesn't read as a bad token. A row that still
+  // exists and matches the token is simply past the point of being withdrawable.
+  const stale = await env.DB.prepare('SELECT 1 FROM submissions WHERE id = ? AND delete_hash = ?')
+    .bind(id, deleteHash)
+    .first()
+  if (stale)
+    return json(
+      { error: `A submitted result can only be withdrawn within ${DELETE_WINDOW_MS / 60_000} minutes.` },
+      403,
+      origin,
+    )
+  return json({ error: 'Submission not found.' }, 404, origin)
 }
 
 export default {
