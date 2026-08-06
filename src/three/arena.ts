@@ -13,18 +13,20 @@ import { pieceGeometry, pieceHeight, pieceVoxels, VOXEL, voxelGeometry } from '.
 const TILE = 1
 const BOARD_TOP = 0.16
 /** Bounding radius the camera has to keep in frame (board + frame + tall pieces). */
-const BOARD_RADIUS = 5.6
+const BOARD_RADIUS = 6.5
 const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
 
 const COLORS = {
   white: new THREE.Color('#ffe0b0'),
   black: new THREE.Color('#7b5cff'),
+  whiteAccent: new THREE.Color('#ffb154'),
+  blackAccent: new THREE.Color('#3ef0ff'),
   lightTile: new THREE.Color('#8ea0c4'),
   darkTile: new THREE.Color('#232c46'),
   frame: new THREE.Color('#161c2e'),
 }
 
-type PieceMesh = THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial> & {
+type PieceMesh = THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial[]> & {
   userData: { type: PieceSymbol; color: Color; square: Square }
 }
 
@@ -42,11 +44,12 @@ export class Arena {
   private composer: EffectComposer
   private fx: Fx
   private pieces = new Map<Square, PieceMesh>()
-  private materials = new Map<Color, THREE.MeshStandardMaterial>()
+  private materials = new Map<Color, THREE.MeshStandardMaterial[]>()
   private tiles = new Map<string, THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>>()
   private tileGlow = new Map<string, number>()
   private clock = new THREE.Clock()
-  private baseCamPos = new THREE.Vector3(0, 10.6, 12.4)
+  // Elevated enough that the back rank doesn't hide its own pawns.
+  private baseCamPos = new THREE.Vector3(0, 12.8, 11.2)
   private running = true
 
   /** Multiplier on animation length; the UI shrinks it in turbo mode. */
@@ -74,7 +77,7 @@ export class Arena {
     this.controls.maxDistance = 28
     this.controls.maxPolarAngle = Math.PI * 0.49
     this.controls.autoRotateSpeed = 0.5
-    this.controls.target.set(0, 0.5, 0)
+    this.controls.target.set(0, 0.75, 0)
 
     this.buildLights()
     this.buildBoard()
@@ -171,30 +174,38 @@ export class Arena {
     this.scene.add(grid)
   }
 
-  /** One material per side — pieces never differ individually, so sharing them
-   *  keeps the per-move rebuild free of allocation churn. */
-  private pieceMaterial(color: Color) {
+  /** Two materials per side — body and accent — matching the geometry's groups.
+   *  Pieces never differ individually, so sharing them keeps the per-move
+   *  rebuild free of allocation churn. */
+  private pieceMaterials(color: Color) {
     const cached = this.materials.get(color)
     if (cached) return cached
-    const base = color === 'w' ? COLORS.white : COLORS.black
-    const mat = new THREE.MeshStandardMaterial({
-      color: base,
-      vertexColors: true,
-      roughness: 0.35,
-      metalness: 0.45,
-      emissive: base.clone().multiplyScalar(0.18),
-    })
-    this.materials.set(color, mat)
-    return mat
+    const make = (c: THREE.Color, metal: number, glow: number) =>
+      new THREE.MeshStandardMaterial({
+        color: c,
+        vertexColors: true,
+        roughness: 0.35,
+        metalness: metal,
+        emissive: c.clone().multiplyScalar(glow),
+      })
+    const pair =
+      color === 'w'
+        ? [make(COLORS.white, 0.45, 0.18), make(COLORS.whiteAccent, 0.85, 0.3)]
+        : [make(COLORS.black, 0.45, 0.18), make(COLORS.blackAccent, 0.85, 0.3)]
+    this.materials.set(color, pair)
+    return pair
   }
 
   private makePiece(type: PieceSymbol, color: Color, square: Square): PieceMesh {
-    const mesh = new THREE.Mesh(pieceGeometry(type), this.pieceMaterial(color)) as PieceMesh
+    const mesh = new THREE.Mesh(pieceGeometry(type), this.pieceMaterials(color)) as PieceMesh
     mesh.castShadow = true
     mesh.receiveShadow = true
     mesh.position.copy(squarePos(square))
     // Knights face the enemy.
-    if (type === 'n') mesh.rotation.y = color === 'w' ? 0 : Math.PI
+    // Knights stand side-on rather than facing down the board: from the default
+    // camera that shows the head in profile, which is the only angle it reads at.
+    // Each side turns outward so the two armies still face away from each other.
+    if (type === 'n') mesh.rotation.y = color === 'w' ? Math.PI / 2 : -Math.PI / 2
     mesh.userData = { type, color, square }
     return mesh
   }
