@@ -6,7 +6,7 @@
 
 import { fetchModels, FALLBACK_EFFORTS, type ModelInfo } from '../llm'
 import { PROMPT_VARIABLES, systemPrompt } from '../prompt'
-import { CIRCUITS } from '../leaderboard-protocol'
+import { CIRCUITS, inspectEligibility } from '../leaderboard-protocol'
 import { DEFAULTS, NO_EFFORT, type Settings } from '../settings'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
@@ -38,6 +38,7 @@ function playerFieldset(i: number, s: Settings) {
 
 export function renderSettings(s: Settings) {
   $('#settings-form').innerHTML = `
+    <div id="eligibility" class="eligibility"></div>
     <fieldset class="fieldset">
       <legend>ENDPOINT</legend>
       <div class="grid">
@@ -89,8 +90,50 @@ export function renderSettings(s: Settings) {
   }
   $<HTMLInputElement>('[name="commentary"]').addEventListener('change', refreshSystemPrompt)
   $<HTMLInputElement>('[name="maxTokens"]').addEventListener('input', refreshSystemPrompt)
+
+  // Ranked eligibility is decided by the settings themselves, so the only honest
+  // place to explain it is next to the field that decides it — and it has to
+  // track edits, not the values the modal happened to open with.
+  const form = $('#settings-form')
+  const refreshEligibility = () => renderEligibility(s)
+  form.addEventListener('input', refreshEligibility)
+  form.addEventListener('change', refreshEligibility)
+  refreshEligibility()
+
   void refreshCatalog(s)
 }
+
+/** Marks every field the ranked protocol objects to, and summarises which
+ *  circuit the current settings would submit to. */
+function renderEligibility(current: Settings) {
+  const form = $('#settings-form')
+  form.querySelectorAll('.field-verdict').forEach((node) => node.remove())
+  form.querySelectorAll('.field.ineligible').forEach((node) => node.classList.remove('ineligible'))
+
+  const { circuit, issues, eligible } = inspectEligibility(readSettings(current))
+
+  for (const issue of issues) {
+    const field = form.querySelector(`[name="${issue.field}"]`)?.closest('.field')
+    if (!field) continue
+    field.classList.add('ineligible')
+    const verdict = document.createElement('span')
+    verdict.className = 'field-verdict'
+    verdict.textContent = issue.reason
+    field.appendChild(verdict)
+  }
+
+  const banner = $('#eligibility')
+  banner.className = `eligibility ${eligible ? 'ok' : 'off'}`
+  if (eligible && circuit) {
+    banner.textContent = `Ranked: this match can be submitted to the ${circuit.name} (${circuit.maxTokens.toLocaleString('en-US')} tokens per move).`
+    return
+  }
+  const blocked = `${issues.length} setting${issues.length === 1 ? '' : 's'} below ${issues.length === 1 ? 'keeps' : 'keep'} this match out of the standings.`
+  banner.textContent = circuit
+    ? `Exhibition: your token cap targets the ${circuit.name}, but ${blocked}`
+    : `Exhibition: ${blocked} Play it anyway — only submission is affected.`
+}
+
 
 /** Rebuilds one effort dropdown for whatever model id is currently typed. */
 function renderEfforts(i: number, preferred?: string) {

@@ -3,10 +3,15 @@ import {
   circuitById,
   circuitFor,
   DEFAULT_CIRCUIT,
+  entrantKey,
   type Circuit,
+  type EntrantResponse,
+  type EntrantSeries,
+  type HeadToHead,
   type ProtocolConfig,
   type Standing,
 } from '../src/leaderboard-protocol'
+import { MIN_OPPONENTS, rateEntrants, sortStandings, type SeriesResult } from './rating'
 import { sha256, validateConfig, validateSubmission } from './validation'
 
 type Env = {
@@ -31,6 +36,11 @@ type TicketPayload = {
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
 const TICKET_LIFETIME_MS = 6 * 60 * 60 * 1000
+const WINDOW_DAYS = 30
+
+/** Per browser, per model pairing, per day. Sized so a full effort sweep of one
+ *  matchup (three levels, both directions) fits in a single sitting. */
+const INSTALL_DAILY_PAIR_QUOTA = 8
 
 function base64url(bytes: Uint8Array) {
   let raw = ''
@@ -205,7 +215,11 @@ async function submit(request: Request, env: Env, origin: string) {
       .bind(dayStart, networkHash)
       .first<{ count: number }>(),
   ])
-  if ((installQuota?.count ?? 0) >= 5)
+  // Keyed on the two model ids, deliberately not on effort. The ranking entity
+  // is (model, effort), but the thing a farmer manipulates is the matchup — and
+  // folding effort in here would multiply one browser's daily ceiling by the
+  // number of effort combinations instead of holding it flat.
+  if ((installQuota?.count ?? 0) >= INSTALL_DAILY_PAIR_QUOTA)
     return json({ error: 'This browser has contributed enough results for this matchup today.' }, 429, origin)
   if ((networkQuota?.count ?? 0) >= 100)
     return json({ error: 'This network has reached today’s anonymous contribution limit.' }, 429, origin)
@@ -257,64 +271,159 @@ async function submit(request: Request, env: Env, origin: string) {
   return json({ id, deleteToken, message: `Result added to the ${submission.circuit.name}.` }, 201, origin)
 }
 
+const DISCLOSURE =
+  'Community-reported matches. PGN legality and board results are checked; model identity is not cryptographically verified.'
+
+type SeriesRow = {
+  created_at: number
+  model_a: string
+  effort_a: string
+  model_b: string
+  effort_b: string
+  wins_a: number
+  draws_a: number
+  losses_a: number
+}
+
+/** Every series in the window for one circuit. The rating fit is a fold over all
+ *  of them, so they are read whole rather than pre-aggregated in SQL — grouping
+ *  in the query would throw away exactly the opponent identities the fit needs. */
+function windowSeries(env: Env, circuit: Circuit) {
+  return env.DB.prepare(
+    `SELECT created_at, model_a, effort_a, model_b, effort_b, wins_a, draws_a, losses_a
+     FROM submissions WHERE protocol = ? AND created_at >= ?`,
+  )
+    .bind(circuit.id, Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000)
+    .all<SeriesRow>()
+}
+
+const asSeriesResult = (row: SeriesRow): SeriesResult => ({
+  a: { model: row.model_a, effort: row.effort_a },
+  b: { model: row.model_b, effort: row.effort_b },
+  wins: row.wins_a,
+  draws: row.draws_a,
+  losses: row.losses_a,
+})
+
 async function standings(env: Env, origin: string | null, circuitId: string | null) {
   const circuit = circuitId ? circuitById(circuitId) : DEFAULT_CIRCUIT
   if (!circuit) return json({ error: 'Unknown circuit.' }, 400, origin)
-  const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000
-  const result = await env.DB.prepare(
-    `WITH model_results AS (
-      SELECT model_a AS model, score_a_x2 AS points_x2, games, wins_a AS wins, draws_a AS draws, losses_a AS losses
-      FROM submissions WHERE protocol = ? AND created_at >= ?
-      UNION ALL
-      SELECT model_b AS model, score_b_x2 AS points_x2, games, losses_a AS wins, draws_a AS draws, wins_a AS losses
-      FROM submissions WHERE protocol = ? AND created_at >= ?
-    )
-    SELECT model,
-      SUM(points_x2) AS points_x2,
-      SUM(games) AS games,
-      COUNT(*) AS series,
-      SUM(wins) AS wins,
-      SUM(draws) AS draws,
-      SUM(losses) AS losses
-    FROM model_results
-    GROUP BY model
-    ORDER BY (CAST(SUM(points_x2) AS REAL) / (2 * SUM(games))) DESC, SUM(games) DESC, model ASC
-    LIMIT 100`,
-  )
-    .bind(circuit.id, cutoff, circuit.id, cutoff)
-    .all<{
-      model: string
-      points_x2: number
-      games: number
-      series: number
-      wins: number
-      draws: number
-      losses: number
-    }>()
 
-  const rows: Standing[] = result.results.map((row, index) => ({
-    rank: index + 1,
-    model: row.model,
-    points: row.points_x2 / 2,
-    games: row.games,
-    series: row.series,
-    wins: row.wins,
-    draws: row.draws,
-    losses: row.losses,
-    scorePct: row.games ? Math.round((row.points_x2 / (2 * row.games)) * 1000) / 10 : 0,
+  const { results } = await windowSeries(env, circuit)
+  const rated = sortStandings(rateEntrants(results.map(asSeriesResult)))
+
+  let rank = 0
+  const rows: Standing[] = rated.slice(0, 100).map((entrant) => ({
+    rank: entrant.provisional ? null : ++rank,
+    model: entrant.model,
+    effort: entrant.effort,
+    rating: entrant.rating,
+    ratingMargin: entrant.ratingMargin,
+    provisional: entrant.provisional,
+    opponents: entrant.opponents,
+    points: entrant.points,
+    games: entrant.games,
+    series: entrant.series,
+    wins: entrant.wins,
+    draws: entrant.draws,
+    losses: entrant.losses,
+    scorePct: entrant.scorePct,
   }))
+
   return json(
     {
       protocol: circuit.id,
       circuit: { id: circuit.id, name: circuit.name, maxTokens: circuit.maxTokens, blurb: circuit.blurb },
-      windowDays: 30,
-      disclosure: 'Community-reported matches. PGN legality and board results are checked; model identity is not cryptographically verified.',
+      windowDays: WINDOW_DAYS,
+      disclosure: DISCLOSURE,
+      minOpponents: MIN_OPPONENTS,
       standings: rows,
     },
     200,
     origin,
     'public, max-age=60, stale-while-revalidate=300',
   )
+}
+
+/** One entrant's record broken out by opponent, so anyone can see whether a
+ *  rating was earned against the field or farmed against one weak model. */
+async function entrant(
+  env: Env,
+  origin: string | null,
+  circuitId: string | null,
+  model: string | null,
+  effort: string | null,
+) {
+  const circuit = circuitId ? circuitById(circuitId) : DEFAULT_CIRCUIT
+  if (!circuit) return json({ error: 'Unknown circuit.' }, 400, origin)
+  if (!model || !effort || model.length > 200 || effort.length > 32)
+    return json({ error: 'An entrant is identified by model and effort.' }, 400, origin)
+
+  const self = entrantKey({ model, effort })
+  const { results } = await windowSeries(env, circuit)
+
+  const opponents = new Map<string, HeadToHead>()
+  const history: EntrantSeries[] = []
+  let wins = 0
+  let draws = 0
+  let losses = 0
+
+  for (const row of results) {
+    const a = { model: row.model_a, effort: row.effort_a }
+    const b = { model: row.model_b, effort: row.effort_b }
+    const isA = entrantKey(a) === self
+    if (!isA && entrantKey(b) !== self) continue
+
+    const mine = isA ? row.wins_a : row.losses_a
+    const theirs = isA ? row.losses_a : row.wins_a
+    const other = isA ? b : a
+
+    wins += mine
+    draws += row.draws_a
+    losses += theirs
+    history.push({
+      playedAt: row.created_at,
+      opponentModel: other.model,
+      opponentEffort: other.effort,
+      games: mine + row.draws_a + theirs,
+      wins: mine,
+      draws: row.draws_a,
+      losses: theirs,
+    })
+
+    const key = entrantKey(other)
+    const record =
+      opponents.get(key) ??
+      ({ model: other.model, effort: other.effort, series: 0, games: 0, wins: 0, draws: 0, losses: 0, scorePct: 0 } satisfies HeadToHead)
+    record.series += 1
+    record.games += mine + row.draws_a + theirs
+    record.wins += mine
+    record.draws += row.draws_a
+    record.losses += theirs
+    opponents.set(key, record)
+  }
+
+  if (!history.length) return json({ error: 'No results for this entrant in the current window.' }, 404, origin)
+
+  const pct = (w: number, d: number, total: number) => (total ? Math.round(((w + d / 2) / total) * 1000) / 10 : 0)
+  const games = wins + draws + losses
+  const body: EntrantResponse = {
+    circuit: { id: circuit.id, name: circuit.name, maxTokens: circuit.maxTokens, blurb: circuit.blurb },
+    model,
+    effort,
+    games,
+    series: history.length,
+    wins,
+    draws,
+    losses,
+    scorePct: pct(wins, draws, games),
+    headToHead: [...opponents.values()]
+      .map((record) => ({ ...record, scorePct: pct(record.wins, record.draws, record.games) }))
+      .sort((x, y) => y.games - x.games || x.model.localeCompare(y.model)),
+    history: history.sort((x, y) => y.playedAt - x.playedAt).slice(0, 100),
+  }
+
+  return json(body, 200, origin, 'public, max-age=60, stale-while-revalidate=300')
 }
 
 async function removeSubmission(request: Request, env: Env, origin: string, id: string) {
@@ -341,6 +450,14 @@ export default {
         return json({ siteKey: env.TURNSTILE_SITE_KEY, circuits: CIRCUITS }, 200, origin, 'public, max-age=3600')
       if (request.method === 'GET' && url.pathname === '/v1/standings')
         return standings(env, origin, url.searchParams.get('circuit'))
+      if (request.method === 'GET' && url.pathname === '/v1/entrant')
+        return entrant(
+          env,
+          origin,
+          url.searchParams.get('circuit'),
+          url.searchParams.get('model'),
+          url.searchParams.get('effort'),
+        )
       if (request.method === 'POST' && url.pathname === '/v1/run-ticket') return issueTicket(request, env, origin!)
       if (request.method === 'POST' && url.pathname === '/v1/submissions') return submit(request, env, origin!)
       const deletion = url.pathname.match(/^\/v1\/submissions\/([0-9a-f-]{36})$/i)

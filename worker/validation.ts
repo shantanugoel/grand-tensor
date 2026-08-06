@@ -2,6 +2,9 @@ import { Chess } from 'chess.js'
 import {
   circuitFor,
   LEADERBOARD_APP_VERSION,
+  RANKED_GAMES_MAX,
+  RANKED_GAMES_MIN,
+  RANKED_TEMPERATURE,
   type Circuit,
   type ProtocolConfig,
   type SubmittedGame,
@@ -73,9 +76,17 @@ export async function validateConfig(value: unknown): Promise<{ config: Protocol
   const circuit = typeof cfg.maxTokens === 'number' ? circuitFor(cfg.maxTokens) : null
   if (!circuit) throw new Error('This match does not use a ranked completion budget.')
 
+  // Series length only sets sample size, so it is a range rather than a pin.
+  if (
+    typeof cfg.games !== 'number' ||
+    !Number.isInteger(cfg.games) ||
+    cfg.games < RANKED_GAMES_MIN ||
+    cfg.games > RANKED_GAMES_MAX
+  )
+    throw new Error(`A ranked series runs ${RANKED_GAMES_MIN} to ${RANKED_GAMES_MAX} games.`)
+
   if (
     cfg.baseUrl !== 'https://openrouter.ai/api/v1' ||
-    cfg.games !== 4 ||
     cfg.maxPlies !== 200 ||
     cfg.retries !== 3 ||
     cfg.commentary !== true ||
@@ -95,8 +106,9 @@ export async function validateConfig(value: unknown): Promise<{ config: Protocol
       throw new Error('Invalid model identifier.')
     if (typeof player.effort !== 'string' || !EFFORT_RE.test(player.effort))
       throw new Error('Invalid reasoning effort.')
-    if (player.temperature !== 0.2) throw new Error('Ranked temperature must be 0.2.')
-    return { model: player.model, effort: player.effort, temperature: 0.2 }
+    if (player.temperature !== RANKED_TEMPERATURE)
+      throw new Error(`Ranked temperature must be ${RANKED_TEMPERATURE}.`)
+    return { model: player.model, effort: player.effort, temperature: RANKED_TEMPERATURE }
   }) as ProtocolConfig['players']
 
   if (players[0].model === players[1].model) throw new Error('A model cannot play itself in a ranked match.')
@@ -105,7 +117,7 @@ export async function validateConfig(value: unknown): Promise<{ config: Protocol
     circuit,
     config: {
       baseUrl: 'https://openrouter.ai/api/v1',
-      games: 4,
+      games: cfg.games,
       maxPlies: 200,
       retries: 3,
       commentary: true,
@@ -233,8 +245,10 @@ export async function validateSubmission(value: unknown): Promise<ValidatedSubmi
   // circuit it didn't play in — it can only disagree with itself and be refused.
   const { config, circuit } = await validateConfig(body.config)
   if (body.protocol !== circuit.id) throw new Error('Submission protocol does not match its settings.')
-  if (!Array.isArray(body.games) || body.games.length !== 4)
-    throw new Error('A ranked submission must contain four games.')
+  // The config declares the series length and the ticket is signed over the
+  // config, so the game list has to match what was declared before play started.
+  if (!Array.isArray(body.games) || body.games.length !== config.games)
+    throw new Error(`This submission does not contain its declared ${config.games} games.`)
   const games = body.games.map(validateGame)
 
   let scoreAX2 = 0
@@ -274,7 +288,7 @@ export async function validateSubmission(value: unknown): Promise<ValidatedSubmi
     circuit,
     games,
     scoreAX2,
-    scoreBX2: 8 - scoreAX2,
+    scoreBX2: 2 * games.length - scoreAX2,
     winsA,
     drawsA,
     lossesA,

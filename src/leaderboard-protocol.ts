@@ -40,6 +40,17 @@ export const CIRCUITS: readonly Circuit[] = [
 
 export const DEFAULT_CIRCUIT = CIRCUITS[0]
 
+/** Series length is the one pinned setting that only changes sample size: games
+ *  are scored individually and the rating fit consumes them individually, so a
+ *  6-game series is just three more data points than a 4-game one. Everything
+ *  else that stays pinned changes what the model is asked to do. */
+export const RANKED_GAMES_MIN = 2
+export const RANKED_GAMES_MAX = 10
+
+/** Ranked temperature. Unlike effort, this is continuous, so it cannot become
+ *  part of the entrant key without splitting the board into unbounded buckets. */
+export const RANKED_TEMPERATURE = 0.2
+
 /** The circuit a match belongs to is derived from its cap, never sent alongside
  *  it — that keeps the client from nominating a bucket it didn't actually play. */
 export const circuitFor = (maxTokens: number): Circuit | null =>
@@ -86,9 +97,31 @@ export type LeaderboardSubmission = {
   games: SubmittedGame[]
 }
 
+/** An entrant is a model *at an effort level*, not a model. On OpenRouter the
+ *  reasoning budget scales with effort, so one model at `low` and at `xhigh` are
+ *  two different competitors; averaging them describes a configuration nobody
+ *  ran. `default` (no effort parameter sent) is its own entrant — "whatever the
+ *  provider picks" is a real, reproducible choice. */
+export type Entrant = { model: string; effort: string }
+
+/** Unambiguous because neither half can contain a space: model ids and efforts
+ *  are both validated against regexes that exclude whitespace. */
+export const entrantKey = (entrant: Entrant) => `${entrant.model} ${entrant.effort}`
+
 export type Standing = {
-  rank: number
+  /** Null for provisional entrants, which are listed but not ranked. */
+  rank: number | null
   model: string
+  effort: string
+  /** Bradley-Terry strength on an Elo-like scale, anchored so the field averages
+   *  1500. Comparable only within a circuit. */
+  rating: number
+  /** Half-width of the 95% interval, in rating points. */
+  ratingMargin: number
+  /** Too few distinct opponents to rate credibly — shown, but unranked. */
+  provisional: boolean
+  /** Distinct opponents faced, which is what makes a rating meaningful. */
+  opponents: number
   points: number
   games: number
   series: number
@@ -98,6 +131,51 @@ export type Standing = {
   scorePct: number
 }
 
+export type StandingsResponse = {
+  protocol: string
+  circuit: Circuit
+  windowDays: number
+  disclosure: string
+  minOpponents: number
+  standings: Standing[]
+}
+
+/** One opponent's worth of an entrant's record, for the drill-down view. */
+export type HeadToHead = {
+  model: string
+  effort: string
+  series: number
+  games: number
+  wins: number
+  draws: number
+  losses: number
+  scorePct: number
+}
+
+export type EntrantSeries = {
+  playedAt: number
+  opponentModel: string
+  opponentEffort: string
+  games: number
+  wins: number
+  draws: number
+  losses: number
+}
+
+export type EntrantResponse = {
+  circuit: Circuit
+  model: string
+  effort: string
+  games: number
+  series: number
+  wins: number
+  draws: number
+  losses: number
+  scorePct: number
+  headToHead: HeadToHead[]
+  history: EntrantSeries[]
+}
+
 const encoder = new TextEncoder()
 
 export async function sha256(value: string): Promise<string> {
@@ -105,37 +183,85 @@ export async function sha256(value: string): Promise<string> {
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
+/** Every settings field the ranked protocol has an opinion about. Named the same
+ *  as the form controls so the settings modal can attach each verdict to the
+ *  input that causes it. */
+export type EligibilityField =
+  | 'baseUrl'
+  | 'games'
+  | 'maxPlies'
+  | 'retries'
+  | 'commentary'
+  | 'includePreviousGames'
+  | 'maxTokens'
+  | 'promptTemplate'
+  | 'p0_model'
+  | 'p1_model'
+  | 'p0_temperature'
+  | 'p1_temperature'
+
+export type EligibilityIssue = { field: EligibilityField; reason: string }
+
+export type Eligibility = {
+  /** The circuit the completion cap selects, reported even when other fields
+   *  block submission — "your cap says Extended, but the prompt is edited" is
+   *  more useful than a bare refusal. */
+  circuit: Circuit | null
+  issues: EligibilityIssue[]
+  eligible: boolean
+}
+
+const RANKED_CAPS = CIRCUITS.map((c) => c.maxTokens.toLocaleString('en-US')).join(' or ')
+
+/** The single source of truth for what ranked play requires. Both the submit
+ *  gate and the settings modal read it, so a rule can never drift between the
+ *  explanation and the enforcement. */
+export function inspectEligibility(settings: Settings): Eligibility {
+  const issues: EligibilityIssue[] = []
+  const circuit = circuitFor(settings.maxTokens)
+
+  if (settings.baseUrl.replace(/\/+$/, '') !== 'https://openrouter.ai/api/v1')
+    issues.push({ field: 'baseUrl', reason: 'Ranked play runs on OpenRouter, so every entrant faces the same providers.' })
+  if (!Number.isInteger(settings.games) || settings.games < RANKED_GAMES_MIN || settings.games > RANKED_GAMES_MAX)
+    issues.push({ field: 'games', reason: `Ranked series run ${RANKED_GAMES_MIN}–${RANKED_GAMES_MAX} games.` })
+  if (settings.maxPlies !== 200)
+    issues.push({ field: 'maxPlies', reason: 'Ranked games are adjudicated drawn at 200 plies, which sets the draw rate.' })
+  if (settings.retries !== 3)
+    issues.push({ field: 'retries', reason: 'Ranked matches allow 3 retries — more retries hide a model’s illegal moves.' })
+  if (!settings.commentary)
+    issues.push({ field: 'commentary', reason: 'Ranked matches ask for commentary, which changes what each model is prompted for.' })
+  if (!settings.includePreviousGames)
+    issues.push({ field: 'includePreviousGames', reason: 'Ranked matches show earlier games in the series.' })
+  if (!circuit)
+    issues.push({ field: 'maxTokens', reason: `Ranked matches run at ${RANKED_CAPS} max tokens per move.` })
+  if (settings.promptTemplate !== DEFAULT_PROMPT_TEMPLATE)
+    issues.push({ field: 'promptTemplate', reason: 'An edited prompt is an exhibition — it changes the task, not the player.' })
+
+  settings.players.forEach((player, i) => {
+    const model = `p${i}_model` as EligibilityField
+    const temperature = `p${i}_temperature` as EligibilityField
+    if (player.model.trim().toLowerCase() === 'random')
+      issues.push({ field: model, reason: 'The local random mover is a demo opponent and cannot affect standings.' })
+    if (player.temperature !== RANKED_TEMPERATURE)
+      issues.push({ field: temperature, reason: `Ranked matches use temperature ${RANKED_TEMPERATURE} for both models.` })
+  })
+  if (settings.players[0].model.trim() === settings.players[1].model.trim())
+    issues.push({ field: 'p1_model', reason: 'A model cannot play itself in a ranked match.' })
+
+  return { circuit, issues, eligible: issues.length === 0 }
+}
+
 export async function protocolConfig(
   settings: Settings,
 ): Promise<{ config?: ProtocolConfig; circuit?: Circuit; reason?: string }> {
-  if (settings.baseUrl.replace(/\/+$/, '') !== 'https://openrouter.ai/api/v1')
-    return { reason: 'Only OpenRouter matches are eligible for ranked standings.' }
-  if (settings.games !== 4) return { reason: 'Ranked matches use exactly 4 games.' }
-  if (settings.maxPlies !== 200) return { reason: 'Ranked matches use a 200-ply limit.' }
-  if (settings.retries !== 3) return { reason: 'Ranked matches allow 3 retries.' }
-  if (!settings.commentary) return { reason: 'Ranked matches use commentary.' }
-  if (!settings.includePreviousGames) return { reason: 'Ranked matches include previous games.' }
-
-  const circuit = circuitFor(settings.maxTokens)
-  if (!circuit)
-    return {
-      reason: `Ranked matches run at ${CIRCUITS.map((c) => c.maxTokens.toLocaleString('en-US')).join(' or ')} max tokens per move.`,
-    }
-
-  if (settings.promptTemplate !== DEFAULT_PROMPT_TEMPLATE)
-    return { reason: 'Custom prompts are exhibitions and cannot affect standings.' }
-  if (settings.players.some((player) => player.model.trim().toLowerCase() === 'random'))
-    return { reason: 'Local random opponents are exhibitions and cannot affect standings.' }
-  if (settings.players.some((player) => player.temperature !== 0.2))
-    return { reason: 'Ranked matches use temperature 0.2 for both models.' }
-  if (settings.players[0].model === settings.players[1].model)
-    return { reason: 'A model cannot play itself in a ranked match.' }
+  const { circuit, issues, eligible } = inspectEligibility(settings)
+  if (!eligible || !circuit) return { reason: issues[0]?.reason ?? 'This match is not eligible for ranked standings.' }
 
   return {
     circuit,
     config: {
       baseUrl: 'https://openrouter.ai/api/v1',
-      games: 4,
+      games: settings.games,
       maxPlies: 200,
       retries: 3,
       commentary: true,

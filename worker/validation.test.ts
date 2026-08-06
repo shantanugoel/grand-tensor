@@ -3,6 +3,8 @@ import {
   CIRCUITS,
   DEFAULT_CIRCUIT,
   LEADERBOARD_APP_VERSION,
+  RANKED_GAMES_MAX,
+  RANKED_GAMES_MIN,
   type LeaderboardSubmission,
   type ProtocolConfig,
 } from '../src/leaderboard-protocol'
@@ -25,6 +27,18 @@ async function config(): Promise<ProtocolConfig> {
   }
 }
 
+/** A fool's-mate series of the requested length: Black checkmates every game, so
+ *  the side seated as A alternates colors and loses each one. */
+const games = (length: number) =>
+  Array.from({ length }, (_, index) => ({
+    index,
+    white: (index % 2) as 0 | 1,
+    result: '0-1' as const,
+    reason: 'checkmate' as const,
+    plies: 4,
+    pgn: '1. f3 e5 2. g4 Qh4#',
+  }))
+
 async function submission(): Promise<LeaderboardSubmission> {
   return {
     schemaVersion: 1,
@@ -34,14 +48,7 @@ async function submission(): Promise<LeaderboardSubmission> {
     ticket: 'ticket',
     turnstileToken: 'token',
     config: await config(),
-    games: Array.from({ length: 4 }, (_, index) => ({
-      index,
-      white: (index % 2) as 0 | 1,
-      result: '0-1' as const,
-      reason: 'checkmate' as const,
-      plies: 4,
-      pgn: '1. f3 e5 2. g4 Qh4#',
-    })),
+    games: games(4),
   }
 }
 
@@ -77,8 +84,39 @@ describe('leaderboard submission validation', () => {
 
   test('rejects non-standard settings', async () => {
     const value = await submission()
-    value.config.games = 6
+    value.config.retries = 5
     await expect(validateSubmission(value)).rejects.toThrow('ranked protocol')
+  })
+
+  test('accepts any series length in the ranked range', async () => {
+    const value = await submission()
+    value.config.games = 6
+    value.games = games(6)
+    const result = await validateSubmission(value)
+    expect(result.games).toHaveLength(6)
+    // Black mates in every game and the colors alternate, so a six-game series
+    // splits 3-3 — and the half-point total tracks the length, not a fixed 8.
+    expect(result.scoreAX2).toBe(6)
+    expect(result.scoreBX2).toBe(6)
+    expect(result.winsA).toBe(3)
+    expect(result.lossesA).toBe(3)
+  })
+
+  test('rejects a series length outside the ranked range', async () => {
+    for (const length of [RANKED_GAMES_MIN - 1, RANKED_GAMES_MAX + 1]) {
+      const value = await submission()
+      value.config.games = length
+      value.games = games(length)
+      await expect(validateSubmission(value)).rejects.toThrow(
+        `${RANKED_GAMES_MIN} to ${RANKED_GAMES_MAX} games`,
+      )
+    }
+  })
+
+  test('rejects a game list that disagrees with the declared series length', async () => {
+    const value = await submission()
+    value.config.games = 6
+    await expect(validateSubmission(value)).rejects.toThrow('declared 6 games')
   })
 
   test('routes a submission to the circuit its completion cap belongs to', async () => {

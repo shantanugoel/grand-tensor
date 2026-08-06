@@ -6,9 +6,11 @@ import {
   protocolConfig,
   submissionReason,
   type Circuit,
+  type EntrantResponse,
   type LeaderboardSubmission,
   type ProtocolConfig,
   type Standing,
+  type StandingsResponse,
   type SubmittedGame,
 } from './leaderboard-protocol'
 import type { Series } from './series'
@@ -91,6 +93,23 @@ function loadTurnstile(): Promise<TurnstileApi> {
 
 function fmtPoints(points: number) {
   return Number.isInteger(points) ? String(points) : `${Math.floor(points)}½`
+}
+
+/** `default` means no effort parameter was sent at all, which is a real entrant
+ *  but not a claim about how hard the model thought — so it reads muted. */
+function effortChip(effort: string) {
+  const chip = document.createElement('span')
+  chip.className = effort === 'default' ? 'effort-chip muted' : 'effort-chip'
+  chip.textContent = effort
+  return chip
+}
+
+function cell(row: HTMLTableRowElement, value: string | Node, className?: string) {
+  const td = document.createElement('td')
+  if (className) td.className = className
+  typeof value === 'string' ? (td.textContent = value) : td.appendChild(value)
+  row.appendChild(td)
+  return td
 }
 
 export class Leaderboard {
@@ -213,11 +232,7 @@ export class Leaderboard {
     body.appendChild(loading)
 
     try {
-      const result = await api<{
-        windowDays: number
-        disclosure: string
-        standings: Standing[]
-      }>(`/v1/standings?circuit=${encodeURIComponent(circuit.id)}`)
+      const result = await api<StandingsResponse>(`/v1/standings?circuit=${encodeURIComponent(circuit.id)}`)
       // A slow response for a tab the user has since left must not overwrite the
       // one they're actually looking at.
       if (this.standingsCircuit.id !== circuit.id) return
@@ -225,7 +240,10 @@ export class Leaderboard {
 
       const note = document.createElement('p')
       note.className = 'leaderboard-note'
-      note.textContent = `${circuit.blurb} ${result.disclosure} Results cover the last ${result.windowDays} days.`
+      note.textContent =
+        `${circuit.blurb} Rating is a Bradley-Terry fit over every result in the window, so beating a strong entrant counts for more than beating a weak one. ` +
+        `Entrants with fewer than ${result.minOpponents} distinct opponents are listed but unranked. ` +
+        `${result.disclosure} Results cover the last ${result.windowDays} days.`
       body.appendChild(note)
 
       if (!result.standings.length) {
@@ -241,24 +259,9 @@ export class Leaderboard {
       const table = document.createElement('table')
       table.className = 'leaderboard-table'
       table.innerHTML =
-        '<thead><tr><th>#</th><th>Model</th><th>Score</th><th>W/D/L</th><th>Games</th></tr></thead>'
+        '<thead><tr><th>#</th><th>Model</th><th>Effort</th><th>Rating</th><th>Score</th><th>W/D/L</th><th>Opp.</th><th>Games</th></tr></thead>'
       const tbody = document.createElement('tbody')
-      for (const row of result.standings) {
-        const tr = document.createElement('tr')
-        const values = [
-          String(row.rank),
-          row.model,
-          `${row.scorePct.toFixed(1)}% (${fmtPoints(row.points)})`,
-          `${row.wins}/${row.draws}/${row.losses}`,
-          String(row.games),
-        ]
-        for (const value of values) {
-          const td = document.createElement('td')
-          td.textContent = value
-          tr.appendChild(td)
-        }
-        tbody.appendChild(tr)
-      }
+      for (const row of result.standings) tbody.appendChild(this.standingRow(row, circuit))
       table.appendChild(tbody)
       wrap.appendChild(table)
       body.appendChild(wrap)
@@ -266,6 +269,95 @@ export class Leaderboard {
       if (this.standingsCircuit.id !== circuit.id) return
       loading.textContent = error instanceof Error ? error.message : 'Could not load standings.'
       loading.classList.add('error')
+    }
+  }
+
+  private standingRow(row: Standing, circuit: Circuit) {
+    const tr = document.createElement('tr')
+    tr.className = row.provisional ? 'standing-row provisional' : 'standing-row'
+    tr.tabIndex = 0
+    tr.title = row.provisional
+      ? `${row.opponents} distinct opponent${row.opponents === 1 ? '' : 's'} so far — too few to rank. Open the record.`
+      : 'Open this entrant’s record'
+
+    cell(tr, row.rank === null ? '—' : String(row.rank))
+    cell(tr, row.model)
+    cell(tr, effortChip(row.effort))
+    cell(tr, row.provisional ? '—' : `${row.rating} ±${row.ratingMargin}`)
+    cell(tr, `${row.scorePct.toFixed(1)}% (${fmtPoints(row.points)})`)
+    cell(tr, `${row.wins}/${row.draws}/${row.losses}`)
+    cell(tr, String(row.opponents))
+    cell(tr, String(row.games))
+
+    const open = () => void this.openEntrant(circuit, row.model, row.effort)
+    tr.addEventListener('click', open)
+    tr.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        open()
+      }
+    })
+    return tr
+  }
+
+  /** The record behind a rating: who this entrant actually played, and how often.
+   *  Farming one weak opponent is invisible in a single number and obvious here. */
+  private async openEntrant(circuit: Circuit, model: string, effort: string) {
+    this.open(`${model} · ${effort}`)
+    const content = $('#leaderboard-content')
+    const loading = document.createElement('p')
+    loading.className = 'leaderboard-note'
+    loading.textContent = 'Loading match record…'
+    content.appendChild(loading)
+
+    const back = document.createElement('button')
+    back.className = 'btn ghost tiny'
+    back.textContent = '← Standings'
+    back.addEventListener('click', () => void this.openStandings())
+
+    try {
+      const query = new URLSearchParams({ circuit: circuit.id, model, effort })
+      const record = await api<EntrantResponse>(`/v1/entrant?${query}`)
+      content.replaceChildren(back)
+
+      const summary = document.createElement('p')
+      summary.className = 'leaderboard-note'
+      summary.textContent =
+        `${record.circuit.name} · ${record.series} series, ${record.games} games · ` +
+        `${record.wins}/${record.draws}/${record.losses} · ${record.scorePct.toFixed(1)}% overall.`
+      content.appendChild(summary)
+
+      const heading = document.createElement('h3')
+      heading.className = 'leaderboard-subhead'
+      heading.textContent = 'Head to head'
+      content.appendChild(heading)
+
+      const wrap = document.createElement('div')
+      wrap.className = 'leaderboard-table-wrap'
+      const table = document.createElement('table')
+      table.className = 'leaderboard-table'
+      table.innerHTML =
+        '<thead><tr><th>Opponent</th><th>Effort</th><th>Score</th><th>W/D/L</th><th>Series</th><th>Games</th></tr></thead>'
+      const tbody = document.createElement('tbody')
+      for (const opponent of record.headToHead) {
+        const tr = document.createElement('tr')
+        cell(tr, opponent.model)
+        cell(tr, effortChip(opponent.effort))
+        cell(tr, `${opponent.scorePct.toFixed(1)}%`)
+        cell(tr, `${opponent.wins}/${opponent.draws}/${opponent.losses}`)
+        cell(tr, String(opponent.series))
+        cell(tr, String(opponent.games))
+        tbody.appendChild(tr)
+      }
+      table.appendChild(tbody)
+      wrap.appendChild(table)
+      content.appendChild(wrap)
+    } catch (error) {
+      content.replaceChildren(back)
+      const failed = document.createElement('p')
+      failed.className = 'leaderboard-note error'
+      failed.textContent = error instanceof Error ? error.message : 'Could not load this record.'
+      content.appendChild(failed)
     }
   }
 

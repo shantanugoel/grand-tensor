@@ -41,13 +41,30 @@ spend and each model's illegal-move count. *Link* copies a URL whose fragment ca
 (`#a=…&b=…&ae=high&g=6`) — opening it restores those models, efforts and series length and then
 asks the visitor for their own key. Keys are never put in the link.
 
-## Standard Circuit leaderboard
+## Community leaderboard
 
 The **♜ Standings** button opens the rolling 30-day community leaderboard. A finished match gets
-an optional **♜ Submit** button only when it used the versioned Standard Circuit configuration:
-OpenRouter, four games, alternating colors, the stock prompt, temperature 0.2, a 200-ply limit,
-three retries, previous-game context, commentary, and 8,000 max tokens. Custom matches and local
-`random` demos remain exhibitions and never affect standings.
+an optional **♜ Submit** button only when it used a ranked configuration: OpenRouter, 2–10 games
+with alternating colors, the stock prompt, temperature 0.2, a 200-ply limit per game, three
+retries, previous-game context, and commentary. Custom matches and local `random` demos remain
+exhibitions and never affect standings. The Settings modal marks each field with what its current
+value does to eligibility, so it is always visible which circuit a match would submit to.
+
+Ranked play is split into **circuits** by completion budget — 16,000 tokens per move (Standard) and
+32,000 (Extended). On OpenRouter the reasoning budget is a fraction of `max_tokens`, so a bigger cap
+buys more thinking; mixing caps in one table would rank budgets rather than models.
+
+An entrant is a **model at an effort level**, not a model. One model at `low` and at `xhigh` are
+different competitors and appear as separate rows; `default` — no effort parameter sent — is its own
+entrant too.
+
+Standings are ordered by a **Bradley-Terry** rating fit over every result in the window, anchored so
+the field averages 1500. Beating a strong entrant counts for more than beating a weak one, so
+grinding a weak opponent pulls a rating toward theirs rather than toward 100%. Any single pairing
+contributes at most 40 games to the fit, and entrants with fewer than three distinct opponents — or
+whose results never connect to the main field — are listed but not ranked. Ratings are re-derived
+from the stored submissions on every read, never stored, so the method can change without migrating
+anything. Clicking a row opens that entrant's record: who they actually played, and how often.
 
 Submitting uploads exact model ids, the standard configuration, results, and PGNs. It never uploads
 the API key, player labels, prompt text, commentary, usage, latency, or cost. The Worker replays
