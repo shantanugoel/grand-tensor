@@ -6,6 +6,7 @@ import { Hud } from './ui/hud'
 import { readSettings, renderSettings } from './ui/settings-ui'
 import { applyMatchHash, canNativeShare, copyText, nativeShare, resultText, shareUrl, tweetUrl } from './share'
 import { dismissRotateHint, setupMobile } from './ui/mobile'
+import { Leaderboard } from './leaderboard'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
 
@@ -16,6 +17,7 @@ const settings: Settings = loadSettings()
 const fromLink = applyMatchHash(settings)
 const arena = new Arena($('#stage'))
 const hud = new Hud(settings)
+const leaderboard = new Leaderboard((message) => hud.toast(message))
 let series: Series | null = null
 
 function newSeries(): Series {
@@ -86,6 +88,7 @@ $('#btn-run').addEventListener('click', async () => {
   dismissRotateHint()
   hud.clearLog()
   series = newSeries()
+  const leaderboardRun = leaderboard.prepare(settings)
   arena.setPosition(series.chess)
   hud.render(series)
   const finished = series.run()
@@ -96,6 +99,7 @@ $('#btn-run').addEventListener('click', async () => {
   syncStatus()
   // Let the round's K.O. slam clear before the match verdict lands on top of it.
   if (series.status === 'done') {
+    leaderboard.complete(series, await leaderboardRun)
     const leader = series.leader
     setTimeout(() => hud.announce(leader === null ? 'DRAW MATCH' : 'CHAMPION'), 1500)
   }
@@ -110,6 +114,7 @@ $('#btn-pause').addEventListener('click', () => {
 
 function reset() {
   series?.stop()
+  leaderboard.clear()
   series = newSeries()
   hud.clearLog()
   hud.setThinking(null)

@@ -1,0 +1,39 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "grand-tensor-leaderboard",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-08-06",
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "leaderboard.grandtensor.shantanugoel.com",
+      "custom_domain": true
+    }
+  ],
+  "vars": {
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAEHyFhblcq5hQ2vP",
+    "CORS_ORIGINS": "https://grandtensor.shantanugoel.com,http://localhost:5177,http://127.0.0.1:5177"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "grand-tensor-leaderboard",
+      "database_id": "45fbb797-ebef-4042-8a90-c64e3df4e7b3",
+      "migrations_dir": "worker/migrations"
+    }
+  ],
+  "ratelimits": [
+    {
+      "name": "SUBMIT_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 6,
+        "period": 60
+      }
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 0.1
+  }
+}

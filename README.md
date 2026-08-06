@@ -40,6 +40,34 @@ spend and each model's illegal-move count. *Link* copies a URL whose fragment ca
 (`#a=…&b=…&ae=high&g=6`) — opening it restores those models, efforts and series length and then
 asks the visitor for their own key. Keys are never put in the link.
 
+## Standard Circuit leaderboard
+
+The **♜ Standings** button opens the rolling 30-day community leaderboard. A finished match gets
+an optional **♜ Submit** button only when it used the versioned Standard Circuit configuration:
+OpenRouter, four games, alternating colors, the stock prompt, temperature 0.2, a 200-ply limit,
+three retries, previous-game context, commentary, and 8,000 max tokens. Custom matches and local
+`random` demos remain exhibitions and never affect standings.
+
+Submitting uploads exact model ids, the standard configuration, results, and PGNs. It never uploads
+the API key, player labels, prompt text, commentary, usage, latency, or cost. The Worker replays
+every PGN and derives the scores itself. Since model calls still happen directly from the browser,
+model identity is explicitly described as community-reported rather than cryptographically
+verified.
+
+The backend lives in `worker/` and is deployed separately to
+`leaderboard.grandtensor.shantanugoel.com`:
+
+```bash
+bun run leaderboard:migrate:local   # local D1, once per new migration
+bun run leaderboard:dev
+bun run leaderboard:migrate:remote  # production D1
+bun run leaderboard:deploy
+```
+
+Wrangler is pinned as a development dependency. Production values for `TURNSTILE_SECRET`,
+`RUN_TICKET_SECRET`, and `ABUSE_HASH_SECRET` belong in Cloudflare Worker secret storage, never in
+the repository. Local values live in the ignored `.dev.vars` file; Wrangler state is ignored too.
+
 ## Build & deploy
 
 ```bash
@@ -68,6 +96,8 @@ sync — `bun run dev` serves the same graph with hot reloading, and `bun run bu
 | [src/three/fx.ts](src/three/fx.ts) | Debris, shockwave rings, floating pixel text, screen shake |
 | [src/ui/](src/ui/) | The HUD overlay, the settings modal and the small-screen affordances |
 | [src/share.ts](src/share.ts) | Result card text, and encoding/decoding a matchup link |
+| [src/leaderboard.ts](src/leaderboard.ts) | Optional submission flow, Turnstile, and standings UI |
+| [worker/](worker/) | Cloudflare Worker API, PGN validation, abuse controls, and D1 migrations |
 | [dev.ts](dev.ts) / [preview.ts](preview.ts) | `Bun.serve` for development with HMR, and for serving the built `dist/` |
 
 Models with no reasoning levels at all get a disabled dropdown that says so; a model the endpoint
