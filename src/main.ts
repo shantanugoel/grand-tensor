@@ -5,6 +5,7 @@ import { loadSettings, saveSettings, isFirstVisit, DEFAULTS, SPEEDS, type Settin
 import { Hud } from './ui/hud'
 import { readSettings, renderSettings } from './ui/settings-ui'
 import { applyMatchHash, canNativeShare, copyText, nativeShare, resultText, shareUrl, tweetUrl } from './share'
+import { dismissRotateHint, setupMobile } from './ui/mobile'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
 
@@ -82,6 +83,7 @@ $('#btn-run').addEventListener('click', async () => {
     openModal()
     return
   }
+  dismissRotateHint()
   hud.clearLog()
   series = newSeries()
   arena.setPosition(series.chess)
@@ -180,5 +182,6 @@ $('#btn-defaults').addEventListener('click', () => {
 speedInput.value = String(settings.speed)
 applySpeed()
 if (canNativeShare()) $('[data-share="native"]').classList.remove('hidden')
+setupMobile()
 reset()
 if (firstVisit || fromLink) openModal()

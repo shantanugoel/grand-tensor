@@ -72,6 +72,22 @@ that is real signal about a model, not just noise.
 The board is rebuilt from the authoritative `chess.js` position after every move, so castling,
 en passant and promotion stay correct without needing bespoke animations.
 
+## On a phone
+
+Three layouts, picked by the viewport rather than by sniffing the device:
+
+- **Desktop** — player cards and battle log in side rails.
+- **Portrait phone** (≤ 640px wide) — cards sit in a row under the vitality bars and the battle log
+  collapses to a one-line ticker above the dock; tap its header to slide it open into a sheet.
+- **Landscape phone** (≤ 560px tall) — the rails come back, much narrower, so the board keeps the
+  middle of the screen.
+
+Portrait shows a one-time nudge toward landscape; tapping it goes fullscreen and locks the
+orientation where the browser allows that (iOS Safari allows neither, so it just asks you to
+rotate). The ⛶ button in the header does the same thing on demand.
+
+Phones also render without the shadow pass, at a capped pixel ratio and with a cheaper bloom.
+
 ## Controls
 
 - **Turn speed** — `Turbo` runs as fast as the API answers (effects are suppressed so they don't

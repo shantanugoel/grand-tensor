@@ -2,7 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#060810" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <title>Grand Tensor — the machine grandmaster circuit</title>
     <meta name="description" content="Watch two language models fight it out over 64 squares." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -24,7 +26,8 @@
       </div>
       <div class="topbar-right">
         <div id="status-chip" class="chip">IDLE</div>
-        <button id="btn-settings" class="btn ghost">⚙ Settings</button>
+        <button id="btn-fullscreen" class="btn ghost hidden" title="Fullscreen landscape">⛶</button>
+        <button id="btn-settings" class="btn ghost"><span class="wide-only">⚙ Settings</span><span class="narrow-only">⚙</span></button>
       </div>
     </header>
 
@@ -54,14 +57,17 @@
     <aside class="panel panel-left">
       <div id="player-cards"></div>
 
-      <section class="card">
+      <section class="card series-card">
         <h3>Series</h3>
         <div class="rows">
           <div class="row"><span>Move</span><b id="s-ply">0</b></div>
           <div class="row"><span>Total cost</span><b id="s-cost">$0.0000</b></div>
         </div>
-        <div id="champion" class="champion hidden"></div>
-        <div id="share" class="share hidden">
+      </section>
+
+      <section class="card result-card hidden" id="result-card">
+        <div id="champion" class="champion"></div>
+        <div id="share" class="share">
           <button class="btn tiny" data-share="result">⧉ Result</button>
           <button class="btn tiny" data-share="link">🔗 Link</button>
           <button class="btn tiny" data-share="x">𝕏 Post</button>
@@ -70,9 +76,9 @@
       </section>
     </aside>
 
-    <aside class="panel panel-right">
+    <aside class="panel panel-right" id="log-panel">
       <section class="card grow">
-        <h3>Battle log</h3>
+        <h3 id="log-toggle">Battle log<span class="log-caret"></span></h3>
         <ol id="log" class="log"></ol>
       </section>
     </aside>

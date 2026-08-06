@@ -51,14 +51,19 @@ export class Arena {
   // Elevated enough that the back rank doesn't hide its own pawns.
   private baseCamPos = new THREE.Vector3(0, 12.8, 11.2)
   private running = true
+  private lowPower: boolean
 
   /** Multiplier on animation length; the UI shrinks it in turbo mode. */
   speed = 1
 
   constructor(private container: HTMLElement) {
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2))
-    this.renderer.shadowMap.enabled = true
+    // Phones get a lighter setup: no shadow pass, a capped pixel ratio and a
+    // cheaper bloom. Everything else is identical.
+    this.lowPower = matchMedia('(pointer: coarse)').matches || innerWidth < 860
+
+    this.renderer = new THREE.WebGLRenderer({ antialias: !this.lowPower, powerPreference: 'high-performance' })
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, this.lowPower ? 1.5 : 2))
+    this.renderer.shadowMap.enabled = !this.lowPower
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
     this.renderer.toneMappingExposure = 1.05
@@ -85,7 +90,7 @@ export class Arena {
     this.fx = new Fx(this.scene)
 
     const renderPass = new RenderPass(this.scene, this.camera)
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.55, 0.7, 0.75)
+    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), this.lowPower ? 0.42 : 0.55, 0.6, 0.8)
     this.composer = new EffectComposer(this.renderer)
     this.composer.addPass(renderPass)
     this.composer.addPass(bloom)
@@ -105,7 +110,7 @@ export class Arena {
 
     const key = new THREE.DirectionalLight('#fff4e0', 1.5)
     key.position.set(6, 12, 7)
-    key.castShadow = true
+    key.castShadow = !this.lowPower
     key.shadow.mapSize.set(2048, 2048)
     key.shadow.camera.near = 1
     key.shadow.camera.far = 40
@@ -344,6 +349,9 @@ export class Arena {
     const { clientWidth: w, clientHeight: h } = this.container
     if (!w || !h) return
     this.camera.aspect = w / h
+    // Tall windows would otherwise force an absurd pull-back to fit the board's
+    // width, so they get a wider lens instead.
+    this.camera.fov = this.camera.aspect < 1 ? 52 : 36
     this.camera.updateProjectionMatrix()
     this.renderer.setSize(w, h)
     this.composer.setSize(w, h)
@@ -359,6 +367,11 @@ export class Arena {
     const offset = this.camera.position.clone().sub(this.controls.target).setLength(distance)
     this.camera.position.copy(this.controls.target).add(offset)
     this.controls.update()
+    // Fog is a fraction of the viewing distance, or a far-away camera would sit
+    // entirely inside it and grey the board out.
+    const fog = this.scene.fog as THREE.Fog
+    fog.near = distance * 0.75
+    fog.far = distance * 2.1
   }
 
   dispose() {

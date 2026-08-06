@@ -107,11 +107,10 @@ export class Hud {
       return `<i class="pip ${cls}" title="Game ${i + 1}: ${rec.result} — ${rec.reason}"></i>`
     }).join('')
 
-    const champ = $('#champion')
     const done = series.status === 'done'
-    champ.classList.toggle('hidden', !done)
-    $('#share').classList.toggle('hidden', !done)
+    $('#result-card').classList.toggle('hidden', !done)
     if (done) {
+      const champ = $('#champion')
       const leader = series.leader
       champ.textContent =
         leader === null
