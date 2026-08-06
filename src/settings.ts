@@ -117,7 +117,11 @@ export const DEFAULTS: Settings = {
   ],
   games: 4,
   maxPlies: 200,
-  retries: 3,
+  // The move parser no longer scrapes a move out of free prose, so a reply that
+  // misses the JSON shape now costs an attempt instead of being silently turned
+  // into a move the model never nominated. That is the honest accounting, and it
+  // needs a wider budget to stay a measurement of chess rather than of syntax.
+  retries: 5,
   networkRetries: 0,
   speed: 0,
   commentary: true,
@@ -140,6 +144,14 @@ const LEGACY_DEFAULT_MAX_TOKENS = 8000
 export const currentMaxTokens = (saved?: number): number =>
   saved === undefined || saved === LEGACY_DEFAULT_MAX_TOKENS ? DEFAULTS.maxTokens : saved
 
+/** Same bargain for the retry budget: 3 was the stock value and is no longer the
+ *  ranked one, so anyone who has ever opened Settings would come back ineligible
+ *  through no choice of their own. */
+const LEGACY_DEFAULT_RETRIES = 3
+
+export const currentRetries = (saved?: number): number =>
+  saved === undefined || saved === LEGACY_DEFAULT_RETRIES ? DEFAULTS.retries : saved
+
 const KEY = 'grand-tensor:settings'
 
 export function loadSettings(): Settings {
@@ -157,6 +169,7 @@ export function loadSettings(): Settings {
       players,
       promptTemplate: currentPromptTemplate(saved.promptTemplate),
       maxTokens: currentMaxTokens(saved.maxTokens),
+      retries: currentRetries(saved.retries),
     }
   } catch {
     return structuredClone(DEFAULTS)

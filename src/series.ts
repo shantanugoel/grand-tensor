@@ -408,7 +408,12 @@ export class Series {
         return { san: parsed.san, say: parsed.say, ms: turnMs }
       }
 
-      const truncated = result.finish === 'length'
+      // A reply with no content never made a move either. Providers disagree on
+      // how they say so — some return finish_reason "length", others hand back
+      // "stop" with an empty content field once reasoning has eaten the budget —
+      // and calling the second one an illegal move blames chess for a budget
+      // problem, which is the exact conflation `capped` exists to avoid.
+      const truncated = result.finish === 'length' || !result.text.trim()
       if (truncated) this.stats[player].capped++
       else {
         this.stats[player].illegal++
@@ -419,7 +424,7 @@ export class Series {
         kind: 'warn',
         player,
         text: truncated
-          ? `Reply hit the token cap before a move appeared — attempt ${attempt + 1} of ${this.settings.retries + 1}`
+          ? `Reply ended without a move — attempt ${attempt + 1} of ${this.settings.retries + 1}`
           : `Illegal move "${parsed.raw || '(empty)'}" — attempt ${attempt + 1} of ${this.settings.retries + 1}`,
         detail: truncated ? 'Raise "Max tokens / move" in Settings if this repeats.' : undefined,
       })

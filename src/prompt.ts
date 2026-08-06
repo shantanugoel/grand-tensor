@@ -118,10 +118,12 @@ export function retryPrompt(bad: string, legal: LegalMove[]): string {
 }
 
 /** A reply that ran out of budget never made a move at all, so calling it
- *  illegal is both wrong and useless — it invites the same overrun again. */
+ *  illegal is both wrong and useless — it invites the same overrun again. Also
+ *  covers a reply that came back empty, which is the same failure wearing a
+ *  different finish_reason. */
 export function capRetryPrompt(maxTokens: number, legal: LegalMove[]): string {
   return [
-    `Your previous reply reached the ${fmtCap(maxTokens)}-token completion limit before it produced a move.`,
+    `Your previous reply produced no move — it returned nothing, or reached the ${fmtCap(maxTokens)}-token completion limit first.`,
     `This attempt has the same limit and the same reasoning effort, so think more briefly and emit the JSON early.`,
     `Pick one move copied exactly from this list: ${legal.map((m) => m.san).join(' ')}`,
     `Reply with JSON only.`,
@@ -130,22 +132,56 @@ export function capRetryPrompt(maxTokens: number, legal: LegalMove[]): string {
 
 const normalize = (s: string) => s.replace(/[+#!?\s]/g, '').replace(/0/g, 'O')
 
-/** Pulls a legal SAN out of whatever the model actually returned. */
+/** The first balanced `{…}` in the text, string-aware so a brace inside a quoted
+ *  value doesn't throw off the depth count. Greedy `\{[\s\S]*\}` matched from the
+ *  first brace to the *last* one anywhere in the reply, so a well-formed object
+ *  followed by a stray `}` in prose stopped parsing at all. */
+function firstJsonObject(text: string): string | null {
+  for (let start = text.indexOf('{'); start !== -1; start = text.indexOf('{', start + 1)) {
+    let depth = 0
+    let inString = false
+    let escaped = false
+    for (let i = start; i < text.length; i++) {
+      const ch = text[i]
+      if (inString) {
+        if (escaped) escaped = false
+        else if (ch === '\\') escaped = true
+        else if (ch === '"') inString = false
+        continue
+      }
+      if (ch === '"') inString = true
+      else if (ch === '{') depth++
+      else if (ch === '}' && --depth === 0) return text.slice(start, i + 1)
+    }
+  }
+  return null
+}
+
+/** Pulls the move out of the JSON object the model was asked for.
+ *
+ *  Only out of the JSON object. An earlier version fell back to scanning the
+ *  whole reply for any token that happened to resolve to a legal move, which
+ *  turned "the model failed to answer" into "the model played something" — and
+ *  usually played a line it was arguing against. A move has to be one the model
+ *  actually nominated, so the answer must arrive in the shape it was asked for
+ *  and the retry budget handles the rest. */
 export function parseMove(text: string, legal: LegalMove[]): { san: string | null; say: string; raw: string } {
   const cleaned = text.replace(/```[a-z]*|```/gi, '').trim()
   let say = ''
   let candidate = ''
 
-  const objMatch = cleaned.match(/\{[\s\S]*\}/)
-  if (objMatch) {
+  const block = firstJsonObject(cleaned)
+  if (block) {
     try {
-      const obj = JSON.parse(objMatch[0])
+      const obj = JSON.parse(block)
       if (typeof obj.move === 'string') candidate = obj.move
       if (typeof obj.say === 'string') say = obj.say
     } catch {
-      // Fall through to loose key scraping — models sometimes emit broken JSON.
-      const m = cleaned.match(/"move"\s*:\s*"([^"]+)"/)
-      const s = cleaned.match(/"say"\s*:\s*"([^"]*)"/)
+      // Repair, not prose mining: this reads the declared keys out of an object
+      // that is malformed elsewhere — an unescaped quote in `say` is the usual
+      // culprit, and it has nothing to do with the move the model picked.
+      const m = block.match(/"move"\s*:\s*"([^"]+)"/)
+      const s = block.match(/"say"\s*:\s*"([^"]*)"/)
       if (m) candidate = m[1]
       if (s) say = s[1]
     }
@@ -163,14 +199,6 @@ export function parseMove(text: string, legal: LegalMove[]): { san: string | nul
   if (candidate) {
     const hit = resolve(candidate)
     if (hit) return { san: hit, say, raw: candidate }
-  }
-
-  // Last resort: scan the prose for any legal move token, preferring the last one
-  // mentioned (models tend to end with their answer).
-  const tokens = cleaned.match(/[A-Za-z][A-Za-z0-9+#=-]{1,6}/g) ?? []
-  for (let i = tokens.length - 1; i >= 0; i--) {
-    const hit = resolve(tokens[i])
-    if (hit) return { san: hit, say, raw: candidate || tokens[i] }
   }
 
   return { san: null, say, raw: candidate || cleaned.slice(0, 60) }

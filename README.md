@@ -24,7 +24,7 @@ Then open the printed URL, hit **⚙ Settings**, and fill in:
 | Reasoning effort | Only the levels the chosen model actually accepts — read from its `/models` entry, so `deepseek-v4-flash-0731` offers max/high/low with no medium while `gpt-5.6-luna` adds xhigh and none. `default` sends nothing and lets the provider choose (the dropdown names which level that is). Sent as `reasoning.effort` on OpenRouter, `reasoning_effort` elsewhere |
 | Games in series | Colors alternate every game; 1 / 0.5 / 0 scoring decides the champion |
 | Ply limit | Games past this are adjudicated a draw so a series can't hang |
-| Retries before forfeit | Illegal or unparseable moves are re-prompted this many times, then the model loses the game |
+| Retries before forfeit | A reply that names an illegal move, or that never produces the JSON at all, is re-prompted this many times; then the model loses the game |
 | Connection retry cap | Network and provider failures are retried on their own budget, backing off 2s → 60s, and never count as illegal moves. `0` (the default) keeps retrying; anything else parks the series after that many tries. Either way it stops on the failed move rather than throwing the series away — **Retry** sends it again |
 | Previous games | On by default. Sends every completed game's moves, result and ending reason to both models so they can adapt during a series |
 | Position prompt template | Customize the per-move prompt with variables such as `{{fen}}`, `{{moves}}`, `{{legalMoves}}`, `{{player}}`, and `{{previousGames}}`. The required JSON response rules stay in a separate system message |
@@ -45,7 +45,7 @@ asks the visitor for their own key. Keys are never put in the link.
 
 The **♜ Standings** button opens the rolling 30-day community leaderboard. A finished match gets
 an optional **♜ Submit** button only when it used a ranked configuration: OpenRouter, an even
-2–10 games with alternating colors, the stock prompt, temperature 0.2, a 200-ply limit per game, three
+2–10 games with alternating colors, the stock prompt, temperature 0.2, a 200-ply limit per game, five
 retries, previous-game context, and commentary. The count has to be even because colors
 alternate from game one — an odd series would quietly hand the first-seated model an extra
 White, and a submission reports only wins/draws/losses, so the rating fit could never correct
@@ -111,7 +111,7 @@ sync — `bun run dev` serves the same graph with hot reloading, and `bun run bu
 | --- | --- |
 | [src/series.ts](src/series.ts) | Runs the series: alternates colors, calls the models, applies moves, keeps the score. Knows nothing about the DOM or three.js |
 | [src/llm.ts](src/llm.ts) | One `fetch` to `/chat/completions`, plus token/cost accounting |
-| [src/prompt.ts](src/prompt.ts) | Builds the position prompt and forgivingly parses a legal SAN out of whatever comes back |
+| [src/prompt.ts](src/prompt.ts) | Builds the position prompt and reads the move out of the JSON object the model was asked for |
 | [src/three/voxels.ts](src/three/voxels.ts) | Pieces authored as 7-wide side profiles, revolved or extruded into cubes and merged into one geometry per type |
 | [src/three/arena.ts](src/three/arena.ts) | Board, lights, bloom, camera framing, and the move choreography |
 | [src/three/fx.ts](src/three/fx.ts) | Debris, shockwave rings, floating pixel text, screen shake |
@@ -132,9 +132,17 @@ response and that is used verbatim; for any other endpoint the series reads list
 pricing simply show `—`.
 
 Each model is asked for JSON — `{"move": "Nf3", "say": "..."}` — with the full legal move list in
-the prompt. Anything that isn't a legal move is re-prompted with the error; run out of retries and
-the model forfeits the game. Illegal-move counts are tracked per model and shown in the HUD, since
-that is real signal about a model, not just noise.
+the prompt. The move has to arrive inside that object: the parser tolerates code fences, check and
+annotation marks, long algebraic notation and an object that is malformed somewhere other than the
+move itself, but it will not scan free prose for something move-shaped. A reply that argues its way
+around a position without answering is a non-answer, and reading the last move mentioned in it
+credits the model with a line it was usually refuting.
+
+Anything that isn't a legal move is re-prompted with the error; a reply that produces no move at
+all — truncated, or empty because reasoning ate the whole budget — is re-prompted with *that*
+instead, since it is a budget failure rather than a chess one. Run out of retries and the model
+forfeits the game. The two counts are tracked and displayed separately, since illegal moves are
+real signal about a model and capped replies are signal about the completion budget.
 
 By default, later games also receive the moves, result and ending reason from every completed game
 in the series. This can be disabled in Settings. The position prompt itself is editable there and

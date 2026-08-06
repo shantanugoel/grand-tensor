@@ -5,6 +5,7 @@ import {
   LEADERBOARD_APP_VERSION,
   RANKED_GAMES_MAX,
   RANKED_GAMES_MIN,
+  RANKED_RETRIES,
   type LeaderboardSubmission,
   type ProtocolConfig,
 } from '../src/leaderboard-protocol'
@@ -15,7 +16,7 @@ async function config(): Promise<ProtocolConfig> {
     baseUrl: 'https://openrouter.ai/api/v1',
     games: 4,
     maxPlies: 200,
-    retries: 3,
+    retries: RANKED_RETRIES,
     commentary: true,
     includePreviousGames: true,
     maxTokens: DEFAULT_CIRCUIT.maxTokens,
@@ -84,7 +85,7 @@ describe('leaderboard submission validation', () => {
 
   test('rejects non-standard settings', async () => {
     const value = await submission()
-    value.config.retries = 5
+    value.config.retries = RANKED_RETRIES - 1
     await expect(validateSubmission(value)).rejects.toThrow('ranked protocol')
   })
 

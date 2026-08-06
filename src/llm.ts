@@ -135,7 +135,11 @@ export async function chat(req: ChatRequest): Promise<ChatResult> {
 
   const choice = json.choices?.[0] ?? {}
   const message = choice.message ?? {}
-  const text: string = (message.content || message.reasoning || '').toString()
+  // Content only. A reasoning trace is the model's working, not its answer —
+  // mining it for a move plays whatever line it happened to mention last, which
+  // is very often one it was in the middle of refuting. An empty content field
+  // means the model produced no move, and the caller treats it as exactly that.
+  const text: string = (message.content ?? '').toString()
   const u = json.usage ?? {}
   const prompt = u.prompt_tokens ?? 0
   const completion = u.completion_tokens ?? 0

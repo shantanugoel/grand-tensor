@@ -7,7 +7,7 @@ export const LEADERBOARD_API =
     ? 'http://localhost:8787'
     : 'https://leaderboard.grandtensor.shantanugoel.com'
 
-export const LEADERBOARD_APP_VERSION = '0.2.0'
+export const LEADERBOARD_APP_VERSION = '0.3.0'
 
 /** A ranked bucket. Everything about a match is pinned except the models, so
  *  standings compare players rather than settings. The completion budget is the
@@ -59,6 +59,11 @@ export const isRankedGameCount = (games: number): boolean =>
 /** Ranked temperature. Unlike effort, this is continuous, so it cannot become
  *  part of the entrant key without splitting the board into unbounded buckets. */
 export const RANKED_TEMPERATURE = 0.2
+
+/** Re-prompts a player gets before forfeiting. Wider than it was, because the
+ *  move parser stopped inventing moves out of prose: an off-shape reply now
+ *  costs an attempt instead of quietly becoming a move. */
+export const RANKED_RETRIES = 5
 
 /** The circuit a match belongs to is derived from its cap, never sent alongside
  *  it — that keeps the client from nominating a bucket it didn't actually play. */
@@ -238,8 +243,11 @@ export function inspectEligibility(settings: Settings): Eligibility {
     })
   if (settings.maxPlies !== 200)
     issues.push({ field: 'maxPlies', reason: 'Ranked games are adjudicated drawn at 200 plies, which sets the draw rate.' })
-  if (settings.retries !== 3)
-    issues.push({ field: 'retries', reason: 'Ranked matches allow 3 retries — more retries hide a model’s illegal moves.' })
+  if (settings.retries !== RANKED_RETRIES)
+    issues.push({
+      field: 'retries',
+      reason: `Ranked matches allow ${RANKED_RETRIES} retries — more retries hide a model’s illegal moves, fewer punish a bad reply shape.`,
+    })
   if (!settings.commentary)
     issues.push({ field: 'commentary', reason: 'Ranked matches ask for commentary, which changes what each model is prompted for.' })
   if (!settings.includePreviousGames)
@@ -275,7 +283,7 @@ export async function protocolConfig(
       baseUrl: 'https://openrouter.ai/api/v1',
       games: settings.games,
       maxPlies: 200,
-      retries: 3,
+      retries: RANKED_RETRIES,
       commentary: true,
       includePreviousGames: true,
       maxTokens: circuit.maxTokens,

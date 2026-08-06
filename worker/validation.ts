@@ -5,6 +5,7 @@ import {
   LEADERBOARD_APP_VERSION,
   RANKED_GAMES_MAX,
   RANKED_GAMES_MIN,
+  RANKED_RETRIES,
   RANKED_TEMPERATURE,
   type Circuit,
   type ProtocolConfig,
@@ -85,7 +86,7 @@ export async function validateConfig(value: unknown): Promise<{ config: Protocol
   if (
     cfg.baseUrl !== 'https://openrouter.ai/api/v1' ||
     cfg.maxPlies !== 200 ||
-    cfg.retries !== 3 ||
+    cfg.retries !== RANKED_RETRIES ||
     cfg.commentary !== true ||
     cfg.includePreviousGames !== true ||
     cfg.promptHash !== (await expectedPromptHash())
@@ -116,7 +117,7 @@ export async function validateConfig(value: unknown): Promise<{ config: Protocol
       baseUrl: 'https://openrouter.ai/api/v1',
       games: cfg.games,
       maxPlies: 200,
-      retries: 3,
+      retries: RANKED_RETRIES,
       commentary: true,
       includePreviousGames: true,
       maxTokens: circuit.maxTokens,
