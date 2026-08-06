@@ -56,7 +56,7 @@ export const DEFAULTS: Settings = {
   games: 4,
   maxPlies: 200,
   retries: 3,
-  speed: 3,
+  speed: 0,
   commentary: true,
   // Generous by default: reasoning models spend most of this before they answer.
   maxTokens: 8000,

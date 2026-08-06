@@ -1,11 +1,11 @@
 {
   "name": "grand-tensor",
   "version": "0.1.0",
-  "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "bun run dev.ts",
-    "build": "tsc --noEmit && bun build ./index.html --outdir=dist --minify --public-path=./",
+    "build": "tsc --noEmit && rm -rf dist && bun build ./index.html --outdir=dist --minify --public-path=./ && touch dist/.nojekyll",
     "preview": "bun run preview.ts"
   },
   "dependencies": {
