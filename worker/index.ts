@@ -12,6 +12,7 @@ import {
   type Standing,
 } from '../src/leaderboard-protocol'
 import { MIN_OPPONENTS, rateEntrants, sortStandings, type SeriesResult } from './rating'
+import { ClientError } from './errors'
 import { sha256, validateConfig, validateSubmission } from './validation'
 
 type Env = {
@@ -40,6 +41,12 @@ const decoder = new TextDecoder()
 const TICKET_LIFETIME_MS = 6 * 60 * 60 * 1000
 const WINDOW_DAYS = 30
 
+/** The whole window is read into the Worker on a standings cache miss, because
+ *  the rating fit needs opponent identities that a GROUP BY would throw away.
+ *  Nothing else bounds that read, so this does — newest first, so growth past
+ *  the ceiling drops the oldest results rather than failing the request. */
+const WINDOW_SERIES_LIMIT = 20_000
+
 /** How long a submitter may withdraw a result. Deletion exists to undo a mistake,
  *  not to curate a record: an open-ended window lets anyone submit every series
  *  and then delete the losses, which bends the standings without a single
@@ -49,6 +56,9 @@ const DELETE_WINDOW_MS = 15 * 60 * 1000
 /** Per browser, per model pairing, per day. Sized so a full effort sweep of one
  *  matchup (three levels, both directions) fits in a single sitting. */
 const INSTALL_DAILY_PAIR_QUOTA = 8
+
+/** Per network, per day, across every matchup. */
+const NETWORK_DAILY_QUOTA = 100
 
 function base64url(bytes: Uint8Array) {
   let raw = ''
@@ -145,12 +155,18 @@ function json(data: unknown, status = 200, origin: string | null = null, cache?:
   return Response.json(data, { status, headers })
 }
 
+const MAX_BODY_BYTES = 120_000
+
 async function readJson(request: Request) {
   const length = Number(request.headers.get('Content-Length') ?? 0)
-  if (length > 120_000) throw new Error('Submission is too large.')
+  if (length > MAX_BODY_BYTES) throw new ClientError('Submission is too large.')
   const text = await request.text()
-  if (text.length > 120_000) throw new Error('Submission is too large.')
-  return JSON.parse(text) as unknown
+  if (text.length > MAX_BODY_BYTES) throw new ClientError('Submission is too large.')
+  try {
+    return JSON.parse(text) as unknown
+  } catch {
+    throw new ClientError('Submission is not valid JSON.')
+  }
 }
 
 async function validateKnownModels(config: ProtocolConfig) {
@@ -162,7 +178,7 @@ async function validateKnownModels(config: ProtocolConfig) {
   const data = (await response.json()) as { data?: { id?: unknown }[] }
   const ids = new Set((data.data ?? []).flatMap((model) => (typeof model.id === 'string' ? [model.id] : [])))
   if (config.players.some((player) => !ids.has(player.model)))
-    throw new Error('Both models must be current OpenRouter model identifiers.')
+    throw new ClientError('Both models must be current OpenRouter model identifiers.')
 }
 
 async function verifyTurnstile(request: Request, env: Env, token: string) {
@@ -222,39 +238,33 @@ async function submit(request: Request, env: Env, origin: string) {
   if (!success) return json({ error: 'Too many submissions. Try again shortly.' }, 429, origin)
 
   const dayStart = Date.parse(`${date}T00:00:00.000Z`)
-  const [installQuota, networkQuota] = await Promise.all([
-    env.DB.prepare(
-      'SELECT COUNT(*) AS count FROM submissions WHERE created_at >= ? AND install_hash = ? AND pair_hash = ?',
-    )
-      .bind(dayStart, installHash, pairHash)
-      .first<{ count: number }>(),
-    env.DB.prepare('SELECT COUNT(*) AS count FROM submissions WHERE created_at >= ? AND network_hash = ?')
-      .bind(dayStart, networkHash)
-      .first<{ count: number }>(),
-  ])
-  // Keyed on the two model ids, deliberately not on effort. The ranking entity
-  // is (model, effort), but the thing a farmer manipulates is the matchup — and
-  // folding effort in here would multiply one browser's daily ceiling by the
-  // number of effort combinations instead of holding it flat.
-  if ((installQuota?.count ?? 0) >= INSTALL_DAILY_PAIR_QUOTA)
-    return json({ error: 'This browser has contributed enough results for this matchup today.' }, 429, origin)
-  if ((networkQuota?.count ?? 0) >= 100)
-    return json({ error: 'This network has reached today’s anonymous contribution limit.' }, 429, origin)
-
   const contentHash = await sha256(submission.canonical)
   const id = crypto.randomUUID()
   const deleteToken = `${crypto.randomUUID()}${crypto.randomUUID()}`
   const deleteHash = await sha256(deleteToken)
   const now = Date.now()
 
+  // The quotas are conditions on the INSERT rather than queries in front of it.
+  // Two submissions arriving together each used to read a count from before the
+  // other's row existed, so both passed a ceiling only one of them was under;
+  // SQLite evaluates these subqueries as part of the same statement, so the
+  // second one sees the first.
+  //
+  // The install quota is keyed on the two model ids, deliberately not on effort.
+  // The ranking entity is (model, effort), but the thing a farmer manipulates is
+  // the matchup — folding effort in here would multiply one browser's daily
+  // ceiling by the number of effort combinations instead of holding it flat.
   try {
-    await env.DB.prepare(
+    const inserted = await env.DB.prepare(
       `INSERT INTO submissions (
         id, content_hash, protocol, app_version, created_at,
         model_a, effort_a, model_b, effort_b,
         score_a_x2, score_b_x2, wins_a, draws_a, losses_a, games,
         payload_json, install_hash, network_hash, pair_hash, delete_hash
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+      WHERE (SELECT COUNT(*) FROM submissions WHERE created_at >= ? AND install_hash = ? AND pair_hash = ?) < ?
+        AND (SELECT COUNT(*) FROM submissions WHERE created_at >= ? AND network_hash = ?) < ?`,
     )
       .bind(
         id,
@@ -277,8 +287,19 @@ async function submit(request: Request, env: Env, origin: string) {
         networkHash,
         pairHash,
         deleteHash,
+        dayStart,
+        installHash,
+        pairHash,
+        INSTALL_DAILY_PAIR_QUOTA,
+        dayStart,
+        networkHash,
+        NETWORK_DAILY_QUOTA,
       )
       .run()
+
+    // No row means a quota condition failed. Which one is worth saying, and this
+    // path is rare enough to afford the extra read.
+    if (!inserted.meta.changes) return quotaRefusal(env, origin, dayStart, installHash, pairHash)
   } catch (error) {
     if (error instanceof Error && /unique/i.test(error.message))
       return json({ error: 'This result has already been submitted.' }, 409, origin)
@@ -286,6 +307,17 @@ async function submit(request: Request, env: Env, origin: string) {
   }
 
   return json({ id, deleteToken, message: `Result added to the ${submission.circuit.name}.` }, 201, origin)
+}
+
+async function quotaRefusal(env: Env, origin: string, dayStart: number, installHash: string, pairHash: string) {
+  const installed = await env.DB.prepare(
+    'SELECT COUNT(*) AS count FROM submissions WHERE created_at >= ? AND install_hash = ? AND pair_hash = ?',
+  )
+    .bind(dayStart, installHash, pairHash)
+    .first<{ count: number }>()
+  return (installed?.count ?? 0) >= INSTALL_DAILY_PAIR_QUOTA
+    ? json({ error: 'This browser has contributed enough results for this matchup today.' }, 429, origin)
+    : json({ error: 'This network has reached today’s anonymous contribution limit.' }, 429, origin)
 }
 
 const DISCLOSURE =
@@ -308,9 +340,10 @@ type SeriesRow = {
 function windowSeries(env: Env, circuit: Circuit) {
   return env.DB.prepare(
     `SELECT created_at, model_a, effort_a, model_b, effort_b, wins_a, draws_a, losses_a
-     FROM submissions WHERE protocol = ? AND created_at >= ?`,
+     FROM submissions WHERE protocol = ? AND created_at >= ?
+     ORDER BY created_at DESC LIMIT ?`,
   )
-    .bind(circuit.id, Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000)
+    .bind(circuit.id, Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000, WINDOW_SERIES_LIMIT)
     .all<SeriesRow>()
 }
 
@@ -496,9 +529,8 @@ export default {
       if (request.method === 'DELETE' && deletion) return removeSubmission(request, env, origin!, deletion[1])
       return json({ error: 'Not found.' }, 404, origin)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unexpected leaderboard error.'
-      const clientError = /invalid|unsupported|required|standard|model|match|game|submission|large|refresh/i.test(message)
-      return json({ error: clientError ? message : 'Leaderboard service is temporarily unavailable.' }, clientError ? 400 : 500, origin)
+      if (error instanceof ClientError) return json({ error: error.message }, 400, origin)
+      return json({ error: 'Leaderboard service is temporarily unavailable.' }, 500, origin)
     }
   },
 } satisfies ExportedHandler<Env>
