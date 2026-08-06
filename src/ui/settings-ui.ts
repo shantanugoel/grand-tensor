@@ -55,7 +55,7 @@ export function renderSettings(s: Settings) {
         ${num('maxPlies', 'Ply limit (draw)', s.maxPlies, 20, 600, 10)}
         ${num('retries', 'Retries before forfeit', s.retries, 0, 10, 1, 'Spent on illegal moves and token-capped replies alike.')}
         ${num('networkRetries', 'Connection retry cap', s.networkRetries, 0, 100, 1, 'Connection failures ridden out before the series parks and waits for you. <code>0</code> keeps retrying, backing off to once a minute — nothing is lost either way.')}
-        ${num('maxTokens', 'Max tokens / move', s.maxTokens, 32, 32000, 32, `Reasoning counts against this — on OpenRouter high effort thinks in 80% of it. Both models are told the number. ${CIRCUITS.map((c) => `${c.maxTokens.toLocaleString('en-US')} = ${c.name}`).join('; ')}.`)}
+        ${num('maxTokens', 'Max tokens / move', s.maxTokens, 32, 32000, 32, `Both models are told the number. ${CIRCUITS.map((c) => `${c.maxTokens.toLocaleString('en-US')} = ${c.name}`).join('; ')}.`)}
         <label class="field check">
           <input name="commentary" type="checkbox" ${s.commentary ? 'checked' : ''}/>
           <span>Ask for trash talk with each move</span>

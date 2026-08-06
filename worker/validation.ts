@@ -6,7 +6,8 @@ import {
   RANKED_GAMES_MAX,
   RANKED_GAMES_MIN,
   RANKED_RETRIES,
-  RANKED_TEMPERATURE,
+  RANKED_TEMPERATURE_MAX,
+  RANKED_TEMPERATURE_MIN,
   type Circuit,
   type ProtocolConfig,
   type SubmittedGame,
@@ -104,9 +105,14 @@ export async function validateConfig(value: unknown): Promise<{ config: Protocol
       throw new Error('Invalid model identifier.')
     if (typeof player.effort !== 'string' || !EFFORT_RE.test(player.effort))
       throw new Error('Invalid reasoning effort.')
-    if (player.temperature !== RANKED_TEMPERATURE)
-      throw new Error(`Ranked temperature must be ${RANKED_TEMPERATURE}.`)
-    return { model: player.model, effort: player.effort, temperature: RANKED_TEMPERATURE }
+    if (
+      typeof player.temperature !== 'number' ||
+      !Number.isFinite(player.temperature) ||
+      player.temperature < RANKED_TEMPERATURE_MIN ||
+      player.temperature > RANKED_TEMPERATURE_MAX
+    )
+      throw new Error(`Temperature must be between ${RANKED_TEMPERATURE_MIN} and ${RANKED_TEMPERATURE_MAX}.`)
+    return { model: player.model, effort: player.effort, temperature: player.temperature }
   }) as ProtocolConfig['players']
 
   if (players[0].model === players[1].model) throw new Error('A model cannot play itself in a ranked match.')

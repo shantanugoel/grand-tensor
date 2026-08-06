@@ -56,9 +56,13 @@ export const RANKED_GAMES_MAX = 10
 export const isRankedGameCount = (games: number): boolean =>
   Number.isInteger(games) && games >= RANKED_GAMES_MIN && games <= RANKED_GAMES_MAX && games % 2 === 0
 
-/** Ranked temperature. Unlike effort, this is continuous, so it cannot become
- *  part of the entrant key without splitting the board into unbounded buckets. */
-export const RANKED_TEMPERATURE = 0.2
+/** Temperature is recorded per submission but not pinned and not part of the
+ *  entrant key: being continuous, it cannot be bucketed without splitting the
+ *  board without limit. Two results for the same entrant may therefore have been
+ *  sampled differently — the value is stored with the submission, so the record
+ *  is there, but the standings do not separate on it. */
+export const RANKED_TEMPERATURE_MIN = 0
+export const RANKED_TEMPERATURE_MAX = 2
 
 /** Re-prompts a player gets before forfeiting. Wider than it was, because the
  *  move parser stopped inventing moves out of prose: an off-shape reply now
@@ -211,8 +215,6 @@ export type EligibilityField =
   | 'promptTemplate'
   | 'p0_model'
   | 'p1_model'
-  | 'p0_temperature'
-  | 'p1_temperature'
 
 export type EligibilityIssue = { field: EligibilityField; reason: string }
 
@@ -259,11 +261,8 @@ export function inspectEligibility(settings: Settings): Eligibility {
 
   settings.players.forEach((player, i) => {
     const model = `p${i}_model` as EligibilityField
-    const temperature = `p${i}_temperature` as EligibilityField
     if (player.model.trim().toLowerCase() === 'random')
       issues.push({ field: model, reason: 'The local random mover is a demo opponent and cannot affect standings.' })
-    if (player.temperature !== RANKED_TEMPERATURE)
-      issues.push({ field: temperature, reason: `Ranked matches use temperature ${RANKED_TEMPERATURE} for both models.` })
   })
   if (settings.players[0].model.trim() === settings.players[1].model.trim())
     issues.push({ field: 'p1_model', reason: 'A model cannot play itself in a ranked match.' })
