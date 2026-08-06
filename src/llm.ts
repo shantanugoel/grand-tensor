@@ -14,6 +14,9 @@ export type Usage = {
 
 export type ChatResult = { text: string; usage: Usage; ms: number; finish: string }
 
+/** Dollars per token, as advertised by the endpoint's /models listing. */
+export type Pricing = { prompt: number; completion: number }
+
 export type ChatRequest = {
   baseUrl: string
   apiKey: string
@@ -22,6 +25,8 @@ export type ChatRequest = {
   temperature: number
   maxTokens: number
   messages: { role: 'system' | 'user' | 'assistant'; content: string }[]
+  /** Used to derive a cost when the response doesn't report one itself. */
+  pricing?: Pricing
   signal?: AbortSignal
 }
 
@@ -87,30 +92,44 @@ export async function chat(req: ChatRequest): Promise<ChatResult> {
   const message = choice.message ?? {}
   const text: string = (message.content || message.reasoning || '').toString()
   const u = json.usage ?? {}
+  const prompt = u.prompt_tokens ?? 0
+  const completion = u.completion_tokens ?? 0
 
   return {
     text,
     ms,
     finish: choice.finish_reason ?? '',
     usage: {
-      prompt: u.prompt_tokens ?? 0,
-      completion: u.completion_tokens ?? 0,
+      prompt,
+      completion,
       reasoning: u.completion_tokens_details?.reasoning_tokens ?? 0,
-      total: u.total_tokens ?? (u.prompt_tokens ?? 0) + (u.completion_tokens ?? 0),
-      cost: u.cost ?? 0,
+      total: u.total_tokens ?? prompt + completion,
+      // OpenRouter bills the exact figure; elsewhere fall back to list pricing.
+      cost: u.cost ?? (req.pricing ? prompt * req.pricing.prompt + completion * req.pricing.completion : 0),
     },
   }
 }
 
-/** Best-effort model list for the settings autocomplete. Failure is non-fatal. */
-export async function listModels(baseUrl: string, apiKey: string): Promise<string[]> {
+/** Best-effort /models listing. Failure is non-fatal everywhere it's used. */
+export async function fetchModels(baseUrl: string, apiKey: string): Promise<Map<string, Pricing | undefined>> {
+  const out = new Map<string, Pricing | undefined>()
   try {
     const res = await fetch(`${trimUrl(baseUrl)}/models`, { headers: headers({ baseUrl, apiKey }) })
-    if (!res.ok) return []
+    if (!res.ok) return out
     const json = await res.json()
-    const ids = (json.data ?? []).map((m: any) => m.id).filter((id: unknown) => typeof id === 'string')
-    return ids.sort()
+    for (const m of json.data ?? []) {
+      if (typeof m?.id !== 'string') continue
+      const prompt = Number(m.pricing?.prompt)
+      const completion = Number(m.pricing?.completion)
+      const priced = Number.isFinite(prompt) && Number.isFinite(completion)
+      out.set(m.id, priced ? { prompt, completion } : undefined)
+    }
   } catch {
-    return []
+    // Offline, CORS-blocked, or an endpoint without /models — callers cope.
   }
+  return out
+}
+
+export async function listModels(baseUrl: string, apiKey: string): Promise<string[]> {
+  return [...(await fetchModels(baseUrl, apiKey)).keys()].sort()
 }

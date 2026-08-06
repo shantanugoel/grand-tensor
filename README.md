@@ -49,6 +49,11 @@ GitHub Pages, S3, or anything that serves files.
 | [src/three/fx.ts](src/three/fx.ts) | Debris, shockwave rings, floating pixel text, screen shake |
 | [src/ui/](src/ui/) | The HUD overlay and the settings modal |
 
+Cost is shown per model as well as for the series. OpenRouter reports the exact spend on every
+response and that is used verbatim; for any other endpoint the series reads list pricing from
+`/models` once at the start and derives the cost from the token counts. Endpoints that publish no
+pricing simply show `—`.
+
 Each model is asked for JSON — `{"move": "Nf3", "say": "..."}` — with the full legal move list in
 the prompt. Anything that isn't a legal move is re-prompted with the error; run out of retries and
 the model forfeits the game. Illegal-move counts are tracked per model and shown in the HUD, since

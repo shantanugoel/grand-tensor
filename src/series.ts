@@ -2,7 +2,7 @@
  *  Pure logic + events: it knows nothing about three.js or the DOM. */
 
 import { Chess, type Color, type Move } from 'chess.js'
-import { addUsage, chat, emptyUsage, type Usage } from './llm'
+import { addUsage, chat, emptyUsage, fetchModels, type Pricing, type Usage } from './llm'
 import { movePrompt, parseMove, retryPrompt, systemPrompt, type LegalMove } from './prompt'
 import { SPEEDS, type Settings } from './settings'
 
@@ -28,6 +28,8 @@ export type PlayerStats = {
   moves: number
   illegal: number
   usage: Usage
+  /** API round trips, including the ones spent retrying an illegal move. */
+  calls: number
   totalMs: number
   lastMs: number
 }
@@ -77,6 +79,7 @@ const newStats = (): PlayerStats => ({
   moves: 0,
   illegal: 0,
   usage: emptyUsage(),
+  calls: 0,
   totalMs: 0,
   lastMs: 0,
 })
@@ -95,6 +98,8 @@ export class Series {
 
   private abort = new AbortController()
   private resumeWaiters: (() => void)[] = []
+  /** List pricing per model id, used only when a response omits its own cost. */
+  private pricing = new Map<string, Pricing | undefined>()
 
   constructor(private settings: Settings, private events: SeriesEvents) {}
 
@@ -132,6 +137,7 @@ export class Series {
   async run() {
     this.status = 'running'
     this.events.onLog({ kind: 'info', text: `Series started — best of ${this.settings.games}` })
+    this.pricing = await fetchModels(this.settings.baseUrl, this.settings.apiKey)
     try {
       for (this.gameIndex = 0; this.gameIndex < this.settings.games; this.gameIndex++) {
         this.white = (this.gameIndex % 2) as PlayerIdx
@@ -304,6 +310,7 @@ export class Series {
           temperature: cfg.temperature,
           maxTokens: this.settings.maxTokens,
           messages,
+          pricing: this.pricing.get(cfg.model),
           signal: this.abort.signal,
         })
       } catch (err) {
@@ -313,6 +320,7 @@ export class Series {
       }
 
       this.stats[player].usage = addUsage(this.stats[player].usage, result.usage)
+      this.stats[player].calls++
       this.stats[player].totalMs += result.ms
       this.stats[player].lastMs = result.ms
       this.events.onUpdate()
