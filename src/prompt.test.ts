@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { movePrompt, previousGamesPrompt, systemPrompt, type MovePromptArgs } from './prompt'
+import { capRetryPrompt, movePrompt, previousGamesPrompt, retryPrompt, systemPrompt, type MovePromptArgs } from './prompt'
 
 const args: MovePromptArgs = {
   fen: 'test-fen',
@@ -23,7 +23,13 @@ const args: MovePromptArgs = {
 
 describe('movePrompt', () => {
   test('explicitly identifies the game as chess in the fixed instructions', () => {
-    expect(systemPrompt('white', false)).toContain('playing a game of chess as white')
+    expect(systemPrompt('white', false, 8000)).toContain('playing a game of chess as white')
+  })
+
+  test('warns up front that reasoning spends the completion budget', () => {
+    const text = systemPrompt('white', false, 8000)
+    expect(text).toContain('8,000 tokens')
+    expect(text).toContain('internal reasoning counts against it')
   })
 
   test('renders supported variables and preserves unknown ones', () => {
@@ -43,5 +49,18 @@ describe('movePrompt', () => {
 
   test('does not render history when the setting is off', () => {
     expect(movePrompt('{{previousGames}}', { ...args, includePreviousGames: false })).toBe('(not included)')
+  })
+})
+
+describe('retry prompts', () => {
+  test('names the token cap instead of calling the reply illegal', () => {
+    const text = capRetryPrompt(8000, args.legal)
+    expect(text).toContain('8,000-token completion limit')
+    expect(text).not.toContain('not a legal chess move')
+    expect(text).toContain('Nf3 Bc4')
+  })
+
+  test('still calls a genuinely illegal move illegal', () => {
+    expect(retryPrompt('Qh9', args.legal)).toContain('"Qh9" is not a legal chess move here.')
   })
 })

@@ -15,8 +15,8 @@ let known = new Map<string, ModelInfo>()
 const text = (name: string, label: string, value: string, type = 'text', extra = '', help = '') =>
   `<label class="field">${label}<input name="${name}" type="${type}" value="${escapeAttr(value)}" ${extra}/>${help ? `<span class="field-help">${help}</span>` : ''}</label>`
 
-const num = (name: string, label: string, value: number, min: number, max: number, step = 1) =>
-  `<label class="field">${label}<input name="${name}" type="number" value="${value}" min="${min}" max="${max}" step="${step}"/></label>`
+const num = (name: string, label: string, value: number, min: number, max: number, step = 1, help = '') =>
+  `<label class="field">${label}<input name="${name}" type="number" value="${value}" min="${min}" max="${max}" step="${step}"/>${help ? `<span class="field-help">${help}</span>` : ''}</label>`
 
 const textarea = (name: string, label: string, value: string) =>
   `<label class="field prompt-field">${label}<textarea name="${name}" rows="14">${escapeHtml(value)}</textarea></label>`
@@ -51,8 +51,8 @@ export function renderSettings(s: Settings) {
       <div class="grid">
         ${num('games', 'Games in series', s.games, 1, 50)}
         ${num('maxPlies', 'Ply limit (draw)', s.maxPlies, 20, 600, 10)}
-        ${num('retries', 'Retries before forfeit', s.retries, 0, 10)}
-        ${num('maxTokens', 'Max tokens / move', s.maxTokens, 32, 32000, 32)}
+        ${num('retries', 'Retries before forfeit', s.retries, 0, 10, 1, 'Spent on illegal moves and token-capped replies alike.')}
+        ${num('maxTokens', 'Max tokens / move', s.maxTokens, 32, 32000, 32, 'Reasoning counts against this. Both models are told the number.')}
         <label class="field check">
           <input name="commentary" type="checkbox" ${s.commentary ? 'checked' : ''}/>
           <span>Ask for trash talk with each move</span>
@@ -68,7 +68,7 @@ export function renderSettings(s: Settings) {
       ${textarea('promptTemplate', 'Position prompt template', s.promptTemplate)}
       <p class="prompt-help">Available variables: ${PROMPT_VARIABLES.map((v) => `<code>{{${v}}}</code>`).join(' ')}</p>
       <p class="prompt-help">The previous-games variable renders “(not included)” when its match option is turned off.</p>
-      <label class="field prompt-field">System instructions (sent separately; White example)<textarea data-system-prompt rows="8" readonly>${escapeHtml(systemPrompt('white', s.commentary))}</textarea></label>
+      <label class="field prompt-field">System instructions (sent separately; White example)<textarea data-system-prompt rows="10" readonly>${escapeHtml(systemPrompt('white', s.commentary, s.maxTokens))}</textarea></label>
       <p class="prompt-help">The color changes with the turn. These fixed JSON response rules are sent before the editable position prompt.</p>
     </fieldset>
     <datalist id="model-list"></datalist>`
@@ -78,12 +78,15 @@ export function renderSettings(s: Settings) {
     renderEfforts(i, s.players[i].effort)
     $(`[data-model="${i}"]`).addEventListener('input', () => renderEfforts(i))
   })
-  $<HTMLInputElement>('[name="commentary"]').addEventListener('change', (event) => {
-    $<HTMLTextAreaElement>('[data-system-prompt]').value = systemPrompt(
-      'white',
-      (event.target as HTMLInputElement).checked,
-    )
-  })
+  // The preview has to track both inputs it renders — the budget line moves with
+  // "Max tokens / move", so a stale preview would misreport what models are told.
+  const refreshSystemPrompt = () => {
+    const commentary = $<HTMLInputElement>('[name="commentary"]').checked
+    const maxTokens = Number($<HTMLInputElement>('[name="maxTokens"]').value) || s.maxTokens
+    $<HTMLTextAreaElement>('[data-system-prompt]').value = systemPrompt('white', commentary, maxTokens)
+  }
+  $<HTMLInputElement>('[name="commentary"]').addEventListener('change', refreshSystemPrompt)
+  $<HTMLInputElement>('[name="maxTokens"]').addEventListener('input', refreshSystemPrompt)
   void refreshCatalog(s)
 }
 

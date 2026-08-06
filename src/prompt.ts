@@ -27,7 +27,11 @@ export type MovePromptArgs = {
   playerLabels: [string, string]
 }
 
-export function systemPrompt(color: 'white' | 'black', commentary: boolean): string {
+/** Thousands separators, pinned to en-US so every player is told the budget in
+ *  exactly the same words regardless of the operator's locale. */
+const fmtCap = (n: number) => n.toLocaleString('en-US')
+
+export function systemPrompt(color: 'white' | 'black', commentary: boolean, maxTokens: number): string {
   return [
     `You are playing a game of chess as ${color}.`,
     `Act as a world-class chess engine and play to win.`,
@@ -39,6 +43,12 @@ export function systemPrompt(color: 'white' | 'black', commentary: boolean): str
     ``,
     `"move" MUST be copied verbatim from the LEGAL MOVES list you are given.`,
     `No markdown, no code fences, no explanation outside the JSON.`,
+    ``,
+    // Reasoning tokens are billed as completion tokens, so a max-effort model can
+    // spend the entire budget thinking and never emit the JSON. Both players are
+    // told the same number so the warning costs neither of them an advantage.
+    `Your completion budget for each reply is ${fmtCap(maxTokens)} tokens, and internal reasoning counts against it.`,
+    `Reserve enough of that budget to finish the JSON object — a reply that stops mid-thought scores nothing.`,
   ].join('\n')
 }
 
@@ -102,6 +112,17 @@ export function movePrompt(template: string, args: MovePromptArgs): string {
 export function retryPrompt(bad: string, legal: LegalMove[]): string {
   return [
     `"${bad}" is not a legal chess move here.`,
+    `Pick one move copied exactly from this list: ${legal.map((m) => m.san).join(' ')}`,
+    `Reply with JSON only.`,
+  ].join('\n')
+}
+
+/** A reply that ran out of budget never made a move at all, so calling it
+ *  illegal is both wrong and useless — it invites the same overrun again. */
+export function capRetryPrompt(maxTokens: number, legal: LegalMove[]): string {
+  return [
+    `Your previous reply reached the ${fmtCap(maxTokens)}-token completion limit before it produced a move.`,
+    `This attempt has the same limit and the same reasoning effort, so think more briefly and emit the JSON early.`,
     `Pick one move copied exactly from this list: ${legal.map((m) => m.san).join(' ')}`,
     `Reply with JSON only.`,
   ].join('\n')

@@ -83,12 +83,18 @@ const fmtMs = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}s` : `${Math.
 const leadHigh = (a: number, b: number) => (a === b ? null : a > b ? 0 : 1)
 const leadLow = (a: number, b: number) => (a === b ? null : a < b ? 0 : 1)
 
+/** Truncated replies get their own line, but only once one has happened —
+ *  a zero-vs-zero row is noise on a card most matches never need. */
+const cappedRow = (a: number, b: number): SummaryRow[] =>
+  a || b ? [{ label: 'CAPPED', a: String(a), b: String(b), lead: leadLow(a, b) }] : []
+
 /** What one game cost a player, as the difference against the series totals
  *  captured when that game kicked off. */
 function gameDelta(now: PlayerStats, before?: PlayerStats) {
   return {
     moves: now.moves - (before?.moves ?? 0),
     illegal: now.illegal - (before?.illegal ?? 0),
+    capped: now.capped - (before?.capped ?? 0),
     tokens: now.usage.total - (before?.usage.total ?? 0),
     cost: now.usage.cost - (before?.usage.cost ?? 0),
     turns: now.turns - (before?.turns ?? 0),
@@ -113,6 +119,7 @@ function roundView(rec: GameRecord): SummaryView {
     { label: 'MOVES', a: String(a.moves), b: String(b.moves) },
     { label: 'TOKENS', a: fmtTokens(a.tokens), b: fmtTokens(b.tokens) },
     { label: 'ILLEGAL', a: String(a.illegal), b: String(b.illegal), lead: leadLow(a.illegal, b.illegal) },
+    ...cappedRow(a.capped, b.capped),
     { label: 'AVG THINK', a: avg(a), b: avg(b), lead: leadLow(a.turns ? a.totalMs / a.turns : Infinity, b.turns ? b.totalMs / b.turns : Infinity) },
     { label: 'COST', a: fmtCost(a.cost), b: fmtCost(b.cost) },
   ]
@@ -147,6 +154,7 @@ function seriesView(): SummaryView {
     { label: 'TOKENS', a: fmtTokens(a.usage.total), b: fmtTokens(b.usage.total) },
     { label: 'REASONING', a: fmtTokens(a.usage.reasoning), b: fmtTokens(b.usage.reasoning) },
     { label: 'ILLEGAL', a: String(a.illegal), b: String(b.illegal), lead: leadLow(a.illegal, b.illegal) },
+    ...cappedRow(a.capped, b.capped),
     { label: 'AVG THINK', a: avg(a), b: avg(b) },
     { label: 'COST', a: fmtCost(a.usage.cost), b: fmtCost(b.usage.cost) },
   ]

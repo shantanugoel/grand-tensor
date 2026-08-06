@@ -13,6 +13,8 @@ const W = 1200
 const H = 675
 /** Where the arena band ends and the scoreboard begins. */
 const BAND = 258
+/** Room the stat table has between the verdict line and the footer URL. */
+const TABLE_MAX_H = 176
 
 const COLORS = {
   bg: '#060810',
@@ -125,6 +127,9 @@ function statRows(series: Series): Row[] {
     { label: 'MOVES', a: String(a.moves), b: String(b.moves) },
     { label: 'TOKENS', a: fmtTokens(a.usage.total), b: fmtTokens(b.usage.total) },
     { label: 'ILLEGAL', a: String(a.illegal), b: String(b.illegal) },
+    // The card is a fixed 675px tall and the table already fills its share of it,
+    // so the cap line only earns a row when there is something to report.
+    ...(a.capped || b.capped ? [{ label: 'CAPPED', a: String(a.capped), b: String(b.capped) }] : []),
     {
       label: 'AVG THINK',
       a: a.turns ? fmtMs(a.totalMs / a.turns) : '—',
@@ -136,7 +141,9 @@ function statRows(series: Series): Row[] {
 
 function drawTable(ctx: CanvasRenderingContext2D, series: Series, top: number) {
   const rows = statRows(series)
-  const rowH = 26
+  // The card can't grow, so an extra stat row tightens the spacing instead of
+  // pushing the table down into the footer URL.
+  const rowH = Math.min(26, Math.floor((TABLE_MAX_H - 16) / rows.length))
   const height = rows.length * rowH + 16
 
   ctx.fillStyle = 'rgba(122, 160, 255, 0.04)'

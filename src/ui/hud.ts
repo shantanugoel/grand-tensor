@@ -46,6 +46,7 @@ export class Hud {
           <span>Tokens <b data-tokens>0</b></span>
           <span>Reasoning <b data-reason>0</b></span>
           <span>Illegal <b data-illegal>0</b></span>
+          <span data-capped-row hidden>Capped <b data-capped>0</b></span>
           <span>Cost <b data-cost>—</b></span>
           <span>Last <b data-latency>—</b></span>
           <span>Avg <b data-avg>—</b></span>
@@ -84,6 +85,10 @@ export class Hud {
       q('tokens').textContent = fmtTokens(st.usage.total)
       q('reason').textContent = fmtTokens(st.usage.reasoning)
       q('illegal').textContent = String(st.illegal)
+      // Kept out of the way until it happens — the grid is two columns wide and
+      // most matches never hit the cap at all.
+      q('capped-row').hidden = st.capped === 0
+      q('capped').textContent = String(st.capped)
       q('cost').textContent = fmtCost(st.usage.cost)
       q('latency').textContent = st.lastMs ? fmtMs(st.lastMs) : '—'
       q('avg').textContent = st.turns ? fmtMs(st.totalMs / st.turns) : '—'

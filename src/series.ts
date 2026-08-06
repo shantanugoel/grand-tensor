@@ -3,7 +3,7 @@
 
 import { Chess, type Color, type Move } from 'chess.js'
 import { addUsage, chat, emptyUsage, fetchModels, type ModelInfo, type Usage } from './llm'
-import { movePrompt, parseMove, retryPrompt, systemPrompt, type LegalMove } from './prompt'
+import { capRetryPrompt, movePrompt, parseMove, retryPrompt, systemPrompt, type LegalMove } from './prompt'
 import { NO_EFFORT, SPEEDS, type PlayerConfig, type Settings } from './settings'
 
 export type PlayerIdx = 0 | 1
@@ -26,7 +26,11 @@ export type PlayerStats = {
   losses: number
   score: number
   moves: number
+  /** Replies that named a move the position doesn't allow, or named none at all. */
   illegal: number
+  /** Replies that ran out of completion budget before a move appeared. Kept apart
+   *  from `illegal` because it measures budget discipline, not chess. */
+  capped: number
   usage: Usage
   /** API round trips, including the ones spent retrying an illegal move. */
   calls: number
@@ -82,6 +86,7 @@ const newStats = (): PlayerStats => ({
   score: 0,
   moves: 0,
   illegal: 0,
+  capped: 0,
   usage: emptyUsage(),
   calls: 0,
   turns: 0,
@@ -90,6 +95,12 @@ const newStats = (): PlayerStats => ({
 })
 
 export type Status = 'idle' | 'running' | 'paused' | 'done' | 'error'
+
+/** Why a player ran out of attempts. Spelled the way the game record reads it. */
+export type ForfeitCause = 'illegal moves' | 'token cap'
+
+/** A completed turn, or the reason the player couldn't produce one. */
+type TurnOutcome = { san: string; say: string; ms: number } | { forfeit: ForfeitCause }
 
 export class Series {
   chess = new Chess()
@@ -220,11 +231,11 @@ export class Series {
 
       const player = this.chess.turn() === 'w' ? this.white : this.black()
       const outcome = await this.requestMove(player)
-      if (this.abort.signal.aborted) return
+      if (this.abort.signal.aborted || !outcome) return
 
-      if (!outcome) {
+      if ('forfeit' in outcome) {
         const result = player === this.white ? '0-1' : '1-0'
-        record = this.finish(result, `${this.settings.players[player].label} forfeits (illegal moves)`, plies)
+        record = this.finish(result, `${this.settings.players[player].label} forfeits (${outcome.forfeit})`, plies)
         break
       }
 
@@ -294,13 +305,21 @@ export class Series {
     }
   }
 
-  /** Asks a model for a move, re-prompting on illegal output. Null = forfeit. */
-  private async requestMove(player: PlayerIdx): Promise<{ san: string; say: string; ms: number } | null> {
+  /** Asks a model for a move, re-prompting on illegal or truncated output.
+   *  Null means the series was aborted mid-request. */
+  private async requestMove(player: PlayerIdx): Promise<TurnOutcome | null> {
     const cfg = this.settings.players[player]
     const legal: LegalMove[] = this.chess.moves({ verbose: true }).map((m) => ({ san: m.san, lan: m.lan }))
     const history = this.chess.history()
     const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
-      { role: 'system', content: systemPrompt(this.chess.turn() === 'w' ? 'white' : 'black', this.settings.commentary) },
+      {
+        role: 'system',
+        content: systemPrompt(
+          this.chess.turn() === 'w' ? 'white' : 'black',
+          this.settings.commentary,
+          this.settings.maxTokens,
+        ),
+      },
       {
         role: 'user',
         content: movePrompt(this.settings.promptTemplate, {
@@ -334,6 +353,11 @@ export class Series {
       this.events.onThinking(null)
       return { san: pick.san, say: 'Rolling the dice.', ms: 0 }
     }
+
+    // A turn that ends in forfeit is blamed on the token cap only when every
+    // failed attempt was a truncation — one genuinely illegal move makes it a
+    // chess failure, not a budgeting one.
+    let sawIllegal = false
 
     for (let attempt = 0; attempt <= this.settings.retries; attempt++) {
       let result
@@ -370,8 +394,13 @@ export class Series {
         return { san: parsed.san, say: parsed.say, ms: turnMs }
       }
 
-      this.stats[player].illegal++
       const truncated = result.finish === 'length'
+      if (truncated) this.stats[player].capped++
+      else {
+        this.stats[player].illegal++
+        sawIllegal = true
+      }
+
       this.events.onLog({
         kind: 'warn',
         player,
@@ -380,12 +409,20 @@ export class Series {
           : `Illegal move "${parsed.raw || '(empty)'}" — attempt ${attempt + 1} of ${this.settings.retries + 1}`,
         detail: truncated ? 'Raise "Max tokens / move" in Settings if this repeats.' : undefined,
       })
-      messages.push({ role: 'assistant', content: result.text.slice(0, 500) })
-      messages.push({ role: 'user', content: retryPrompt(parsed.raw, legal) })
+
+      if (truncated) {
+        // The tail of a truncated reply is an unfinished reasoning fragment, not a
+        // turn the model stands behind — replaying it back would only anchor the
+        // retry to the same overrun. Name the real cause instead.
+        messages.push({ role: 'user', content: capRetryPrompt(this.settings.maxTokens, legal) })
+      } else {
+        messages.push({ role: 'assistant', content: result.text.slice(0, 500) })
+        messages.push({ role: 'user', content: retryPrompt(parsed.raw, legal) })
+      }
     }
 
     this.events.onThinking(null)
-    return null
+    return { forfeit: sawIllegal ? 'illegal moves' : 'token cap' }
   }
 
   private sleep(ms: number) {

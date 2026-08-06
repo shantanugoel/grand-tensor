@@ -112,6 +112,9 @@ export function submissionReason(reason: string): SubmittedGame['reason'] | null
   if (reason === 'fifty-move rule') return 'fifty_move_rule'
   if (reason === 'draw') return 'draw'
   if (reason.startsWith('move limit (')) return 'move_limit'
-  if (reason.endsWith('forfeits (illegal moves)')) return 'illegal_forfeit'
+  // Both forfeit causes are "the player never produced a move"; the protocol has
+  // one code for that, so a token-cap forfeit submits as an illegal forfeit even
+  // though the UI names it precisely.
+  if (/ forfeits \((illegal moves|token cap)\)$/.test(reason)) return 'illegal_forfeit'
   return null
 }

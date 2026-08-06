@@ -85,6 +85,8 @@ export function resultText(series: Series, s: Settings): string {
     verdict,
     `${moves} moves · ${fmtTokens(tokens)} tokens${cost > 0 ? ` · $${cost.toFixed(cost < 0.01 ? 4 : 2)}` : ''}`,
     `Illegal moves: ${a.illegal} vs ${b.illegal}`,
+    // Only worth a line of a social post when it actually happened.
+    ...(a.capped || b.capped ? [`Token-capped replies: ${a.capped} vs ${b.capped}`] : []),
     ``,
     shareUrl(s),
   ].join('\n')
