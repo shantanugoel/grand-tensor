@@ -96,6 +96,19 @@ describe('retry prompts', () => {
   test('still calls a genuinely illegal move illegal', () => {
     expect(retryPrompt('Qh9', args.legal)).toContain('"Qh9" is not a legal chess move here.')
   })
+
+  test('calls malformed notation invalid while still demanding a legal-list move', () => {
+    const text = retryPrompt('gh6', [{ san: 'gxh6', lan: 'g7h6' }], 'invalid_notation', 'gxh6')
+    expect(text).toContain('"gh6" is invalid move notation here.')
+    expect(text).toContain('Did you mean "gxh6"?')
+    expect(text).toContain('gxh6')
+  })
+
+  test('identifies a response with no nominated move', () => {
+    expect(retryPrompt('', args.legal, 'invalid_response')).toContain(
+      'did not contain a usable "move" value',
+    )
+  })
 })
 
 describe('parseMove', () => {
@@ -130,13 +143,27 @@ describe('parseMove', () => {
   })
 
   test('reports no move for an empty or move-less reply', () => {
-    expect(parseMove('', legal).san).toBeNull()
-    expect(parseMove('{"say": "thinking..."}', legal).san).toBeNull()
+    expect(parseMove('', legal)).toMatchObject({ san: null, rejection: 'invalid_response' })
+    expect(parseMove('{"say": "thinking..."}', legal)).toMatchObject({
+      san: null,
+      rejection: 'invalid_response',
+    })
   })
 
   test('still reports an illegal move the model actually nominated', () => {
-    const parsed = parseMove('{"move": "Qh9"}', legal)
+    const parsed = parseMove('{"move": "Qh5"}', legal)
     expect(parsed.san).toBeNull()
-    expect(parsed.raw).toBe('Qh9')
+    expect(parsed.raw).toBe('Qh5')
+    expect(parsed.rejection).toBe('illegal_move')
+  })
+
+  test('distinguishes malformed notation without accepting it', () => {
+    const parsed = parseMove('{"move": "gh6"}', [{ san: 'gxh6', lan: 'g7h6' }])
+    expect(parsed.san).toBeNull()
+    expect(parsed.raw).toBe('gh6')
+    expect(parsed.rejection).toBe('invalid_notation')
+    expect(parsed.suggestion).toBe('gxh6')
+    expect(parseMove('{"move": "Qh9"}', legal).rejection).toBe('invalid_notation')
+    expect(parseMove('{"move": "Qh5xf7"}', legal).rejection).toBe('invalid_notation')
   })
 })

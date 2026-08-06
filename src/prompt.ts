@@ -1,6 +1,7 @@
 /** Prompt construction and (deliberately forgiving) move parsing. */
 
 export type LegalMove = { san: string; lan: string }
+export type MoveRejection = 'invalid_response' | 'invalid_notation' | 'illegal_move'
 
 export type PromptGame = {
   index: number
@@ -124,9 +125,21 @@ export function movePrompt(template: string, args: MovePromptArgs): string {
   )
 }
 
-export function retryPrompt(bad: string, legal: LegalMove[]): string {
+export function retryPrompt(
+  bad: string,
+  legal: LegalMove[],
+  rejection: MoveRejection = 'illegal_move',
+  suggestion: string | null = null,
+): string {
+  const problem =
+    rejection === 'invalid_response'
+      ? `Your reply did not contain a usable "move" value.`
+      : rejection === 'invalid_notation'
+        ? `"${bad}" is invalid move notation here.`
+        : `"${bad}" is not a legal chess move here.`
   return [
-    `"${bad}" is not a legal chess move here.`,
+    problem,
+    ...(suggestion ? [`Did you mean "${suggestion}"?`] : []),
     `Pick one move copied exactly from this list: ${legal.map((m) => m.san).join(' ')}`,
     `Reply with JSON only.`,
   ].join('\n')
@@ -146,6 +159,27 @@ export function capRetryPrompt(maxTokens: number, legal: LegalMove[]): string {
 }
 
 const normalize = (s: string) => s.replace(/[+#!?\s]/g, '').replace(/0/g, 'O')
+
+/** Syntax only. Whether the move is legal in the current position is decided by
+ *  matching the generated legal list. SAN permits one file/rank disambiguator;
+ *  LAN names both complete squares and optionally a promotion piece. */
+function isMoveNotation(value: string): boolean {
+  const v = normalize(value)
+  if (!v) return false
+  if (/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(v)) return true
+  return /^(?:O-O(?:-O)?|[a-h](?:x[a-h])?[1-8](?:=[QRBN])?|[KQRBN][a-h1-8]?x?[a-h][1-8])$/i.test(v)
+}
+
+/** Find a unique canonical SAN differing only by commonly omitted capture or
+ *  promotion punctuation. This is a diagnostic suggestion, never acceptance. */
+function notationSuggestion(value: string, legal: LegalMove[]): string | null {
+  const loose = normalize(value).replace(/[x=]/gi, '').toLowerCase()
+  if (!loose) return null
+  const matches = legal.filter(
+    (m) => normalize(m.san).replace(/[x=]/gi, '').toLowerCase() === loose,
+  )
+  return matches.length === 1 ? matches[0].san : null
+}
 
 /** The first balanced `{…}` in the text, string-aware so a brace inside a quoted
  *  value doesn't throw off the depth count. Greedy `\{[\s\S]*\}` matched from the
@@ -180,7 +214,16 @@ function firstJsonObject(text: string): string | null {
  *  usually played a line it was arguing against. A move has to be one the model
  *  actually nominated, so the answer must arrive in the shape it was asked for
  *  and the retry budget handles the rest. */
-export function parseMove(text: string, legal: LegalMove[]): { san: string | null; say: string; raw: string } {
+export function parseMove(
+  text: string,
+  legal: LegalMove[],
+): {
+  san: string | null
+  say: string
+  raw: string
+  rejection: MoveRejection | null
+  suggestion: string | null
+} {
   const cleaned = text.replace(/```[a-z]*|```/gi, '').trim()
   let say = ''
   let candidate = ''
@@ -213,8 +256,29 @@ export function parseMove(text: string, legal: LegalMove[]): { san: string | nul
 
   if (candidate) {
     const hit = resolve(candidate)
-    if (hit) return { san: hit, say, raw: candidate }
+    if (hit) {
+      return {
+        san: hit,
+        say,
+        raw: candidate,
+        rejection: null,
+        suggestion: null,
+      }
+    }
   }
 
-  return { san: null, say, raw: candidate || cleaned.slice(0, 60) }
+  const suggestion = notationSuggestion(candidate, legal)
+  const rejection: MoveRejection = !candidate
+    ? 'invalid_response'
+    : suggestion || !isMoveNotation(candidate)
+      ? 'invalid_notation'
+      : 'illegal_move'
+
+  return {
+    san: null,
+    say,
+    raw: candidate || cleaned.slice(0, 60),
+    rejection,
+    suggestion,
+  }
 }

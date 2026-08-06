@@ -418,8 +418,14 @@ export class Series {
         player,
         text: truncated
           ? `Reply ended without a move — attempt ${attempt + 1} of ${this.settings.retries + 1}`
-          : `Illegal move "${parsed.raw || '(empty)'}" — attempt ${attempt + 1} of ${this.settings.retries + 1}`,
-        detail: truncated ? 'Raise "Max tokens / move" in Settings if this repeats.' : undefined,
+          : parsed.rejection === 'invalid_response'
+            ? `Invalid response — attempt ${attempt + 1} of ${this.settings.retries + 1}`
+            : `${parsed.rejection === 'invalid_notation' ? 'Invalid move notation' : 'Illegal move'} "${parsed.raw || '(empty)'}" — attempt ${attempt + 1} of ${this.settings.retries + 1}`,
+        detail: truncated
+          ? 'Raise "Max tokens / move" in Settings if this repeats.'
+          : parsed.suggestion
+            ? `Did you mean "${parsed.suggestion}"?`
+            : undefined,
       })
 
       if (truncated) {
@@ -429,7 +435,10 @@ export class Series {
         messages.push({ role: 'user', content: capRetryPrompt(this.settings.maxTokens, legal) })
       } else {
         messages.push({ role: 'assistant', content: result.text.slice(0, 500) })
-        messages.push({ role: 'user', content: retryPrompt(parsed.raw, legal) })
+        messages.push({
+          role: 'user',
+          content: retryPrompt(parsed.raw, legal, parsed.rejection ?? 'illegal_move', parsed.suggestion),
+        })
       }
     }
 

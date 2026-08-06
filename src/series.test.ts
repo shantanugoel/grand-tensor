@@ -195,10 +195,45 @@ describe('token-capped replies', () => {
 })
 
 describe('illegal replies', () => {
+  test('labels a move-less nonempty reply invalid but charges the illegal budget', async () => {
+    const sent = stubEndpoint(() => ({
+      text: '{"say": "I forgot to nominate a move."}',
+      finish: 'stop',
+    }))
+
+    const { series, logs } = await run(settings())
+
+    expect(series.stats[0].illegal).toBe(2)
+    expect(series.stats[0].capped).toBe(0)
+    expect(series.games[0].reason).toBe('Alpha forfeits (illegal moves)')
+    expect(logs.some((l) => l.text.startsWith('Invalid response — attempt 1 of 2'))).toBe(true)
+    expect(sent[1].messages.at(-1).content).toContain(
+      'did not contain a usable "move" value',
+    )
+  })
+
+  test('labels missing capture notation separately but charges the illegal budget', async () => {
+    const sent = stubEndpoint((model, call) => {
+      if (model === 'alpha' && call === 1) return { text: '{"move": "e4"}', finish: 'stop' }
+      if (model === 'beta') return { text: '{"move": "d5"}', finish: 'stop' }
+      return { text: '{"move": "ed5"}', finish: 'stop' }
+    })
+
+    const { series, logs } = await run(settings())
+
+    expect(series.stats[0].illegal).toBe(2)
+    expect(series.stats[0].capped).toBe(0)
+    expect(series.games[0].reason).toBe('Alpha forfeits (illegal moves)')
+    expect(logs.some((l) => l.text.startsWith('Invalid move notation "ed5"'))).toBe(true)
+    expect(logs.some((l) => l.detail === 'Did you mean "exd5"?')).toBe(true)
+    expect(sent[3].messages.at(-1).content).toContain('"ed5" is invalid move notation here.')
+    expect(sent[3].messages.at(-1).content).toContain('Did you mean "exd5"?')
+  })
+
   test('keep the illegal wording and stay out of the cap count', async () => {
     const sent = stubEndpoint((model) =>
       model === 'alpha'
-        ? { text: '{"move": "Qh5xf7#"}', finish: 'stop' }
+        ? { text: '{"move": "Qh5"}', finish: 'stop' }
         : { text: '{"move": "e5", "say": "hi"}', finish: 'stop' },
     )
 
