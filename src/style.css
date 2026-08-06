@@ -777,6 +777,16 @@ body {
   border-color: var(--p0);
 }
 
+.field-help {
+  color: var(--dim);
+  font-size: 9.5px;
+  line-height: 1.45;
+}
+
+.field-help code {
+  color: var(--p0);
+}
+
 .field textarea {
   min-height: 230px;
   resize: vertical;
@@ -805,20 +815,6 @@ body {
 .field.check input {
   width: auto;
   accent-color: var(--p0);
-}
-
-.note {
-  font-size: 10.5px;
-  color: var(--dim);
-  margin: 14px 0 0;
-  line-height: 1.7;
-}
-
-.note code {
-  color: var(--p0);
-  background: rgba(77, 227, 255, 0.09);
-  padding: 2px 5px;
-  border-radius: 4px;
 }
 
 /* ---------- misc ---------- */

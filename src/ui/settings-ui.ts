@@ -12,8 +12,8 @@ const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySe
 
 let known = new Map<string, ModelInfo>()
 
-const text = (name: string, label: string, value: string, type = 'text', extra = '') =>
-  `<label class="field">${label}<input name="${name}" type="${type}" value="${escapeAttr(value)}" ${extra}/></label>`
+const text = (name: string, label: string, value: string, type = 'text', extra = '', help = '') =>
+  `<label class="field">${label}<input name="${name}" type="${type}" value="${escapeAttr(value)}" ${extra}/>${help ? `<span class="field-help">${help}</span>` : ''}</label>`
 
 const num = (name: string, label: string, value: number, min: number, max: number, step = 1) =>
   `<label class="field">${label}<input name="${name}" type="number" value="${value}" min="${min}" max="${max}" step="${step}"/></label>`
@@ -28,7 +28,7 @@ function playerFieldset(i: number, s: Settings) {
       <legend>PLAYER ${i + 1}</legend>
       <div class="grid">
         ${text(`p${i}_label`, 'Display name', p.label)}
-        ${text(`p${i}_model`, 'Model id', p.model, 'text', `list="model-list" autocomplete="off" data-model="${i}"`)}
+        ${text(`p${i}_model`, 'Model id', p.model, 'text', `list="model-list" autocomplete="off" data-model="${i}"`, 'Use <code>random</code> for a local, no-API demo.')}
         <label class="field">Reasoning effort<select name="p${i}_effort"></select></label>
         ${num(`p${i}_temperature`, 'Temperature', p.temperature, 0, 2, 0.1)}
       </div>
@@ -40,8 +40,8 @@ export function renderSettings(s: Settings) {
     <fieldset class="fieldset">
       <legend>ENDPOINT</legend>
       <div class="grid">
-        ${text('baseUrl', 'Base URL (OpenAI-compatible)', s.baseUrl)}
-        ${text('apiKey', 'API key', s.apiKey, 'password')}
+        ${text('baseUrl', 'Base URL (OpenAI-compatible)', s.baseUrl, 'text', '', 'Works with any <code>/chat/completions</code> endpoint.')}
+        ${text('apiKey', 'API key', s.apiKey, 'password', '', 'Stored only in this browser and sent directly to this endpoint.')}
       </div>
     </fieldset>
     ${playerFieldset(0, s)}
