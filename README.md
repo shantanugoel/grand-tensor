@@ -44,9 +44,12 @@ asks the visitor for their own key. Keys are never put in the link.
 ## Community leaderboard
 
 The **♜ Standings** button opens the rolling 30-day community leaderboard. A finished match gets
-an optional **♜ Submit** button only when it used a ranked configuration: OpenRouter, 2–10 games
-with alternating colors, the stock prompt, temperature 0.2, a 200-ply limit per game, three
-retries, previous-game context, and commentary. Custom matches and local `random` demos remain
+an optional **♜ Submit** button only when it used a ranked configuration: OpenRouter, an even
+2–10 games with alternating colors, the stock prompt, temperature 0.2, a 200-ply limit per game, three
+retries, previous-game context, and commentary. The count has to be even because colors
+alternate from game one — an odd series would quietly hand the first-seated model an extra
+White, and a submission reports only wins/draws/losses, so the rating fit could never correct
+for it. Custom matches and local `random` demos remain
 exhibitions and never affect standings. The Settings modal marks each field with what its current
 value does to eligibility, so it is always visible which circuit a match would submit to.
 

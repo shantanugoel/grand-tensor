@@ -51,7 +51,7 @@ export function renderSettings(s: Settings) {
     <fieldset class="fieldset">
       <legend>MATCH</legend>
       <div class="grid">
-        ${num('games', 'Games in series', s.games, 1, 50)}
+        ${num('games', 'Games in series', s.games, 1, 50, 1, 'Colors alternate, so an even count gives both models the same number of Whites.')}
         ${num('maxPlies', 'Ply limit (draw)', s.maxPlies, 20, 600, 10)}
         ${num('retries', 'Retries before forfeit', s.retries, 0, 10, 1, 'Spent on illegal moves and token-capped replies alike.')}
         ${num('networkRetries', 'Connection retry cap', s.networkRetries, 0, 100, 1, 'Connection failures ridden out before the series parks and waits for you. <code>0</code> keeps retrying, backing off to once a minute — nothing is lost either way.')}

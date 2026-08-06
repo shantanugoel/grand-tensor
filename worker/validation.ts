@@ -1,6 +1,7 @@
 import { Chess } from 'chess.js'
 import {
   circuitFor,
+  isRankedGameCount,
   LEADERBOARD_APP_VERSION,
   RANKED_GAMES_MAX,
   RANKED_GAMES_MIN,
@@ -76,14 +77,10 @@ export async function validateConfig(value: unknown): Promise<{ config: Protocol
   const circuit = typeof cfg.maxTokens === 'number' ? circuitFor(cfg.maxTokens) : null
   if (!circuit) throw new Error('This match does not use a ranked completion budget.')
 
-  // Series length only sets sample size, so it is a range rather than a pin.
-  if (
-    typeof cfg.games !== 'number' ||
-    !Number.isInteger(cfg.games) ||
-    cfg.games < RANKED_GAMES_MIN ||
-    cfg.games > RANKED_GAMES_MAX
-  )
-    throw new Error(`A ranked series runs ${RANKED_GAMES_MIN} to ${RANKED_GAMES_MAX} games.`)
+  // Series length only sets sample size, so it is a range rather than a pin —
+  // but an even one, so colors come out level. See isRankedGameCount.
+  if (typeof cfg.games !== 'number' || !isRankedGameCount(cfg.games))
+    throw new Error(`A ranked series runs an even ${RANKED_GAMES_MIN} to ${RANKED_GAMES_MAX} games.`)
 
   if (
     cfg.baseUrl !== 'https://openrouter.ai/api/v1' ||

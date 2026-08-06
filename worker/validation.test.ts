@@ -113,6 +113,15 @@ describe('leaderboard submission validation', () => {
     }
   })
 
+  test('rejects an odd series length, which would hand slot 0 an extra White', async () => {
+    for (const length of [3, 5]) {
+      const value = await submission()
+      value.config.games = length
+      value.games = games(length)
+      await expect(validateSubmission(value)).rejects.toThrow('even')
+    }
+  })
+
   test('rejects a game list that disagrees with the declared series length', async () => {
     const value = await submission()
     value.config.games = 6

@@ -43,9 +43,18 @@ export const DEFAULT_CIRCUIT = CIRCUITS[0]
 /** Series length is the one pinned setting that only changes sample size: games
  *  are scored individually and the rating fit consumes them individually, so a
  *  6-game series is just three more data points than a 4-game one. Everything
- *  else that stays pinned changes what the model is asked to do. */
+ *  else that stays pinned changes what the model is asked to do.
+ *
+ *  It has to be even. Colors alternate from game one, so an odd series hands the
+ *  player in slot 0 an extra game with White — and the rating fit has no color
+ *  term to correct for it, because a submission reports only wins/draws/losses.
+ *  Anyone who seats their favourite first and picks 3 games gets a real, silent
+ *  edge while breaking no rule. */
 export const RANKED_GAMES_MIN = 2
 export const RANKED_GAMES_MAX = 10
+
+export const isRankedGameCount = (games: number): boolean =>
+  Number.isInteger(games) && games >= RANKED_GAMES_MIN && games <= RANKED_GAMES_MAX && games % 2 === 0
 
 /** Ranked temperature. Unlike effort, this is continuous, so it cannot become
  *  part of the entrant key without splitting the board into unbounded buckets. */
@@ -222,8 +231,11 @@ export function inspectEligibility(settings: Settings): Eligibility {
 
   if (settings.baseUrl.replace(/\/+$/, '') !== 'https://openrouter.ai/api/v1')
     issues.push({ field: 'baseUrl', reason: 'Ranked play runs on OpenRouter, so every entrant faces the same providers.' })
-  if (!Number.isInteger(settings.games) || settings.games < RANKED_GAMES_MIN || settings.games > RANKED_GAMES_MAX)
-    issues.push({ field: 'games', reason: `Ranked series run ${RANKED_GAMES_MIN}–${RANKED_GAMES_MAX} games.` })
+  if (!isRankedGameCount(settings.games))
+    issues.push({
+      field: 'games',
+      reason: `Ranked series run ${RANKED_GAMES_MIN}–${RANKED_GAMES_MAX} games, and an even number of them so both models get the same number of Whites.`,
+    })
   if (settings.maxPlies !== 200)
     issues.push({ field: 'maxPlies', reason: 'Ranked games are adjudicated drawn at 200 plies, which sets the draw rate.' })
   if (settings.retries !== 3)
