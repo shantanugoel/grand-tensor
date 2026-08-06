@@ -54,6 +54,28 @@ function exactKeys(value: Record<string, unknown>, keys: string[]) {
   return actual.length === keys.length && actual.every((key, index) => key === [...keys].sort()[index])
 }
 
+/** A floor rather than an equality.
+ *
+ *  The site and the Worker deploy through separate pipelines, so they are never
+ *  updated at the same instant, and a visitor on a cached bundle lags both. An
+ *  exact match meant whichever side moved first broke submission for everyone
+ *  until the other caught up. A floor only rejects clients genuinely older than
+ *  the protocol — and every substantive rule is enforced on its own terms
+ *  anyway, so the version is a courtesy message, not a security boundary. */
+const parseVersion = (value: string): number[] | null =>
+  /^\d+\.\d+\.\d+$/.test(value) ? value.split('.').map(Number) : null
+
+export function isSupportedAppVersion(value: string): boolean {
+  const actual = parseVersion(value)
+  const minimum = parseVersion(LEADERBOARD_APP_VERSION)
+  if (!actual || !minimum) return false
+  for (let i = 0; i < minimum.length; i++) {
+    if (actual[i] > minimum[i]) return true
+    if (actual[i] < minimum[i]) return false
+  }
+  return true
+}
+
 export async function expectedPromptHash() {
   return sha256(DEFAULT_PROMPT_TEMPLATE)
 }
@@ -255,7 +277,7 @@ export async function validateSubmission(value: unknown): Promise<ValidatedSubmi
     throw new Error('Invalid submission.')
   if (body.schemaVersion !== 1 || typeof body.protocol !== 'string')
     throw new Error('Unsupported leaderboard protocol.')
-  if (body.appVersion !== LEADERBOARD_APP_VERSION)
+  if (typeof body.appVersion !== 'string' || !isSupportedAppVersion(body.appVersion))
     throw new Error('Please refresh Grand Tensor before submitting.')
   if (typeof body.installationId !== 'string' || !UUID_RE.test(body.installationId))
     throw new Error('Invalid anonymous installation identifier.')

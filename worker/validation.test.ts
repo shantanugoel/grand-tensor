@@ -228,6 +228,28 @@ describe('leaderboard submission validation', () => {
     await expect(validateSubmission(value)).rejects.toThrow('cannot play itself')
   })
 
+  test('accepts a client newer than the Worker, and rejects an older one', async () => {
+    const bump = (index: number, by: number) => {
+      const parts = LEADERBOARD_APP_VERSION.split('.').map(Number)
+      parts[index] += by
+      return parts.join('.')
+    }
+
+    for (const newer of [bump(0, 1), bump(1, 1), bump(2, 1)]) {
+      const value = await submission()
+      value.appVersion = newer
+      expect((await validateSubmission(value)).appVersion).toBe(newer)
+    }
+
+    // Well-formed but genuinely behind, then malformed — both are refused, and
+    // bump(1, -1) keeps this honest if the current version ever gains a minor.
+    for (const older of [bump(1, -1), '0.0.1', 'not-a-version', '1.0']) {
+      const value = await submission()
+      value.appVersion = older
+      await expect(validateSubmission(value)).rejects.toThrow('refresh')
+    }
+  })
+
   test('rejects extra fields rather than silently trusting them', async () => {
     const value = (await submission()) as LeaderboardSubmission & { cost: number }
     value.cost = 0

@@ -24,7 +24,13 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
-      # Type-checks, cleans dist/, bundles, and writes .nojekyll.
+      # The Worker shares src/ with the client but builds separately, so nothing
+      # else in this pipeline would notice a break in it.
+      - run: bun run typecheck:worker
+
+      - run: bun test
+
+      # Type-checks the client, cleans dist/, bundles, and writes .nojekyll.
       - run: bun run build
 
       # Keeps the custom domain attached to every deploy, independent of the
