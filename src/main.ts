@@ -1,7 +1,7 @@
 import './style.css'
 import { Arena } from './three/arena'
 import { material, MAX_MATERIAL, Series } from './series'
-import { loadSettings, saveSettings, isFirstVisit, DEFAULTS, SPEEDS, type Settings } from './settings'
+import { loadSettings, saveSettings, isFirstVisit, DEFAULTS, SPEEDS, effectiveSpeedIndex, type Settings } from './settings'
 import { Hud } from './ui/hud'
 import { readSettings, renderSettings } from './ui/settings-ui'
 import { applyMatchHash, canNativeShare, copyText, nativeShare, resultText, shareUrl, tweetUrl } from './share'
@@ -124,9 +124,10 @@ $('#btn-reset').addEventListener('click', reset)
 const speedInput = $<HTMLInputElement>('#speed')
 function applySpeed() {
   settings.speed = Number(speedInput.value)
-  const s = SPEEDS[settings.speed] ?? SPEEDS[3]
+  const effectiveIndex = effectiveSpeedIndex(settings)
+  const s = SPEEDS[effectiveIndex] ?? SPEEDS[3]
   arena.speed = s.anim
-  $('#speed-label').textContent = s.label
+  $('#speed-label').textContent = effectiveIndex === settings.speed ? s.label : `${s.label} demo`
   saveSettings(settings)
 }
 speedInput.addEventListener('input', applySpeed)
@@ -142,7 +143,10 @@ function openModal() {
   $('#modal').classList.remove('hidden')
 }
 
-const closeModal = () => $('#modal').classList.add('hidden')
+const closeModal = () => {
+  ;(document.activeElement as HTMLElement | null)?.blur()
+  $('#modal').classList.add('hidden')
+}
 
 $('#btn-settings').addEventListener('click', openModal)
 $('#btn-close').addEventListener('click', closeModal)
@@ -155,6 +159,7 @@ $('#btn-save').addEventListener('click', () => {
   saveSettings(settings)
   hud.setSettings(settings)
   closeModal()
+  applySpeed()
   // A live series keeps the config it started with; otherwise pick up the new one.
   if (series?.status !== 'running' && series?.status !== 'paused') reset()
 })

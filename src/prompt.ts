@@ -29,7 +29,8 @@ export type MovePromptArgs = {
 
 export function systemPrompt(color: 'white' | 'black', commentary: boolean): string {
   return [
-    `You are a world-class chess engine playing ${color}. Play to win.`,
+    `You are playing a game of chess as ${color}.`,
+    `Act as a world-class chess engine and play to win.`,
     ``,
     `Respond with a single JSON object and nothing else:`,
     commentary
@@ -100,7 +101,7 @@ export function movePrompt(template: string, args: MovePromptArgs): string {
 
 export function retryPrompt(bad: string, legal: LegalMove[]): string {
   return [
-    `"${bad}" is not a legal move here.`,
+    `"${bad}" is not a legal chess move here.`,
     `Pick one move copied exactly from this list: ${legal.map((m) => m.san).join(' ')}`,
     `Reply with JSON only.`,
   ].join('\n')

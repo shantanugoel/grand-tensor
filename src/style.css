@@ -970,11 +970,29 @@ body {
   }
 
   .modal {
-    padding: 8px;
+    padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+    overflow: hidden;
   }
   .modal-body {
     padding: 14px;
-    max-height: 92vh;
+    max-height: calc(100dvh - max(16px, env(safe-area-inset-top) + env(safe-area-inset-bottom)));
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* iOS zooms the visual viewport when a focused form control is below 16px.
+     That zoom can survive closing the modal and make the HUD look cropped. */
+  .field input,
+  .field select,
+  .field textarea {
+    font-size: 16px;
+  }
+  .modal-foot {
+    position: sticky;
+    bottom: -14px;
+    z-index: 2;
+    margin: 18px -14px -14px;
+    padding: 12px 14px max(14px, env(safe-area-inset-bottom));
+    background: linear-gradient(180deg, rgba(11, 15, 28, 0), #0b0f1c 18%);
   }
   .grid {
     grid-template-columns: 1fr;

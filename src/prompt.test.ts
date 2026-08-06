@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { movePrompt, previousGamesPrompt, type MovePromptArgs } from './prompt'
+import { movePrompt, previousGamesPrompt, systemPrompt, type MovePromptArgs } from './prompt'
 
 const args: MovePromptArgs = {
   fen: 'test-fen',
@@ -22,6 +22,10 @@ const args: MovePromptArgs = {
 }
 
 describe('movePrompt', () => {
+  test('explicitly identifies the game as chess in the fixed instructions', () => {
+    expect(systemPrompt('white', false)).toContain('playing a game of chess as white')
+  })
+
   test('renders supported variables and preserves unknown ones', () => {
     expect(movePrompt('{{player}} {{legalMoveCount}} {{legalMoves}} {{unknown}}', args)).toBe(
       'Alpha 2 Nf3 Bc4 {{unknown}}',

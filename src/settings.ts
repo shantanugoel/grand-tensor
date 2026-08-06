@@ -21,7 +21,7 @@ export type PlayerConfig = {
 /** User-message template sent for every move. The system prompt remains fixed so
  *  models still return the JSON shape the move parser expects. */
 export const DEFAULT_PROMPT_TEMPLATE = [
-  `You are {{player}}, playing {{color}} against {{opponent}}.`,
+  `You are {{player}}, playing a game of chess as {{color}} against {{opponent}}.`,
   `This is game {{gameNumber}} of {{totalGames}}.`,
   ``,
   `FEN: {{fen}}`,
@@ -49,6 +49,13 @@ export const SPEEDS = [
   { label: 'Very slow', delay: 2400, anim: 1.7 },
   { label: 'Cinematic', delay: 4000, anim: 2.2 },
 ]
+
+/** All-local demo matches can otherwise complete an entire Turbo series in one
+ *  browser task, starving the renderer until only the result is visible. */
+export function effectiveSpeedIndex(s: Pick<Settings, 'players' | 'speed'>): number {
+  const isLocalDemo = s.players.every((player) => player.model.trim().toLowerCase() === 'random')
+  return isLocalDemo && s.speed === 0 ? 1 : s.speed
+}
 
 export type Settings = {
   baseUrl: string
