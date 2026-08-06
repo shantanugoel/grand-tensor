@@ -7,7 +7,7 @@ export const LEADERBOARD_API =
     ? 'http://localhost:8787'
     : 'https://leaderboard.grandtensor.shantanugoel.com'
 
-export const LEADERBOARD_APP_VERSION = '0.3.0'
+export const LEADERBOARD_APP_VERSION = '1.0.0'
 
 /** A ranked bucket. Everything about a match is pinned except the models, so
  *  standings compare players rather than settings. The completion budget is the
@@ -25,13 +25,13 @@ export type Circuit = {
 
 export const CIRCUITS: readonly Circuit[] = [
   {
-    id: 'standard-v2',
+    id: 'standard',
     name: 'Standard Circuit',
     maxTokens: 16000,
     blurb: '16,000 tokens per move — enough for high reasoning effort to finish its thought.',
   },
   {
-    id: 'extended-v1',
+    id: 'extended',
     name: 'Extended Circuit',
     maxTokens: 32000,
     blurb: '32,000 tokens per move — room for the deepest reasoning, at the highest cost.',
