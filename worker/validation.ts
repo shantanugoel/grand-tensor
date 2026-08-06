@@ -173,11 +173,17 @@ function validateTerminal(chess: Chess, game: SubmittedGame) {
         throw new Error(`Game ${game.index + 1} does not match the material adjudication at the move limit.`)
       return
     }
+    // Different causes, identical board evidence: the player to move never
+    // produced a move, so the point goes to the other side and the position is
+    // not itself terminal. Which cause it was is the client's report.
     case 'illegal_forfeit':
-      if (draw || chess.isGameOver()) throw new Error(`Game ${game.index + 1} is not a valid illegal-move forfeit.`)
+    case 'cap_forfeit': {
+      const kind = game.reason === 'cap_forfeit' ? 'a token-cap' : 'an illegal-move'
+      if (draw || chess.isGameOver()) throw new Error(`Game ${game.index + 1} is not ${kind} forfeit.`)
       if (game.result !== (chess.turn() === 'w' ? '0-1' : '1-0'))
-        throw new Error(`Game ${game.index + 1} awards an illegal-move forfeit to the wrong side.`)
+        throw new Error(`Game ${game.index + 1} awards ${kind} forfeit to the wrong side.`)
       return
+    }
     case 'draw':
       if (!draw || !chess.isDraw()) throw new Error(`Game ${game.index + 1} is not a drawn position.`)
   }
@@ -201,6 +207,7 @@ function validateGame(value: unknown, index: number): SubmittedGame {
       'draw',
       'move_limit',
       'illegal_forfeit',
+      'cap_forfeit',
     ].includes(String(game.reason))
   )
     throw new Error(`Game ${index + 1} has an invalid ending reason.`)

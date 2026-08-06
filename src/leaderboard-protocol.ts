@@ -99,7 +99,20 @@ export type SubmittedGame = {
   index: number
   white: 0 | 1
   result: '1-0' | '0-1' | '1/2-1/2'
-  reason: 'checkmate' | 'stalemate' | 'insufficient_material' | 'threefold_repetition' | 'fifty_move_rule' | 'draw' | 'move_limit' | 'illegal_forfeit'
+  /** `illegal_forfeit` and `cap_forfeit` both mean "ran out of attempts without
+   *  a move", but for opposite reasons: one is a chess failure, the other is a
+   *  completion budget too small for how the model thinks. Folding them together
+   *  hid the single number that says whether a circuit's cap is set right. */
+  reason:
+    | 'checkmate'
+    | 'stalemate'
+    | 'insufficient_material'
+    | 'threefold_repetition'
+    | 'fifty_move_rule'
+    | 'draw'
+    | 'move_limit'
+    | 'illegal_forfeit'
+    | 'cap_forfeit'
   plies: number
   pgn: string
 }
@@ -310,9 +323,7 @@ export function submissionReason(reason: string): SubmittedGame['reason'] | null
   if (reason === 'fifty-move rule') return 'fifty_move_rule'
   if (reason === 'draw') return 'draw'
   if (reason.startsWith('move limit (')) return 'move_limit'
-  // Both forfeit causes are "the player never produced a move"; the protocol has
-  // one code for that, so a token-cap forfeit submits as an illegal forfeit even
-  // though the UI names it precisely.
-  if (/ forfeits \((illegal moves|token cap)\)$/.test(reason)) return 'illegal_forfeit'
+  if (/ forfeits \(illegal moves\)$/.test(reason)) return 'illegal_forfeit'
+  if (/ forfeits \(token cap\)$/.test(reason)) return 'cap_forfeit'
   return null
 }

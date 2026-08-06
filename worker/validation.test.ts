@@ -138,6 +138,15 @@ describe('leaderboard submission validation', () => {
     expect((await validateSubmission(value)).games[0].reason).toBe('illegal_forfeit')
   })
 
+  test('accepts a token-cap forfeit as its own ending, not as an illegal one', async () => {
+    const value = await submission()
+    value.games[0] = { index: 0, white: 0, result: '0-1', reason: 'cap_forfeit', plies: 0, pgn: '' }
+    expect((await validateSubmission(value)).games[0].reason).toBe('cap_forfeit')
+
+    value.games[0].result = '1-0'
+    await expect(validateSubmission(value)).rejects.toThrow('token-cap forfeit to the wrong side')
+  })
+
   test('rejects non-standard settings', async () => {
     const value = await submission()
     value.config.retries = RANKED_RETRIES - 1
