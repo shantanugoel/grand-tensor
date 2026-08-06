@@ -1,6 +1,13 @@
 /** All user-tunable configuration. Persisted in localStorage, edited in the UI. */
 
-export type Effort = 'default' | 'minimal' | 'low' | 'medium' | 'high'
+/** Reasoning effort. The valid set is per-model and comes from the endpoint's
+ *  /models listing, so this is a plain string rather than a fixed union —
+ *  `deepseek-v4-flash` takes max/high/low with no medium, `gpt-5.6-luna` adds
+ *  xhigh and none, and older models take nothing at all. */
+export type Effort = string
+
+/** Send no effort parameter and let the provider pick. */
+export const NO_EFFORT = 'default'
 
 export type PlayerConfig = {
   /** Display name shown in the HUD. */

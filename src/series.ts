@@ -2,9 +2,9 @@
  *  Pure logic + events: it knows nothing about three.js or the DOM. */
 
 import { Chess, type Color, type Move } from 'chess.js'
-import { addUsage, chat, emptyUsage, fetchModels, type Pricing, type Usage } from './llm'
+import { addUsage, chat, emptyUsage, fetchModels, type ModelInfo, type Usage } from './llm'
 import { movePrompt, parseMove, retryPrompt, systemPrompt, type LegalMove } from './prompt'
-import { SPEEDS, type Settings } from './settings'
+import { NO_EFFORT, SPEEDS, type PlayerConfig, type Settings } from './settings'
 
 export type PlayerIdx = 0 | 1
 
@@ -98,8 +98,10 @@ export class Series {
 
   private abort = new AbortController()
   private resumeWaiters: (() => void)[] = []
-  /** List pricing per model id, used only when a response omits its own cost. */
-  private pricing = new Map<string, Pricing | undefined>()
+  /** What the endpoint says about each model: pricing and supported efforts. */
+  private models = new Map<string, ModelInfo>()
+  /** Per-player effort after checking it against the model. */
+  private effort: [string, string] = [NO_EFFORT, NO_EFFORT]
 
   constructor(private settings: Settings, private events: SeriesEvents) {}
 
@@ -137,7 +139,8 @@ export class Series {
   async run() {
     this.status = 'running'
     this.events.onLog({ kind: 'info', text: `Series started — best of ${this.settings.games}` })
-    this.pricing = await fetchModels(this.settings.baseUrl, this.settings.apiKey)
+    this.models = await fetchModels(this.settings.baseUrl, this.settings.apiKey)
+    this.effort = this.settings.players.map((p, i) => this.resolveEffort(p, i as PlayerIdx)) as [string, string]
     try {
       for (this.gameIndex = 0; this.gameIndex < this.settings.games; this.gameIndex++) {
         this.white = (this.gameIndex % 2) as PlayerIdx
@@ -168,6 +171,23 @@ export class Series {
 
   private black(): PlayerIdx {
     return (1 - this.white) as PlayerIdx
+  }
+
+  /** Settings can outlive a model's capabilities — a shared link, or a model
+   *  that dropped an effort level. Rather than let the request 400, fall back to
+   *  the provider default and say so once, up front. */
+  private resolveEffort(cfg: PlayerConfig, player: PlayerIdx): string {
+    if (cfg.effort === NO_EFFORT) return NO_EFFORT
+    const supported = this.models.get(cfg.model)?.efforts
+    if (!supported || supported.includes(cfg.effort)) return cfg.effort
+
+    this.events.onLog({
+      kind: 'warn',
+      player,
+      text: `${cfg.model} doesn't accept "${cfg.effort}" reasoning — using its default`,
+      detail: supported.length ? `Supported: ${supported.join(', ')}` : 'This model has no effort levels.',
+    })
+    return NO_EFFORT
   }
 
   private async playGame() {
@@ -306,11 +326,11 @@ export class Series {
           baseUrl: this.settings.baseUrl,
           apiKey: this.settings.apiKey,
           model: cfg.model,
-          effort: cfg.effort,
+          effort: this.effort[player],
           temperature: cfg.temperature,
           maxTokens: this.settings.maxTokens,
           messages,
-          pricing: this.pricing.get(cfg.model),
+          pricing: this.models.get(cfg.model)?.pricing,
           signal: this.abort.signal,
         })
       } catch (err) {

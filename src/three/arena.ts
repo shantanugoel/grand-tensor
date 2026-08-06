@@ -12,8 +12,10 @@ import { pieceGeometry, pieceHeight, pieceVoxels, VOXEL, voxelGeometry } from '.
 
 const TILE = 1
 const BOARD_TOP = 0.16
-/** Bounding radius the camera has to keep in frame (board + frame + tall pieces). */
-const BOARD_RADIUS = 6.5
+/** Bounding radius the camera has to keep in frame. The diagonal view puts the
+ *  board's corners nearest, so this covers the frame's corner plus a tall piece
+ *  standing on it. */
+const BOARD_RADIUS = 7.3
 const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
 
 const COLORS = {
@@ -48,8 +50,11 @@ export class Arena {
   private tiles = new Map<string, THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>>()
   private tileGlow = new Map<string, number>()
   private clock = new THREE.Clock()
-  // Elevated enough that the back rank doesn't hide its own pawns.
-  private baseCamPos = new THREE.Vector3(0, 12.8, 11.2)
+  // Looking down the a1–h8 diagonal: the armies sit left and right rather than
+  // near and far, ranks stagger instead of hiding each other, and the board
+  // reads as an isometric diamond. Only the direction matters — frameBoard()
+  // sets the distance.
+  private baseCamPos = new THREE.Vector3(-9.6, 10.6, 9.6)
   private running = true
   private lowPower: boolean
 
@@ -207,10 +212,10 @@ export class Arena {
     mesh.receiveShadow = true
     mesh.position.copy(squarePos(square))
     // Knights face the enemy.
-    // Knights stand side-on rather than facing down the board: from the default
-    // camera that shows the head in profile, which is the only angle it reads at.
-    // Each side turns outward so the two armies still face away from each other.
-    if (type === 'n') mesh.rotation.y = color === 'w' ? Math.PI / 2 : -Math.PI / 2
+    // Knights turn broadside to the default diagonal camera, which is the only
+    // angle the head reads at. Each side faces outward so the two armies still
+    // point away from each other.
+    if (type === 'n') mesh.rotation.y = color === 'w' ? Math.PI / 4 : Math.PI / 4 + Math.PI
     mesh.userData = { type, color, square }
     return mesh
   }

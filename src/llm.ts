@@ -1,7 +1,7 @@
 /** Minimal OpenAI-compatible chat client. Works with OpenRouter, OpenAI, or any
  *  server exposing /chat/completions. No SDK — one fetch, one parse. */
 
-import type { Effort } from './settings'
+import { NO_EFFORT } from './settings'
 
 export type Usage = {
   prompt: number
@@ -17,16 +17,31 @@ export type ChatResult = { text: string; usage: Usage; ms: number; finish: strin
 /** Dollars per token, as advertised by the endpoint's /models listing. */
 export type Pricing = { prompt: number; completion: number }
 
+/** What the endpoint says about a model. Every field is optional — plenty of
+ *  OpenAI-compatible servers publish little more than an id. */
+export type ModelInfo = {
+  pricing?: Pricing
+  /** Reasoning efforts this model actually accepts. Empty means "none offered". */
+  efforts?: string[]
+  /** What the provider uses when no effort is sent. */
+  defaultEffort?: string
+}
+
+/** Offered when the endpoint says nothing about a model, so a custom server
+ *  still lets you pick something rather than locking you to the default. */
+export const FALLBACK_EFFORTS = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']
+
 export type ChatRequest = {
   baseUrl: string
   apiKey: string
   model: string
-  effort: Effort
   temperature: number
   maxTokens: number
   messages: { role: 'system' | 'user' | 'assistant'; content: string }[]
   /** Used to derive a cost when the response doesn't report one itself. */
   pricing?: Pricing
+  /** Sent verbatim; the caller is responsible for it being one the model takes. */
+  effort: string
   signal?: AbortSignal
 }
 
@@ -60,7 +75,7 @@ export async function chat(req: ChatRequest): Promise<ChatResult> {
     max_tokens: req.maxTokens,
   }
 
-  if (req.effort !== 'default') {
+  if (req.effort !== NO_EFFORT) {
     // OpenRouter normalises effort under `reasoning`; plain OpenAI uses a flat field.
     if (isOpenRouter(req.baseUrl)) body.reasoning = { effort: req.effort }
     else body.reasoning_effort = req.effort
@@ -111,18 +126,33 @@ export async function chat(req: ChatRequest): Promise<ChatResult> {
 }
 
 /** Best-effort /models listing. Failure is non-fatal everywhere it's used. */
-export async function fetchModels(baseUrl: string, apiKey: string): Promise<Map<string, Pricing | undefined>> {
-  const out = new Map<string, Pricing | undefined>()
+export async function fetchModels(baseUrl: string, apiKey: string): Promise<Map<string, ModelInfo>> {
+  const out = new Map<string, ModelInfo>()
   try {
     const res = await fetch(`${trimUrl(baseUrl)}/models`, { headers: headers({ baseUrl, apiKey }) })
     if (!res.ok) return out
     const json = await res.json()
     for (const m of json.data ?? []) {
       if (typeof m?.id !== 'string') continue
+
       const prompt = Number(m.pricing?.prompt)
       const completion = Number(m.pricing?.completion)
       const priced = Number.isFinite(prompt) && Number.isFinite(completion)
-      out.set(m.id, priced ? { prompt, completion } : undefined)
+
+      // A model with no `reasoning` block has no reasoning at all; one that has
+      // the block but no effort list reasons some other way (a token budget,
+      // say), so there is still no effort to choose.
+      const efforts = Array.isArray(m.reasoning?.supported_efforts)
+        ? m.reasoning.supported_efforts.filter((e: unknown) => typeof e === 'string')
+        : m.reasoning
+          ? []
+          : undefined
+
+      out.set(m.id, {
+        pricing: priced ? { prompt, completion } : undefined,
+        efforts,
+        defaultEffort: typeof m.reasoning?.default_effort === 'string' ? m.reasoning.default_effort : undefined,
+      })
     }
   } catch {
     // Offline, CORS-blocked, or an endpoint without /models — callers cope.

@@ -6,7 +6,9 @@
 import type { Series } from './series'
 import type { Effort, Settings } from './settings'
 
-const EFFORTS = new Set(['default', 'minimal', 'low', 'medium', 'high'])
+/** Efforts are provider-defined, so a shared link is only sanity-checked here;
+ *  the series re-checks it against the model before the first request. */
+const looksLikeEffort = (v: string) => /^[a-z]{2,10}$/.test(v)
 
 /** Rebuildable matchup as a readable `#a=…&b=…` fragment. */
 export function matchHash(s: Settings): string {
@@ -33,8 +35,7 @@ export function applyMatchHash(s: Settings): boolean {
   const p = new URLSearchParams(raw)
   if (!p.get('a') && !p.get('b')) return false
 
-  const effort = (v: string | null, fallback: Effort): Effort =>
-    v && EFFORTS.has(v) ? (v as Effort) : fallback
+  const effort = (v: string | null, fallback: Effort): Effort => (v && looksLikeEffort(v) ? v : fallback)
 
   ;[0, 1].forEach((i) => {
     const key = i === 0 ? 'a' : 'b'

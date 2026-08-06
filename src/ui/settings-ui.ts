@@ -1,22 +1,21 @@
-/** The settings modal: renders a form from the Settings object and reads it back. */
+/** The settings modal: renders a form from the Settings object and reads it back.
+ *
+ *  Reasoning efforts aren't a fixed list — each model publishes the ones it
+ *  accepts, so the dropdowns are rebuilt from the endpoint's /models listing
+ *  whenever a model id changes. */
 
-import { listModels } from '../llm'
-import { DEFAULTS, type Effort, type Settings } from '../settings'
-
-const EFFORTS: Effort[] = ['default', 'minimal', 'low', 'medium', 'high']
+import { fetchModels, FALLBACK_EFFORTS, type ModelInfo } from '../llm'
+import { DEFAULTS, NO_EFFORT, type Settings } from '../settings'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
+
+let known = new Map<string, ModelInfo>()
 
 const text = (name: string, label: string, value: string, type = 'text', extra = '') =>
   `<label class="field">${label}<input name="${name}" type="${type}" value="${escapeAttr(value)}" ${extra}/></label>`
 
 const num = (name: string, label: string, value: number, min: number, max: number, step = 1) =>
   `<label class="field">${label}<input name="${name}" type="number" value="${value}" min="${min}" max="${max}" step="${step}"/></label>`
-
-const select = (name: string, label: string, value: string, options: string[]) =>
-  `<label class="field">${label}<select name="${name}">${options
-    .map((o) => `<option value="${o}" ${o === value ? 'selected' : ''}>${o}</option>`)
-    .join('')}</select></label>`
 
 function playerFieldset(i: number, s: Settings) {
   const p = s.players[i]
@@ -25,8 +24,8 @@ function playerFieldset(i: number, s: Settings) {
       <legend>PLAYER ${i + 1}</legend>
       <div class="grid">
         ${text(`p${i}_label`, 'Display name', p.label)}
-        ${text(`p${i}_model`, 'Model id', p.model, 'text', 'list="model-list" autocomplete="off"')}
-        ${select(`p${i}_effort`, 'Reasoning effort', p.effort, EFFORTS)}
+        ${text(`p${i}_model`, 'Model id', p.model, 'text', `list="model-list" autocomplete="off" data-model="${i}"`)}
+        <label class="field">Reasoning effort<select name="p${i}_effort"></select></label>
         ${num(`p${i}_temperature`, 'Temperature', p.temperature, 0, 2, 0.1)}
       </div>
     </fieldset>`
@@ -58,13 +57,44 @@ export function renderSettings(s: Settings) {
     </fieldset>
     <datalist id="model-list"></datalist>`
 
-  void refreshModelList(s)
+  // Render with whatever we already know, then refine once /models answers.
+  ;[0, 1].forEach((i) => {
+    renderEfforts(i, s.players[i].effort)
+    $(`[data-model="${i}"]`).addEventListener('input', () => renderEfforts(i))
+  })
+  void refreshCatalog(s)
 }
 
-async function refreshModelList(s: Settings) {
-  const ids = await listModels(s.baseUrl, s.apiKey)
+/** Rebuilds one effort dropdown for whatever model id is currently typed. */
+function renderEfforts(i: number, preferred?: string) {
+  const select = $<HTMLSelectElement>(`[name="p${i}_effort"]`)
+  const model = $<HTMLInputElement>(`[data-model="${i}"]`).value.trim()
+  const info = known.get(model)
+  const current = preferred ?? select.value ?? NO_EFFORT
+
+  // Known model: exactly what it accepts, which may be nothing. Unknown model
+  // or no catalog at all: a superset, so a custom endpoint or an unlisted
+  // variant isn't locked out of choosing one.
+  const options = info ? (info.efforts ?? []) : FALLBACK_EFFORTS
+  const none = info?.defaultEffort ? `default (${info.defaultEffort})` : 'default'
+
+  select.innerHTML = [
+    `<option value="${NO_EFFORT}">${none}</option>`,
+    ...options.map((e) => `<option value="${escapeAttr(e)}">${escapeAttr(e)}</option>`),
+  ].join('')
+
+  select.value = options.includes(current) ? current : NO_EFFORT
+  const noneOffered = info != null && options.length === 0
+  select.disabled = noneOffered
+  select.title = noneOffered ? `${model} does not expose reasoning effort levels` : ''
+}
+
+async function refreshCatalog(s: Settings) {
+  known = await fetchModels(s.baseUrl, s.apiKey)
   const list = document.querySelector('#model-list')
-  if (list) list.innerHTML = ids.map((id) => `<option value="${escapeAttr(id)}"></option>`).join('')
+  if (list) list.innerHTML = [...known.keys()].sort().map((id) => `<option value="${escapeAttr(id)}"></option>`).join('')
+  // The form may have been closed and reopened while this was in flight.
+  if (document.querySelector('[data-model="0"]')) [0, 1].forEach((i) => renderEfforts(i, s.players[i].effort))
 }
 
 export function readSettings(current: Settings): Settings {
@@ -79,7 +109,7 @@ export function readSettings(current: Settings): Settings {
   const players = [0, 1].map((i) => ({
     label: str(`p${i}_label`, current.players[i].label),
     model: str(`p${i}_model`, current.players[i].model),
-    effort: (get(`p${i}_effort`)?.value ?? 'default') as Effort,
+    effort: get(`p${i}_effort`)?.value || NO_EFFORT,
     temperature: clamp(int(`p${i}_temperature`, current.players[i].temperature), 0, 2),
   })) as Settings['players']
 

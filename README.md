@@ -21,7 +21,7 @@ Then open the printed URL, hit **⚙ Settings**, and fill in:
 | Base URL | Any OpenAI-compatible `/chat/completions` host. Default: `https://openrouter.ai/api/v1` |
 | API key | Stored in this browser only, sent only to the base URL above |
 | Model id | e.g. `deepseek/deepseek-v4-flash-0731`, `openai/gpt-5.6-luna`. The field autocompletes from the endpoint's `/models` |
-| Reasoning effort | `default` sends nothing; otherwise `reasoning.effort` (OpenRouter) or `reasoning_effort` (OpenAI) |
+| Reasoning effort | Only the levels the chosen model actually accepts — read from its `/models` entry, so `deepseek-v4-flash-0731` offers max/high/low with no medium while `gpt-5.6-luna` adds xhigh and none. `default` sends nothing and lets the provider choose (the dropdown names which level that is). Sent as `reasoning.effort` on OpenRouter, `reasoning_effort` elsewhere |
 | Games in series | Colors alternate every game; 1 / 0.5 / 0 scoring decides the champion |
 | Ply limit | Games past this are adjudicated a draw so a series can't hang |
 | Retries before forfeit | Illegal or unparseable moves are re-prompted this many times, then the model loses the game |
@@ -67,6 +67,11 @@ sync — `bun run dev` serves the same graph with hot reloading, and `bun run bu
 | [src/ui/](src/ui/) | The HUD overlay, the settings modal and the small-screen affordances |
 | [src/share.ts](src/share.ts) | Result card text, and encoding/decoding a matchup link |
 | [dev.ts](dev.ts) / [preview.ts](preview.ts) | `Bun.serve` for development with HMR, and for serving the built `dist/` |
+
+Models with no reasoning levels at all get a disabled dropdown that says so; a model the endpoint
+doesn't list falls back to offering the full set. If a saved or shared setting names an effort the
+model has since stopped accepting, the series drops to the provider default and says so in the log
+rather than letting the request fail.
 
 Cost is shown per model as well as for the series. OpenRouter reports the exact spend on every
 response and that is used verbatim; for any other endpoint the series reads list pricing from
