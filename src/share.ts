@@ -114,9 +114,20 @@ export function tweetUrl(text: string): string {
 
 export const canNativeShare = () => typeof navigator.share === 'function'
 
-export async function nativeShare(text: string, url: string) {
+/** Whether the platform's share sheet will carry the result card itself. Level-2
+ *  Web Share, so in practice: mobile Safari and Android Chrome, yes; desktop
+ *  browsers, no. This is the only route that gets an image into an X post
+ *  without an OAuth media upload — the user picks X in the sheet. */
+export function canShareFile(file: File): boolean {
+  return canNativeShare() && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })
+}
+
+export async function nativeShare(text: string, url: string, file?: File | null) {
+  // Platforms are inconsistent about honouring `url` alongside `files` — some
+  // drop one or the other. `text` already ends with the link, so send just that.
+  const payload: ShareData = file && canShareFile(file) ? { title: 'Grand Tensor', text, files: [file] } : { title: 'Grand Tensor', text, url }
   try {
-    await navigator.share({ title: 'Grand Tensor', text, url })
+    await navigator.share(payload)
   } catch {
     // The user dismissed the sheet — nothing to do.
   }

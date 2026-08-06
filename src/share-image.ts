@@ -255,36 +255,36 @@ export async function renderResultCard(
   return canvas
 }
 
-function toBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
-  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+/** A File rather than a bare Blob, because the Web Share API needs one to
+ *  attach the card to a post. */
+export function cardFile(canvas: HTMLCanvasElement, filename: string): Promise<File | null> {
+  return new Promise((resolve) =>
+    canvas.toBlob((blob) => resolve(blob ? new File([blob], filename, { type: 'image/png' }) : null), 'image/png'),
+  )
 }
 
-export type ImageShareResult = 'copied' | 'downloaded' | 'failed'
-
-/** Copies the card to the clipboard, falling back to a download where the
- *  async clipboard has no image support (Firefox, insecure contexts). */
-export async function copyImage(canvas: HTMLCanvasElement, filename: string): Promise<ImageShareResult> {
-  const blob = await toBlob(canvas)
-  if (!blob) return 'failed'
-
-  if (typeof ClipboardItem === 'function' && navigator.clipboard?.write) {
-    try {
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-      return 'copied'
-    } catch {
-      // Permission denied or unsupported type — fall through to the download.
-    }
-  }
-
+export async function copyImageToClipboard(file: File): Promise<boolean> {
+  if (typeof ClipboardItem !== 'function' || !navigator.clipboard?.write) return false
   try {
-    const url = URL.createObjectURL(blob)
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': file })])
+    return true
+  } catch {
+    // No image support (Firefox), no permission, or an unfocused document.
+    return false
+  }
+}
+
+/** The consolation prize where the clipboard won't take an image. */
+export function downloadImage(file: File): boolean {
+  try {
+    const url = URL.createObjectURL(file)
     const link = document.createElement('a')
     link.href = url
-    link.download = filename
+    link.download = file.name
     link.click()
     setTimeout(() => URL.revokeObjectURL(url), 10_000)
-    return 'downloaded'
+    return true
   } catch {
-    return 'failed'
+    return false
   }
 }

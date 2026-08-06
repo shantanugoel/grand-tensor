@@ -4,8 +4,8 @@ import { material, MAX_MATERIAL, Series, type GameRecord, type PlayerStats } fro
 import { loadSettings, saveSettings, isFirstVisit, DEFAULTS, SPEEDS, effectiveSpeedIndex, type Settings } from './settings'
 import { Hud } from './ui/hud'
 import { readSettings, renderSettings } from './ui/settings-ui'
-import { applyMatchHash, canNativeShare, copyText, fmtScore, nativeShare, resultText, shareUrl, tweetUrl } from './share'
-import { copyImage, renderResultCard } from './share-image'
+import { applyMatchHash, canNativeShare, canShareFile, copyText, fmtScore, nativeShare, resultText, shareUrl, tweetUrl } from './share'
+import { cardFile, copyImageToClipboard, downloadImage, renderResultCard } from './share-image'
 import { dismissRotateHint, setupMobile } from './ui/mobile'
 import { SummaryModal, type SummaryRow, type SummaryView } from './ui/summary'
 import { Leaderboard } from './leaderboard'
@@ -173,6 +173,8 @@ function showSeriesSummary() {
   proxy.disabled = real.disabled
   proxy.title = real.title
   summary.final(seriesView())
+  // The board has settled, so this is the moment to grab the arena still.
+  void buildCard()
 }
 
 function syncStatus() {
@@ -211,6 +213,7 @@ $('#btn-run').addEventListener('click', async () => {
   }
   dismissRotateHint()
   hud.clearLog()
+  card = null
   series = newSeries()
   const leaderboardRun = leaderboard.prepare(settings)
   arena.setPosition(series.chess)
@@ -243,6 +246,7 @@ function reset() {
   series?.stop()
   // Frees whatever round is parked on the countdown before the series is swapped.
   summary.close()
+  card = null
   leaderboard.clear()
   series = newSeries()
   hud.clearLog()
@@ -303,24 +307,48 @@ $('#btn-save').addEventListener('click', () => {
 
 const slug = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'player'
 
-/** Paints the shareable card off the live arena and puts it on the clipboard. */
-async function shareImage() {
-  if (!series) return
-  hud.toast('Rendering result card…')
-  try {
-    const canvas = await renderResultCard(series, settings, arena.snapshot())
-    const name = `grand-tensor-${slug(settings.players[0].label)}-vs-${slug(settings.players[1].label)}.png`
-    const outcome = await copyImage(canvas, name)
-    hud.toast(
-      outcome === 'copied'
-        ? 'Result image copied.'
-        : outcome === 'downloaded'
-          ? 'This browser blocks image copy — saved the card instead.'
-          : 'Could not copy the image.',
+/** Rendered once per finished series and reused by every share route. Kicked off
+ *  as soon as the verdict lands, so a click never waits on the canvas — which
+ *  also keeps window.open inside the browser's user-activation window. */
+let card: Promise<File | null> | null = null
+
+function buildCard(): Promise<File | null> {
+  card ??= renderResultCard(series!, settings, arena.snapshot())
+    .then((canvas) =>
+      cardFile(canvas, `grand-tensor-${slug(settings.players[0].label)}-vs-${slug(settings.players[1].label)}.png`),
     )
-  } catch {
-    hud.toast('Could not build the result image.')
+    .catch(() => null)
+  return card
+}
+
+async function shareImage() {
+  const file = await buildCard()
+  if (!file) return hud.toast('Could not build the result image.')
+  if (await copyImageToClipboard(file)) hud.toast('Result image copied.')
+  else if (downloadImage(file)) hud.toast('This browser blocks image copy — saved the card instead.')
+  else hud.toast('Could not copy the image.')
+}
+
+/** X's post intent takes no media — there is no URL parameter for it, and their
+ *  media upload needs OAuth. So the card rides along one of two ways: the
+ *  platform share sheet where that carries files, or the clipboard everywhere
+ *  else, with the composer opened ready for a paste. */
+async function postToX(text: string) {
+  const file = await buildCard()
+
+  if (file && canShareFile(file)) {
+    hud.toast('Pick X in the share sheet to post with the card attached.')
+    return nativeShare(text, shareUrl(settings), file)
   }
+
+  const copied = file ? await copyImageToClipboard(file) : false
+  const win = open(tweetUrl(text), '_blank', 'noopener')
+  if (!win) return hud.toast(copied ? 'Card copied — allow pop-ups to open the composer.' : 'Allow pop-ups to open the composer.')
+  hud.toast(
+    copied
+      ? 'Composer opened — paste (⌘V / Ctrl+V) to attach the card. X can’t take it from a link.'
+      : 'Composer opened. Use ⧉ Image to copy the card, then paste it into the post.',
+  )
 }
 
 async function share(action: string) {
@@ -330,8 +358,8 @@ async function share(action: string) {
   if (action === 'result') hud.toast((await copyText(text)) ? 'Result copied.' : 'Copy failed.')
   else if (action === 'image') await shareImage()
   else if (action === 'link') hud.toast((await copyText(shareUrl(settings))) ? 'Matchup link copied.' : 'Copy failed.')
-  else if (action === 'x') open(tweetUrl(text), '_blank', 'noopener')
-  else if (action === 'native') await nativeShare(text, shareUrl(settings))
+  else if (action === 'x') await postToX(text)
+  else if (action === 'native') await nativeShare(text, shareUrl(settings), await buildCard())
   else if (action === 'submit') {
     // The verdict card owns the submission flow; this is just a shortcut to it.
     summary.close()
