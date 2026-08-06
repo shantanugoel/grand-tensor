@@ -1,0 +1,52 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Lets you redeploy the current main from the Actions tab without a commit.
+  workflow_dispatch:
+
+# The artifact is the whole site, so a queued run should replace an in-flight
+# one rather than race it — but never cancel a deploy that is already applying.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+
+      # Type-checks, cleans dist/, bundles, and writes .nojekyll.
+      - run: bun run build
+
+      # Keeps the custom domain attached to every deploy, independent of the
+      # repo's Pages settings.
+      - name: Add CNAME
+        run: cp CNAME dist/CNAME
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write # deploy to Pages
+      id-token: write # verify the deployment source
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
