@@ -510,23 +510,32 @@ export default {
       return origin ? new Response(null, { status: 204, headers: corsHeaders(origin) }) : new Response(null, { status: 403 })
     if (request.method !== 'GET' && !origin) return json({ error: 'Origin not allowed.' }, 403)
 
+    // Every route below is awaited, not returned bare. `return handler(...)`
+    // hands back a pending promise, and a promise rejecting after the try block
+    // has already exited is not caught by it — which made this whole catch dead
+    // code for the async routes. A validation refusal reached the client as an
+    // opaque runtime 500 instead of the 400 and the message it was written to
+    // give, and every route here is async.
     try {
       if (request.method === 'GET' && url.pathname === '/v1/config')
         return json({ siteKey: env.TURNSTILE_SITE_KEY, circuits: CIRCUITS }, 200, origin, 'public, max-age=3600')
       if (request.method === 'GET' && url.pathname === '/v1/standings')
-        return standings(env, origin, url.searchParams.get('circuit'))
+        return await standings(env, origin, url.searchParams.get('circuit'))
       if (request.method === 'GET' && url.pathname === '/v1/entrant')
-        return entrant(
+        return await entrant(
           env,
           origin,
           url.searchParams.get('circuit'),
           url.searchParams.get('model'),
           url.searchParams.get('effort'),
         )
-      if (request.method === 'POST' && url.pathname === '/v1/run-ticket') return issueTicket(request, env, origin!)
-      if (request.method === 'POST' && url.pathname === '/v1/submissions') return submit(request, env, origin!)
+      if (request.method === 'POST' && url.pathname === '/v1/run-ticket')
+        return await issueTicket(request, env, origin!)
+      if (request.method === 'POST' && url.pathname === '/v1/submissions')
+        return await submit(request, env, origin!)
       const deletion = url.pathname.match(/^\/v1\/submissions\/([0-9a-f-]{36})$/i)
-      if (request.method === 'DELETE' && deletion) return removeSubmission(request, env, origin!, deletion[1])
+      if (request.method === 'DELETE' && deletion)
+        return await removeSubmission(request, env, origin!, deletion[1])
       return json({ error: 'Not found.' }, 404, origin)
     } catch (error) {
       if (error instanceof ClientError) return json({ error: error.message }, 400, origin)
