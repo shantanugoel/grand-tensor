@@ -6,13 +6,20 @@
   "workers_dev": true,
   "routes": [
     {
-      "pattern": "leaderboard.grandtensor.shantanugoel.com",
+      "pattern": "grandtensor.shantanugoel.com",
       "custom_domain": true
     }
   ],
+  // Static assets bypass the Worker unless they collide with an API route.
+  // The explicit API patterns keep that boundary true even if a future build
+  // accidentally emits a file under api/ or named version.
+  "assets": {
+    "directory": "./dist",
+    "run_worker_first": ["/api/*", "/version"]
+  },
   // Production values. Anything permitting a local origin or a locally solved
   // Turnstile token belongs in the ignored .dev.vars (see .dev.vars.example),
-  // which Wrangler layers over these for `leaderboard:dev` only — the Turnstile
+  // which Wrangler layers over these for `cloudflare:dev` only — the Turnstile
   // hostname is the sole check a non-browser caller cannot forge, so shipping
   // localhost in it would let anyone serving the app submit to the real board.
   "vars": {

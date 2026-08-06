@@ -4,8 +4,9 @@
 other in a voxel battle arena, and you watch the whole thing — moves, captures, token burn and
 score — in real time in the browser.
 
-It is a single static site. No backend: your browser talks straight to whatever
+The match runner is client-side: your browser talks straight to whatever
 OpenAI-compatible endpoint you configure, and the API key never leaves `localStorage`.
+The same Cloudflare Worker serves the site and the optional community leaderboard API.
 
 ## Run it
 
@@ -81,14 +82,14 @@ every PGN and derives the scores itself. Since model calls still happen directly
 model identity is explicitly described as community-reported rather than cryptographically
 verified.
 
-The backend lives in `worker/` and is deployed separately to
-`leaderboard.grandtensor.shantanugoel.com`:
+The leaderboard API lives in `worker/`. In production it shares the site's origin
+at `grandtensor.shantanugoel.com/api/v1/*`; locally Wrangler serves both halves together:
 
 ```bash
 bun run leaderboard:migrate:local   # local D1, once per new migration
-bun run leaderboard:dev
+bun run cloudflare:dev
 bun run leaderboard:migrate:remote  # production D1
-bun run leaderboard:deploy
+bun run deploy
 ```
 
 Wrangler is pinned as a development dependency. Production values for `TURNSTILE_SECRET`,
@@ -97,8 +98,8 @@ the repository. Copy `.dev.vars.example` to the ignored `.dev.vars` for local ru
 layers it over `wrangler.jsonc` so the committed vars can stay production-only. Wrangler state is
 ignored too.
 
-That split matters for two of them. `CORS_ORIGINS` and `TURNSTILE_HOSTNAMES` both widen who may
-submit, and only the second is worth anything on its own: `Origin` is a request header, so
+Those production-only allowlists matter. `CORS_ORIGINS` and `TURNSTILE_HOSTNAMES` both widen who
+may submit, and only the second is worth anything on its own: `Origin` is a request header, so
 anything that isn't a browser sets it to whatever it likes, while the hostname a Turnstile token
 was solved on cannot be forged. Production listing `localhost` there would let anyone serving the
 app on their own machine submit to the real board.
@@ -110,7 +111,7 @@ bun run build
 ```
 
 `dist/` is a self-contained static bundle with relative asset paths — drop it on Netlify, Vercel,
-GitHub Pages, S3, or anything that serves files. To check it before you deploy:
+S3, or anything that serves files. To check it before you deploy:
 
 ```bash
 bun run preview
@@ -119,16 +120,43 @@ bun run preview
 Bun does the bundling itself from the HTML entrypoint, so there is no bundler config to keep in
 sync — `bun run dev` serves the same graph with hot reloading, and `bun run build` writes it out.
 
+Production is one full-stack Cloudflare Worker. Workers Static Assets serves matching files from
+`dist/` without invoking the Worker; `/api/*`, `/version`, and unmatched paths reach
+`worker/index.ts`. The main deployment check is:
+
+```bash
+bun run cloudflare:check
+```
+
+It type-checks the Worker, runs every test, type-checks and builds the client, and writes edge
+cache/security rules to `dist/_headers`.
+
+Cloudflare Workers Builds owns CI/CD. Connect the GitHub repository to the existing
+`grand-tensor-leaderboard` Worker and configure:
+
+| Setting | Value |
+| --- | --- |
+| Production branch | `main` |
+| Build command | `bun run cloudflare:check` |
+| Deploy command | `bun run deploy` |
+| Non-production deploy command | `bun run upload:preview` |
+| Build cache | Enabled |
+
+Set `BUN_VERSION` in the build environment if you want to pin Bun rather than follow the build
+image default. Runtime secrets stay in **Workers → Settings → Variables and Secrets**; they are
+not build variables and never belong in GitHub. D1 migrations remain an explicit operation rather
+than running on every deploy.
+
 ### Which build is live
 
-Both deployables stamp themselves with the commit they were built from, because nothing else
-answers the question reliably. Asset filenames are content hashes, so any commit that misses the
-client bundle — every test-only and Worker-only one — redeploys the site byte-identical and looks
-like nothing shipped. The stamp moves every commit.
+Both halves of the deployment stamp themselves with the commit they were built from. Asset
+filenames are content hashes, so any commit that misses the client bundle — every test-only and
+Worker-only one — redeploys the site byte-identical and otherwise looks like nothing shipped. The
+stamp moves every commit.
 
 ```bash
 curl -s https://grandtensor.shantanugoel.com/ | grep 'name="build"'
-curl -s https://leaderboard.grandtensor.shantanugoel.com/version
+curl -s https://grandtensor.shantanugoel.com/version
 ```
 
 The site's stamp is also on `window.__BUILD__` and is logged once at startup, so a live tab's
@@ -150,7 +178,7 @@ changes; the dev server reports `dev`.
 | [src/leaderboard.ts](src/leaderboard.ts) | Optional submission flow, Turnstile, and standings UI |
 | [worker/](worker/) | Cloudflare Worker API, PGN validation, abuse controls, and D1 migrations |
 | [dev.ts](dev.ts) / [preview.ts](preview.ts) | `Bun.serve` for development with HMR, and for serving the built `dist/` |
-| [build.ts](build.ts) / [deploy-worker.ts](deploy-worker.ts) | Type-check and bundle the site, and deploy the Worker — both stamping the commit from [build-id.ts](build-id.ts) |
+| [build.ts](build.ts) / [deploy.ts](deploy.ts) | Type-check and bundle the site, and deploy the full-stack Worker — both stamping the commit from [build-id.ts](build-id.ts) |
 
 Models with no reasoning levels at all get a disabled dropdown that says so; a model the endpoint
 doesn't list falls back to offering the full set. If a saved or shared setting names an effort the

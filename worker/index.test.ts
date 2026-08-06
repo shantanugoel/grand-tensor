@@ -55,7 +55,7 @@ const post = (h: Harness, path: string, body: unknown, init: RequestInit & { ori
   worker.fetch(request(path, { method: 'POST', body: JSON.stringify(body), ...init }), h.env as any, {} as any)
 
 async function ticketFor(h: Harness, cfg: ProtocolConfig) {
-  const response = await post(h, '/v1/run-ticket', cfg)
+  const response = await post(h, '/api/v1/run-ticket', cfg)
   const body = (await response.json()) as { ticket: string; protocol: string; error?: string }
   if (!response.ok) throw new Error(`ticket refused: ${body.error}`)
   return body
@@ -80,7 +80,7 @@ async function submit(
   const list = over.gameList ?? games(cfg.games, openings[(over.seed ?? 0) % openings.length])
   const response = await post(
     h,
-    '/v1/submissions',
+    '/api/v1/submissions',
     {
       schemaVersion: 1,
       appVersion: LEADERBOARD_APP_VERSION,
@@ -99,7 +99,7 @@ async function submit(
 describe('routing and CORS', () => {
   test('serves config and reflects an allowed origin', async () => {
     const h = start()
-    const response = await worker.fetch(request('/v1/config'), h.env as any, {} as any)
+    const response = await worker.fetch(request('/api/v1/config'), h.env as any, {} as any)
     expect(response.status).toBe(200)
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe(ORIGIN)
     const body = (await response.json()) as any
@@ -109,17 +109,17 @@ describe('routing and CORS', () => {
 
   test('refuses a write from an origin that is not allowed', async () => {
     const h = start()
-    const response = await post(h, '/v1/run-ticket', await config(), { origin: 'https://evil.example' })
+    const response = await post(h, '/api/v1/run-ticket', await config(), { origin: 'https://evil.example' })
     expect(response.status).toBe(403)
     expect((await response.json()).error).toContain('Origin not allowed')
   })
 
   test('preflights only for allowed origins', async () => {
     const h = start()
-    const ok = await worker.fetch(request('/v1/submissions', { method: 'OPTIONS' }), h.env as any, {} as any)
+    const ok = await worker.fetch(request('/api/v1/submissions', { method: 'OPTIONS' }), h.env as any, {} as any)
     expect(ok.status).toBe(204)
     const bad = await worker.fetch(
-      request('/v1/submissions', { method: 'OPTIONS', origin: 'https://evil.example' }),
+      request('/api/v1/submissions', { method: 'OPTIONS', origin: 'https://evil.example' }),
       h.env as any,
       {} as any,
     )
@@ -128,7 +128,12 @@ describe('routing and CORS', () => {
 
   test('404s an unknown path', async () => {
     const h = start()
-    expect((await worker.fetch(request('/v1/nope'), h.env as any, {} as any)).status).toBe(404)
+    expect((await worker.fetch(request('/api/v1/nope'), h.env as any, {} as any)).status).toBe(404)
+  })
+
+  test('does not expose API routes outside the /api namespace', async () => {
+    const h = start()
+    expect((await worker.fetch(request('/v1/config'), h.env as any, {} as any)).status).toBe(404)
   })
 })
 
@@ -145,7 +150,7 @@ describe('run tickets', () => {
 
   test('refuses a config that is not ranked', async () => {
     const h = start()
-    const response = await post(h, '/v1/run-ticket', await config({ retries: 1 }))
+    const response = await post(h, '/api/v1/run-ticket', await config({ retries: 1 }))
     expect(response.status).toBe(400)
     expect((await response.json()).error).toContain('ranked protocol')
   })
@@ -153,7 +158,7 @@ describe('run tickets', () => {
   test('refuses a model the registry does not list', async () => {
     const h = start()
     h.registry.models = ['vendor/model-a']
-    const response = await post(h, '/v1/run-ticket', await config())
+    const response = await post(h, '/api/v1/run-ticket', await config())
     expect(response.status).toBe(400)
     expect((await response.json()).error).toContain('current OpenRouter model identifiers')
   })
@@ -161,7 +166,7 @@ describe('run tickets', () => {
   test('reports a registry outage as a server error, not the caller’s fault', async () => {
     const h = start()
     h.registry.ok = false
-    const response = await post(h, '/v1/run-ticket', await config())
+    const response = await post(h, '/api/v1/run-ticket', await config())
     // The old regex classifier saw the word "model" and called this a 400.
     expect(response.status).toBe(500)
     expect((await response.json()).error).toContain('temporarily unavailable')
@@ -170,7 +175,7 @@ describe('run tickets', () => {
   test('applies the burst rate limit', async () => {
     const h = start()
     h.rateLimit.allow = false
-    expect((await post(h, '/v1/run-ticket', await config())).status).toBe(429)
+    expect((await post(h, '/api/v1/run-ticket', await config())).status).toBe(429)
   })
 })
 
@@ -212,7 +217,7 @@ describe('submission', () => {
   test('refuses a forged ticket', async () => {
     const h = start()
     const cfg = await config()
-    const response = await post(h, '/v1/submissions', {
+    const response = await post(h, '/api/v1/submissions', {
       schemaVersion: 1,
       appVersion: LEADERBOARD_APP_VERSION,
       protocol: DEFAULT_CIRCUIT.id,
@@ -230,7 +235,7 @@ describe('submission', () => {
     const h = start()
     const { ticket } = await ticketFor(h, await config())
     // Same ticket, but the match that was actually played used 6 games.
-    const response = await post(h, '/v1/submissions', {
+    const response = await post(h, '/api/v1/submissions', {
       schemaVersion: 1,
       appVersion: LEADERBOARD_APP_VERSION,
       protocol: DEFAULT_CIRCUIT.id,
@@ -271,7 +276,7 @@ describe('submission', () => {
 
   test('rejects an oversized body before parsing it', async () => {
     const h = start()
-    const response = await post(h, '/v1/submissions', { padding: 'x'.repeat(130_000) })
+    const response = await post(h, '/api/v1/submissions', { padding: 'x'.repeat(130_000) })
     expect(response.status).toBe(400)
     expect((await response.json()).error).toContain('too large')
   })
@@ -279,7 +284,7 @@ describe('submission', () => {
   test('rejects a body that is not JSON', async () => {
     const h = start()
     const response = await worker.fetch(
-      request('/v1/submissions', { method: 'POST', body: 'not json at all' }),
+      request('/api/v1/submissions', { method: 'POST', body: 'not json at all' }),
       h.env as any,
       {} as any,
     )
@@ -346,7 +351,7 @@ describe('daily quotas', () => {
 describe('withdrawal window', () => {
   const del = (h: Harness, id: string, token: string) =>
     worker.fetch(
-      request(`/v1/submissions/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+      request(`/api/v1/submissions/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
       h.env as any,
       {} as any,
     )
@@ -383,7 +388,7 @@ describe('withdrawal window', () => {
     const h = start()
     const { body } = await submit(h)
     const response = await worker.fetch(
-      request(`/v1/submissions/${body.id}`, { method: 'DELETE' }),
+      request(`/api/v1/submissions/${body.id}`, { method: 'DELETE' }),
       h.env as any,
       {} as any,
     )
@@ -422,7 +427,7 @@ describe('standings and entrant records', () => {
   test('rates a connected field and ranks it', async () => {
     const h = start()
     await field(h)
-    const response = await worker.fetch(request('/v1/standings'), h.env as any, {} as any)
+    const response = await worker.fetch(request('/api/v1/standings'), h.env as any, {} as any)
     expect(response.status).toBe(200)
     expect(response.headers.get('Cache-Control')).toContain('max-age=60')
 
@@ -447,23 +452,23 @@ describe('standings and entrant records', () => {
   test('keeps circuits in separate tables', async () => {
     const h = start()
     await submit(h)
-    const extended = await worker.fetch(request('/v1/standings?circuit=extended'), h.env as any, {} as any)
+    const extended = await worker.fetch(request('/api/v1/standings?circuit=extended'), h.env as any, {} as any)
     expect(((await extended.json()) as any).standings).toEqual([])
 
-    const standard = await worker.fetch(request('/v1/standings?circuit=standard'), h.env as any, {} as any)
+    const standard = await worker.fetch(request('/api/v1/standings?circuit=standard'), h.env as any, {} as any)
     expect(((await standard.json()) as any).standings.length).toBe(2)
   })
 
   test('refuses an unknown circuit', async () => {
     const h = start()
-    const response = await worker.fetch(request('/v1/standings?circuit=nope'), h.env as any, {} as any)
+    const response = await worker.fetch(request('/api/v1/standings?circuit=nope'), h.env as any, {} as any)
     expect(response.status).toBe(400)
     expect((await response.json()).error).toContain('Unknown circuit')
   })
 
   test('serves an empty board before anyone has played', async () => {
     const h = start()
-    const body = (await (await worker.fetch(request('/v1/standings'), h.env as any, {} as any)).json()) as any
+    const body = (await (await worker.fetch(request('/api/v1/standings'), h.env as any, {} as any)).json()) as any
     expect(body.standings).toEqual([])
   })
 
@@ -471,7 +476,7 @@ describe('standings and entrant records', () => {
     const h = start()
     await field(h)
     const response = await worker.fetch(
-      request('/v1/entrant?model=vendor%2Fmodel-a&effort=default'),
+      request('/api/v1/entrant?model=vendor%2Fmodel-a&effort=default'),
       h.env as any,
       {} as any,
     )
@@ -492,7 +497,7 @@ describe('standings and entrant records', () => {
     const h = start()
     await submit(h)
     const response = await worker.fetch(
-      request('/v1/entrant?model=vendor%2Fmodel-z&effort=default'),
+      request('/api/v1/entrant?model=vendor%2Fmodel-z&effort=default'),
       h.env as any,
       {} as any,
     )
@@ -501,7 +506,7 @@ describe('standings and entrant records', () => {
 
   test('requires both halves of an entrant key', async () => {
     const h = start()
-    const response = await worker.fetch(request('/v1/entrant?model=vendor%2Fmodel-a'), h.env as any, {} as any)
+    const response = await worker.fetch(request('/api/v1/entrant?model=vendor%2Fmodel-a'), h.env as any, {} as any)
     expect(response.status).toBe(400)
   })
 
@@ -509,7 +514,7 @@ describe('standings and entrant records', () => {
     const h = start()
     await submit(h)
     h.database.run('UPDATE submissions SET created_at = ?', [Date.now() - 31 * 24 * 60 * 60 * 1000])
-    const body = (await (await worker.fetch(request('/v1/standings'), h.env as any, {} as any)).json()) as any
+    const body = (await (await worker.fetch(request('/api/v1/standings'), h.env as any, {} as any)).json()) as any
     expect(body.standings).toEqual([])
   })
 })

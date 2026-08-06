@@ -9,8 +9,11 @@
     "preview": "bun run preview.ts",
     "test": "bun test",
     "typecheck:worker": "tsc -p worker/tsconfig.json",
+    "cloudflare:check": "bun run typecheck:worker && bun test && bun run build",
+    "cloudflare:dev": "bun run build && wrangler dev",
+    "deploy": "bun run deploy.ts",
+    "upload:preview": "bun run deploy.ts --preview",
     "leaderboard:dev": "wrangler dev",
-    "leaderboard:deploy": "bun run deploy-worker.ts",
     "leaderboard:migrate:local": "wrangler d1 migrations apply grand-tensor-leaderboard --local",
     "leaderboard:migrate:remote": "wrangler d1 migrations apply grand-tensor-leaderboard --remote"
   },

@@ -1,11 +1,12 @@
 import { DEFAULT_PROMPT_TEMPLATE, type Settings } from './settings'
 
 const runtimeHostname = typeof location === 'undefined' ? '' : location.hostname
+const runtimeOrigin = typeof location === 'undefined' ? '' : location.origin
 
 export const LEADERBOARD_API =
   runtimeHostname === 'localhost' || runtimeHostname === '127.0.0.1'
-    ? 'http://localhost:8787'
-    : 'https://leaderboard.grandtensor.shantanugoel.com'
+    ? 'http://localhost:8787/api'
+    : `${runtimeOrigin || 'https://grandtensor.shantanugoel.com'}/api`
 
 export const LEADERBOARD_APP_VERSION = '1.0.0'
 

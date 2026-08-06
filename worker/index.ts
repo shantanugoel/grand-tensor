@@ -15,7 +15,7 @@ import { MIN_OPPONENTS, rateEntrants, sortStandings, type SeriesResult } from '.
 import { ClientError } from './errors'
 import { sha256, validateConfig, validateSubmission } from './validation'
 
-/** Substituted at deploy time by the `leaderboard:deploy` script. A bare
+/** Substituted at deploy time by the `deploy` script. A bare
  *  `wrangler deploy` or `wrangler dev` performs no substitution and leaves the
  *  identifier undeclared, so it can only be read through `typeof`. */
 declare const BUILD_SHA: string
@@ -528,11 +528,11 @@ export default {
       // answer to that question is a wrong one.
       if (request.method === 'GET' && url.pathname === '/version')
         return json({ build: BUILD }, 200, origin, 'no-store')
-      if (request.method === 'GET' && url.pathname === '/v1/config')
+      if (request.method === 'GET' && url.pathname === '/api/v1/config')
         return json({ siteKey: env.TURNSTILE_SITE_KEY, circuits: CIRCUITS }, 200, origin, 'public, max-age=3600')
-      if (request.method === 'GET' && url.pathname === '/v1/standings')
+      if (request.method === 'GET' && url.pathname === '/api/v1/standings')
         return await standings(env, origin, url.searchParams.get('circuit'))
-      if (request.method === 'GET' && url.pathname === '/v1/entrant')
+      if (request.method === 'GET' && url.pathname === '/api/v1/entrant')
         return await entrant(
           env,
           origin,
@@ -540,11 +540,11 @@ export default {
           url.searchParams.get('model'),
           url.searchParams.get('effort'),
         )
-      if (request.method === 'POST' && url.pathname === '/v1/run-ticket')
+      if (request.method === 'POST' && url.pathname === '/api/v1/run-ticket')
         return await issueTicket(request, env, origin!)
-      if (request.method === 'POST' && url.pathname === '/v1/submissions')
+      if (request.method === 'POST' && url.pathname === '/api/v1/submissions')
         return await submit(request, env, origin!)
-      const deletion = url.pathname.match(/^\/v1\/submissions\/([0-9a-f-]{36})$/i)
+      const deletion = url.pathname.match(/^\/api\/v1\/submissions\/([0-9a-f-]{36})$/i)
       if (request.method === 'DELETE' && deletion)
         return await removeSubmission(request, env, origin!, deletion[1])
       return json({ error: 'Not found.' }, 404, origin)

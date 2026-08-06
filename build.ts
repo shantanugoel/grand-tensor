@@ -44,7 +44,29 @@ const html = await Bun.file('dist/index.html').text()
 if (!html.includes(PLACEHOLDER)) throw new Error(`No build stamp placeholder (${PLACEHOLDER}) in dist/index.html`)
 await Bun.write('dist/index.html', html.replace(PLACEHOLDER, `<meta name="build" content="${id}" />`))
 
-// Without this GitHub Pages runs the output through Jekyll.
-await Bun.write('dist/.nojekyll', '')
+// Workers Static Assets applies these at the edge. HTML must revalidate so a
+// deployment becomes visible immediately; content-hashed assets can live in a
+// browser cache forever.
+await Bun.write(
+  'dist/_headers',
+  `/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+/
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+`,
+)
 
 console.log(`\nBuild ${id} → dist/`)
