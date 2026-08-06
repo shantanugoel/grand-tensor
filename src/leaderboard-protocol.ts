@@ -257,7 +257,10 @@ export function inspectEligibility(settings: Settings): Eligibility {
       reason: `Ranked series run ${RANKED_GAMES_MIN}–${RANKED_GAMES_MAX} games, and an even number of them so both models get the same number of Whites.`,
     })
   if (settings.maxPlies !== 200)
-    issues.push({ field: 'maxPlies', reason: 'Ranked games are adjudicated drawn at 200 plies, which sets the draw rate.' })
+    issues.push({
+      field: 'maxPlies',
+      reason: 'Ranked games run to 200 plies and are then adjudicated on material, which sets the draw rate.',
+    })
   if (settings.retries !== RANKED_RETRIES)
     issues.push({
       field: 'retries',
