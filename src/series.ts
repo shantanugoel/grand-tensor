@@ -303,13 +303,21 @@ export class Series {
       { role: 'system', content: systemPrompt(this.chess.turn() === 'w' ? 'white' : 'black', this.settings.commentary) },
       {
         role: 'user',
-        content: movePrompt({
+        content: movePrompt(this.settings.promptTemplate, {
           fen: this.chess.fen(),
           pgn: this.chess.pgn().replace(/\[[^\]]*\]\s*/g, '').trim(),
           legal,
           inCheck: this.chess.isCheck(),
           lastMove: history[history.length - 1],
           moveNumber: this.chess.moveNumber(),
+          color: this.chess.turn() === 'w' ? 'white' : 'black',
+          player: cfg.label,
+          opponent: this.settings.players[1 - player].label,
+          gameNumber: this.gameIndex + 1,
+          totalGames: this.settings.games,
+          previousGames: this.settings.includePreviousGames ? this.games : [],
+          includePreviousGames: this.settings.includePreviousGames,
+          playerLabels: [this.settings.players[0].label, this.settings.players[1].label],
         }),
       },
     ]

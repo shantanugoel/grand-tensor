@@ -5,6 +5,7 @@
  *  whenever a model id changes. */
 
 import { fetchModels, FALLBACK_EFFORTS, type ModelInfo } from '../llm'
+import { PROMPT_VARIABLES } from '../prompt'
 import { DEFAULTS, NO_EFFORT, type Settings } from '../settings'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
@@ -16,6 +17,9 @@ const text = (name: string, label: string, value: string, type = 'text', extra =
 
 const num = (name: string, label: string, value: number, min: number, max: number, step = 1) =>
   `<label class="field">${label}<input name="${name}" type="number" value="${value}" min="${min}" max="${max}" step="${step}"/></label>`
+
+const textarea = (name: string, label: string, value: string) =>
+  `<label class="field prompt-field">${label}<textarea name="${name}" rows="14">${escapeHtml(value)}</textarea></label>`
 
 function playerFieldset(i: number, s: Settings) {
   const p = s.players[i]
@@ -53,7 +57,17 @@ export function renderSettings(s: Settings) {
           <input name="commentary" type="checkbox" ${s.commentary ? 'checked' : ''}/>
           <span>Ask for trash talk with each move</span>
         </label>
+        <label class="field check">
+          <input name="includePreviousGames" type="checkbox" ${s.includePreviousGames ? 'checked' : ''}/>
+          <span>Include previous games' moves and results</span>
+        </label>
       </div>
+    </fieldset>
+    <fieldset class="fieldset">
+      <legend>PROMPT</legend>
+      ${textarea('promptTemplate', 'Position prompt template', s.promptTemplate)}
+      <p class="prompt-help">Available variables: ${PROMPT_VARIABLES.map((v) => `<code>{{${v}}}</code>`).join(' ')}</p>
+      <p class="prompt-help">The previous-games variable renders “(not included)” when its match option is turned off. The JSON response rules are added separately.</p>
     </fieldset>
     <datalist id="model-list"></datalist>`
 
@@ -101,6 +115,7 @@ export function readSettings(current: Settings): Settings {
   const form = $('#settings-form')
   const get = (name: string) => form.querySelector<HTMLInputElement>(`[name="${name}"]`)
   const str = (name: string, fallback: string) => get(name)?.value.trim() || fallback
+  const raw = (name: string, fallback: string) => get(name)?.value ?? fallback
   const int = (name: string, fallback: number) => {
     const v = Number(get(name)?.value)
     return Number.isFinite(v) ? v : fallback
@@ -122,6 +137,8 @@ export function readSettings(current: Settings): Settings {
     retries: clamp(int('retries', current.retries), 0, 10),
     maxTokens: clamp(int('maxTokens', current.maxTokens), 32, 32000),
     commentary: get('commentary')?.checked ?? true,
+    promptTemplate: raw('promptTemplate', DEFAULTS.promptTemplate),
+    includePreviousGames: get('includePreviousGames')?.checked ?? true,
     speed: current.speed,
   }
 }
@@ -130,4 +147,8 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 
 function escapeAttr(s: string) {
   return s.replace(/["&<>]/g, (c) => `&#${c.charCodeAt(0)};`)
+}
+
+function escapeHtml(s: string) {
+  return s.replace(/[&<>]/g, (c) => `&#${c.charCodeAt(0)};`)
 }

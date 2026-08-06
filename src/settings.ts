@@ -18,6 +18,27 @@ export type PlayerConfig = {
   temperature: number
 }
 
+/** User-message template sent for every move. The system prompt remains fixed so
+ *  models still return the JSON shape the move parser expects. */
+export const DEFAULT_PROMPT_TEMPLATE = [
+  `You are {{player}}, playing {{color}} against {{opponent}}.`,
+  `This is game {{gameNumber}} of {{totalGames}}.`,
+  ``,
+  `FEN: {{fen}}`,
+  `Move number: {{moveNumber}}`,
+  `Last move: {{lastMove}}`,
+  `Check status: {{inCheck}}`,
+  ``,
+  `Moves so far: {{moves}}`,
+  ``,
+  `Previous games in this series:`,
+  `{{previousGames}}`,
+  ``,
+  `LEGAL MOVES ({{legalMoveCount}}): {{legalMoves}}`,
+  ``,
+  `Choose your move.`,
+].join('\n')
+
 /** Turn-speed presets: pause between moves, and how leisurely pieces animate. */
 export const SPEEDS = [
   { label: 'Turbo', delay: 0, anim: 0 },
@@ -43,6 +64,10 @@ export type Settings = {
   speed: number
   /** Ask each model for a one-line rationale alongside its move. */
   commentary: boolean
+  /** User-message template rendered for each model turn. */
+  promptTemplate: string
+  /** Give models completed games from this series, including moves/results. */
+  includePreviousGames: boolean
   maxTokens: number
 }
 
@@ -58,6 +83,8 @@ export const DEFAULTS: Settings = {
   retries: 3,
   speed: 0,
   commentary: true,
+  promptTemplate: DEFAULT_PROMPT_TEMPLATE,
+  includePreviousGames: true,
   // Generous by default: reasoning models spend most of this before they answer.
   maxTokens: 8000,
 }

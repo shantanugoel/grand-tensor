@@ -2,6 +2,31 @@
 
 export type LegalMove = { san: string; lan: string }
 
+export type PromptGame = {
+  index: number
+  white: 0 | 1
+  result: '1-0' | '0-1' | '1/2-1/2'
+  reason: string
+  pgn: string
+}
+
+export type MovePromptArgs = {
+  fen: string
+  pgn: string
+  legal: LegalMove[]
+  inCheck: boolean
+  lastMove?: string
+  moveNumber: number
+  color: 'white' | 'black'
+  player: string
+  opponent: string
+  gameNumber: number
+  totalGames: number
+  previousGames: PromptGame[]
+  includePreviousGames: boolean
+  playerLabels: [string, string]
+}
+
 export function systemPrompt(color: 'white' | 'black', commentary: boolean): string {
   return [
     `You are a world-class chess engine playing ${color}. Play to win.`,
@@ -16,27 +41,61 @@ export function systemPrompt(color: 'white' | 'black', commentary: boolean): str
   ].join('\n')
 }
 
-export function movePrompt(args: {
-  fen: string
-  pgn: string
-  legal: LegalMove[]
-  inCheck: boolean
-  lastMove?: string
-  moveNumber: number
-}): string {
-  const lines = [
-    `FEN: ${args.fen}`,
-    `Move number: ${args.moveNumber}`,
-    args.lastMove ? `Opponent just played: ${args.lastMove}` : `You are opening the game.`,
-    args.inCheck ? `YOU ARE IN CHECK — you must resolve it.` : ``,
-    ``,
-    `Moves so far: ${args.pgn || '(none)'}`,
-    ``,
-    `LEGAL MOVES (${args.legal.length}): ${args.legal.map((m) => m.san).join(' ')}`,
-    ``,
-    `Choose your move.`,
-  ]
-  return lines.filter(Boolean).join('\n')
+export const PROMPT_VARIABLES = [
+  'player',
+  'opponent',
+  'color',
+  'gameNumber',
+  'totalGames',
+  'fen',
+  'moveNumber',
+  'lastMove',
+  'inCheck',
+  'moves',
+  'legalMoveCount',
+  'legalMoves',
+  'previousGames',
+] as const
+
+const cleanPgn = (pgn: string) => pgn.replace(/\[[^\]]*\]\s*/g, '').trim()
+
+/** Completed games rendered with player identities and colors. */
+export function previousGamesPrompt(games: PromptGame[], labels: [string, string]): string {
+  if (!games.length) return '(none — this is the first game)'
+  return games
+    .map((game) => {
+      const white = labels[game.white]
+      const black = labels[1 - game.white]
+      return [
+        `Game ${game.index + 1}: ${white} (White) vs ${black} (Black) — ${game.result}, ${game.reason}`,
+        `Moves: ${cleanPgn(game.pgn) || '(none)'}`,
+      ].join('\n')
+    })
+    .join('\n\n')
+}
+
+/** Replaces known {{variables}}. Unknown placeholders are left visible so a
+ *  misspelling is apparent in the actual prompt rather than silently erased. */
+export function movePrompt(template: string, args: MovePromptArgs): string {
+  const values: Record<(typeof PROMPT_VARIABLES)[number], string> = {
+    player: args.player,
+    opponent: args.opponent,
+    color: args.color,
+    gameNumber: String(args.gameNumber),
+    totalGames: String(args.totalGames),
+    fen: args.fen,
+    moveNumber: String(args.moveNumber),
+    lastMove: args.lastMove ? `Opponent played ${args.lastMove}.` : 'You are opening the game.',
+    inCheck: args.inCheck ? 'YOU ARE IN CHECK — you must resolve it.' : 'You are not in check.',
+    moves: args.pgn || '(none)',
+    legalMoveCount: String(args.legal.length),
+    legalMoves: args.legal.map((m) => m.san).join(' '),
+    previousGames: args.includePreviousGames ? previousGamesPrompt(args.previousGames, args.playerLabels) : '(not included)',
+  }
+
+  return template.replace(/\{\{([A-Za-z][A-Za-z0-9]*)\}\}/g, (match, name: string) =>
+    name in values ? values[name as keyof typeof values] : match,
+  )
 }
 
 export function retryPrompt(bad: string, legal: LegalMove[]): string {

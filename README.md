@@ -25,6 +25,8 @@ Then open the printed URL, hit **⚙ Settings**, and fill in:
 | Games in series | Colors alternate every game; 1 / 0.5 / 0 scoring decides the champion |
 | Ply limit | Games past this are adjudicated a draw so a series can't hang |
 | Retries before forfeit | Illegal or unparseable moves are re-prompted this many times, then the model loses the game |
+| Previous games | On by default. Sends every completed game's moves, result and ending reason to both models so they can adapt during a series |
+| Position prompt template | Customize the per-move prompt with variables such as `{{fen}}`, `{{moves}}`, `{{legalMoves}}`, `{{player}}`, and `{{previousGames}}`. The required JSON response rules stay in a separate system message |
 
 Set a model id to `random` to run a local demo match with no API key at all.
 
@@ -82,6 +84,10 @@ Each model is asked for JSON — `{"move": "Nf3", "say": "..."}` — with the fu
 the prompt. Anything that isn't a legal move is re-prompted with the error; run out of retries and
 the model forfeits the game. Illegal-move counts are tracked per model and shown in the HUD, since
 that is real signal about a model, not just noise.
+
+By default, later games also receive the moves, result and ending reason from every completed game
+in the series. This can be disabled in Settings. The position prompt itself is editable there and
+supports the variables shown beside the editor; restoring defaults restores the built-in template.
 
 The board is rebuilt from the authoritative `chess.js` position after every move, so castling,
 en passant and promotion stay correct without needing bespoke animations.

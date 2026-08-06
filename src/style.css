@@ -758,7 +758,8 @@ body {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   font-family: var(--mono);
   font-size: 12px;
   color: var(--text);
@@ -770,9 +771,29 @@ body {
 }
 
 .field input:focus,
-.field select:focus {
+.field select:focus,
+.field textarea:focus {
   outline: none;
   border-color: var(--p0);
+}
+
+.field textarea {
+  min-height: 230px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.prompt-help {
+  margin: 9px 0 0;
+  color: var(--dim);
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.prompt-help code {
+  display: inline-block;
+  color: var(--p0);
+  margin-right: 4px;
 }
 
 .field.check {
