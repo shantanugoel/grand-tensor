@@ -91,6 +91,7 @@ export class Arena {
 
     this.buildLights()
     this.buildBoard()
+    this.buildSideStandards()
 
     this.fx = new Fx(this.scene)
 
@@ -182,6 +183,54 @@ export class Arena {
     ;(grid.material as THREE.Material).transparent = true
     ;(grid.material as THREE.Material).opacity = 0.5
     this.scene.add(grid)
+  }
+
+  /** Castle-like standards fixed to the two home ranks. Unlike the pieces,
+   *  these never move or disappear, so the rotating arena always carries an
+   *  unmistakable warm-white and violet-black edge with it. */
+  private buildSideStandards() {
+    const rookGeo = pieceGeometry('r')
+
+    const addSide = (color: Color, z: number) => {
+      const isWhite = color === 'w'
+      const body = isWhite ? COLORS.white : COLORS.black
+      const accent = isWhite ? COLORS.whiteAccent : COLORS.blackAccent
+      const group = new THREE.Group()
+
+      // A luminous "castle wall" runs along the home edge and joins the two
+      // sentinel towers. It stays low enough not to hide any live pieces.
+      const railMat = new THREE.MeshStandardMaterial({
+        color: body,
+        emissive: accent,
+        emissiveIntensity: 0.42,
+        roughness: 0.36,
+        metalness: 0.72,
+      })
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(8.85, 0.1, 0.16), railMat)
+      rail.position.y = 0.03
+      group.add(rail)
+
+      for (const x of [-4.45, 4.45]) {
+        const plinth = new THREE.Mesh(new THREE.BoxGeometry(1.08, 0.22, 0.8), railMat)
+        plinth.position.set(x, 0.08, 0)
+        plinth.castShadow = !this.lowPower
+        plinth.receiveShadow = true
+        group.add(plinth)
+
+        const tower = new THREE.Mesh(rookGeo, this.pieceMaterials(color))
+        tower.position.set(x, 0.19, 0)
+        tower.scale.setScalar(1.2)
+        tower.castShadow = !this.lowPower
+        tower.receiveShadow = true
+        group.add(tower)
+      }
+
+      group.position.z = z
+      this.scene.add(group)
+    }
+
+    addSide('w', 4.62)
+    addSide('b', -4.62)
   }
 
   /** Two materials per side — body and accent — matching the geometry's groups.

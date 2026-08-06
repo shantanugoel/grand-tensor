@@ -81,8 +81,11 @@ export class Hud {
       if (!card) return
       const q = <T extends HTMLElement = HTMLElement>(k: string) => card.querySelector(`[data-${k}]`) as T
       const side = q('side')
-      side.textContent = i === white ? 'WHITE' : 'BLACK'
-      side.classList.toggle('is-white', i === white)
+      const isWhite = i === white
+      side.innerHTML = isWhite ? '<span aria-hidden="true">♖</span> WHITE' : 'BLACK <span aria-hidden="true">♜</span>'
+      side.classList.toggle('is-white', isWhite)
+      side.classList.toggle('is-black', !isWhite)
+      side.title = `${this.settings.players[i].label} is playing ${isWhite ? 'white' : 'black'}`
       // Configured effort until the series has vetted it against the model, then
       // whatever is actually going out on the wire.
       const wanted = this.settings.players[i].effort
@@ -162,6 +165,13 @@ export class Hud {
       $(`#ko-fill-${i}`).style.width = `${pct}%`
       $(`#ko-chip-${i}`).style.width = `${pct}%`
       $(`#ko-fill-${i}`).parentElement!.classList.toggle('danger', pct < 25)
+
+      const side = $(`#ko-side-${i}`)
+      const isWhite = i === white
+      side.innerHTML = isWhite ? '<span aria-hidden="true">♖</span> WHITE' : 'BLACK <span aria-hidden="true">♜</span>'
+      side.classList.toggle('is-white', isWhite)
+      side.classList.toggle('is-black', !isWhite)
+      side.title = `${this.settings.players[i].label} is playing ${isWhite ? 'white' : 'black'}`
 
       // Half-stars keep drawn games visible rather than rounding them away.
       const full = Math.floor(st.score)
