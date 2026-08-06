@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test'
+import { Chess } from 'chess.js'
+import { adjudicate } from '../src/adjudication'
 import {
   CIRCUITS,
   DEFAULT_CIRCUIT,
@@ -52,6 +54,59 @@ async function submission(): Promise<LeaderboardSubmission> {
     games: games(4),
   }
 }
+
+/** A 200-ply game that is still legally alive, found by walking legal moves with
+ *  a seeded generator until one comes out on the wanted side of the adjudication
+ *  margin. Deterministic, and every property the test relies on is asserted
+ *  before it is used. */
+function moveLimitGame(want: '1-0' | '0-1' | '1/2-1/2') {
+  for (let seed = 1; seed < 400; seed++) {
+    let state = seed
+    const next = (n: number) => ((state = (state * 1103515245 + 12345) & 0x7fffffff), state % n)
+    const chess = new Chess()
+    for (let ply = 0; ply < 200 && !chess.isGameOver(); ply++) {
+      const moves = chess.moves()
+      chess.move(moves[next(moves.length)])
+    }
+    if (chess.history().length !== 200 || chess.isGameOver()) continue
+    if (adjudicate(chess).result === want) return chess.pgn().replace(/\[[^\]]*\]\s*/g, '').trim()
+  }
+  throw new Error(`No 200-ply position found that adjudicates ${want}`)
+}
+
+const moveLimit = (index: number, result: '1-0' | '0-1' | '1/2-1/2', pgn: string) => ({
+  index,
+  white: (index % 2) as 0 | 1,
+  result,
+  reason: 'move_limit' as const,
+  plies: 200,
+  pgn,
+})
+
+describe('move-limit adjudication', () => {
+  test('accepts the material verdict the position actually supports', async () => {
+    for (const want of ['1-0', '0-1', '1/2-1/2'] as const) {
+      const value = await submission()
+      value.games[0] = moveLimit(0, want, moveLimitGame(want))
+      expect((await validateSubmission(value)).games[0].reason).toBe('move_limit')
+    }
+  })
+
+  test('refuses a move-limit result the position does not support', async () => {
+    const pgn = moveLimitGame('1-0')
+    for (const claimed of ['0-1', '1/2-1/2'] as const) {
+      const value = await submission()
+      value.games[0] = moveLimit(0, claimed, pgn)
+      await expect(validateSubmission(value)).rejects.toThrow('material adjudication')
+    }
+  })
+
+  test('still refuses a move-limit claim on a game that ended early', async () => {
+    const value = await submission()
+    value.games[0] = { ...moveLimit(0, '1/2-1/2', '1. f3 e5 2. g4 Qh4#'), plies: 4 }
+    await expect(validateSubmission(value)).rejects.toThrow('not a valid move-limit ending')
+  })
+})
 
 describe('leaderboard submission validation', () => {
   test('replays legal games and derives model scores', async () => {

@@ -1,24 +1,13 @@
 /** Runs a series of model-vs-model games and keeps the score.
  *  Pure logic + events: it knows nothing about three.js or the DOM. */
 
-import { Chess, type Color, type Move } from 'chess.js'
+import { Chess, type Move } from 'chess.js'
+import { adjudicate, adjudicationReason } from './adjudication'
 import { addUsage, chat, ChatError, emptyUsage, fetchModels, type ChatResult, type ModelInfo, type Usage } from './llm'
 import { capRetryPrompt, movePrompt, parseMove, retryPrompt, systemPrompt, type LegalMove } from './prompt'
 import { NO_EFFORT, SPEEDS, type PlayerConfig, type Settings } from './settings'
 
 export type PlayerIdx = 0 | 1
-
-/** Standard piece values. Kings are excluded, so a full army is worth 39 —
- *  which is what the vitality bars use as "full health". */
-const VALUES: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
-export const MAX_MATERIAL = 39
-
-export function material(chess: Chess, color: Color): number {
-  let sum = 0
-  for (const row of chess.board())
-    for (const cell of row) if (cell && cell.color === color) sum += VALUES[cell.type] ?? 0
-  return sum
-}
 
 export type PlayerStats = {
   wins: number
@@ -254,7 +243,10 @@ export class Series {
         break
       }
       if (plies >= this.settings.maxPlies) {
-        record = this.finish('1/2-1/2', `move limit (${this.settings.maxPlies} plies)`, plies)
+        // Not an automatic draw: a side far enough ahead on material takes the
+        // point. See adjudicate() for why, and for what that judgement misses.
+        const verdict = adjudicate(this.chess)
+        record = this.finish(verdict.result, adjudicationReason(this.settings.maxPlies, verdict), plies)
         break
       }
 

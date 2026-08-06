@@ -1,6 +1,7 @@
 import './style.css'
 import { Arena } from './three/arena'
-import { material, MAX_MATERIAL, Series, type GameRecord, type PlayerStats } from './series'
+import { material, MAX_MATERIAL } from './adjudication'
+import { Series, type GameRecord, type PlayerStats } from './series'
 import { loadSettings, saveSettings, isFirstVisit, DEFAULTS, SPEEDS, effectiveSpeedIndex, type Settings } from './settings'
 import { Hud } from './ui/hud'
 import { readSettings, renderSettings } from './ui/settings-ui'

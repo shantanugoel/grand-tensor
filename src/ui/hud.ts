@@ -1,6 +1,7 @@
 /** Everything that writes to the DOM overlay: player cards, score, battle log. */
 
-import { material, MAX_MATERIAL, type LogEntry, type PlayerIdx, type Series } from '../series'
+import { material, MAX_MATERIAL } from '../adjudication'
+import { type LogEntry, type PlayerIdx, type Series } from '../series'
 import { NO_EFFORT, type Settings } from '../settings'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T

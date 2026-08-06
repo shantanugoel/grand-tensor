@@ -1,4 +1,5 @@
 import { Chess } from 'chess.js'
+import { adjudicate } from '../src/adjudication'
 import {
   circuitFor,
   isRankedGameCount,
@@ -157,10 +158,15 @@ function validateTerminal(chess: Chess, game: SubmittedGame) {
       if (!draw || !chess.isDrawByFiftyMoves())
         throw new Error(`Game ${game.index + 1} does not satisfy the fifty-move rule.`)
       return
-    case 'move_limit':
-      if (!draw || game.plies !== 200 || chess.isGameOver())
-        throw new Error(`Game ${game.index + 1} is not a valid move-limit draw.`)
+    case 'move_limit': {
+      if (game.plies !== 200 || chess.isGameOver())
+        throw new Error(`Game ${game.index + 1} is not a valid move-limit ending.`)
+      // The margin verdict is recomputed from the replayed position, so a client
+      // cannot claim the point for whichever side it prefers.
+      if (game.result !== adjudicate(chess).result)
+        throw new Error(`Game ${game.index + 1} does not match the material adjudication at the move limit.`)
       return
+    }
     case 'illegal_forfeit':
       if (draw || chess.isGameOver()) throw new Error(`Game ${game.index + 1} is not a valid illegal-move forfeit.`)
       if (game.result !== (chess.turn() === 'w' ? '0-1' : '1-0'))

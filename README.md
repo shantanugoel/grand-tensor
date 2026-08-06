@@ -23,7 +23,7 @@ Then open the printed URL, hit **⚙ Settings**, and fill in:
 | Model id | e.g. `deepseek/deepseek-v4-flash-0731`, `openai/gpt-5.6-luna`. The field autocompletes from the endpoint's `/models` |
 | Reasoning effort | Only the levels the chosen model actually accepts — read from its `/models` entry, so `deepseek-v4-flash-0731` offers max/high/low with no medium while `gpt-5.6-luna` adds xhigh and none. `default` sends nothing and lets the provider choose (the dropdown names which level that is). Sent as `reasoning.effort` on OpenRouter, `reasoning_effort` elsewhere |
 | Games in series | Colors alternate every game; 1 / 0.5 / 0 scoring decides the champion |
-| Ply limit | Games past this are adjudicated a draw so a series can't hang |
+| Ply limit | Games past this are adjudicated so a series can't hang — a side five or more points of material ahead takes the point, anything closer is a draw |
 | Retries before forfeit | A reply that names an illegal move, or that never produces the JSON at all, is re-prompted this many times; then the model loses the game |
 | Connection retry cap | Network and provider failures are retried on their own budget, backing off 2s → 60s, and never count as illegal moves. `0` (the default) keeps retrying; anything else parks the series after that many tries. Either way it stops on the failed move rather than throwing the series away — **Retry** sends it again |
 | Previous games | On by default. Sends every completed game's moves, result and ending reason to both models so they can adapt during a series |
@@ -152,6 +152,14 @@ supports the variables shown beside the editor; restoring defaults restores the 
 
 The board is rebuilt from the authoritative `chess.js` position after every move, so castling,
 en passant and promotion stay correct without needing bespoke animations.
+
+A game that reaches the ply limit is adjudicated on material rather than declared drawn. Models
+are bad at converting won endgames, and an automatic draw paid the same half point for a
+queen-up position as for a dead-equal one — which rewarded surviving over winning and flattened
+the rating spread along with it. Five points is the threshold: a rook, or a minor piece and two
+pawns. Material is a crude judge that cannot see a fortress or a passed pawn, and it is used
+anyway because it is the only verdict the Worker can recompute from a PGN without shipping an
+engine, which is what keeps an adjudicated result checkable rather than merely claimed.
 
 ## On a phone
 
