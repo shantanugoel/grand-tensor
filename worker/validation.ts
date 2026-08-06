@@ -53,7 +53,10 @@ function object(value: unknown): Record<string, unknown> | null {
 
 function exactKeys(value: Record<string, unknown>, keys: string[]) {
   const actual = Object.keys(value).sort()
-  return actual.length === keys.length && actual.every((key, index) => key === [...keys].sort()[index])
+  // Sorted once, not once per key: the expected list was being re-copied and
+  // re-sorted inside the comparison, on a path that runs for every game.
+  const expected = [...keys].sort()
+  return actual.length === expected.length && actual.every((key, index) => key === expected[index])
 }
 
 /** A floor rather than an equality.

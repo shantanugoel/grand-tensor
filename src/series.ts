@@ -519,8 +519,12 @@ export class Series {
 
   protected sleep(ms: number) {
     return new Promise<void>((resolve) => {
-      const t = setTimeout(resolve, ms)
-      this.abort.signal.addEventListener('abort', () => (clearTimeout(t), resolve()), { once: true })
+      // The listener has to come off when the timer wins, not only when the abort
+      // does: a Cinematic ten-game series sleeps after every ply, and each of
+      // those left a listener attached to one long-lived signal.
+      const done = () => (clearTimeout(t), this.abort.signal.removeEventListener('abort', done), resolve())
+      const t = setTimeout(done, ms)
+      this.abort.signal.addEventListener('abort', done)
     })
   }
 
