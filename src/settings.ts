@@ -42,53 +42,6 @@ export const DEFAULT_PROMPT_TEMPLATE = [
   `Choose your move.`,
 ].join('\n')
 
-/** Every built-in template that has shipped before now. Each was persisted like
- *  a customization, so a returning player carries one of these and would keep
- *  playing the old task — and, being off the stock prompt, would be ineligible
- *  for ranked play through no choice of their own. Upgrade those exact values
- *  and preserve every genuinely edited prompt. */
-export const LEGACY_DEFAULT_PROMPT_TEMPLATES = [
-  [
-    `You are {{player}}, playing a game of chess as {{color}} against {{opponent}}.`,
-    `This is game {{gameNumber}} of {{totalGames}}.`,
-    ``,
-    `FEN: {{fen}}`,
-    `Move number: {{moveNumber}}`,
-    `Last move: {{lastMove}}`,
-    `Check status: {{inCheck}}`,
-    ``,
-    `Moves so far: {{moves}}`,
-    ``,
-    `Previous games in this series:`,
-    `{{previousGames}}`,
-    ``,
-    `LEGAL MOVES ({{legalMoveCount}}): {{legalMoves}}`,
-    ``,
-    `Choose your move.`,
-  ].join('\n'),
-  [
-    `You are {{player}}, playing {{color}} against {{opponent}}.`,
-    `This is game {{gameNumber}} of {{totalGames}}.`,
-    ``,
-    `FEN: {{fen}}`,
-    `Move number: {{moveNumber}}`,
-    `Last move: {{lastMove}}`,
-    `Check status: {{inCheck}}`,
-    ``,
-    `Moves so far: {{moves}}`,
-    ``,
-    `Previous games in this series:`,
-    `{{previousGames}}`,
-    ``,
-    `LEGAL MOVES ({{legalMoveCount}}): {{legalMoves}}`,
-    ``,
-    `Choose your move.`,
-  ].join('\n'),
-]
-
-export const currentPromptTemplate = (saved?: string): string =>
-  saved === undefined || LEGACY_DEFAULT_PROMPT_TEMPLATES.includes(saved) ? DEFAULT_PROMPT_TEMPLATE : saved
-
 /** Turn-speed presets: pause between moves, and how leisurely pieces animate. */
 export const SPEEDS = [
   { label: 'Turbo', delay: 0, anim: 0 },
@@ -158,25 +111,11 @@ export const DEFAULTS: Settings = {
   maxTokens: 16000,
 }
 
-/** 8,000 was the old stock cap, persisted like a customization by anyone who has
- *  ever opened Settings — and it now belongs to no circuit, so leaving it in
- *  place would quietly make every returning player ineligible. Upgrade that one
- *  value and preserve any other, the same bargain the prompt template strikes:
- *  someone who deliberately picked 8,000 gets moved too. */
-const LEGACY_DEFAULT_MAX_TOKENS = 8000
-
-export const currentMaxTokens = (saved?: number): number =>
-  saved === undefined || saved === LEGACY_DEFAULT_MAX_TOKENS ? DEFAULTS.maxTokens : saved
-
-/** Same bargain for the retry budget: 3 was the stock value and is no longer the
- *  ranked one, so anyone who has ever opened Settings would come back ineligible
- *  through no choice of their own. */
-const LEGACY_DEFAULT_RETRIES = 3
-
-export const currentRetries = (saved?: number): number =>
-  saved === undefined || saved === LEGACY_DEFAULT_RETRIES ? DEFAULTS.retries : saved
-
-const KEY = 'grand-tensor:settings'
+/** Versioned, so a schema change discards stale settings instead of needing an
+ *  upgrade path for each field. Three of those paths used to live here and could
+ *  not tell a saved stock value from a deliberately chosen identical one — a
+ *  returning player who genuinely wanted 3 retries got moved anyway. */
+const KEY = 'grand-tensor:settings:2'
 
 export function loadSettings(): Settings {
   try {
@@ -191,9 +130,6 @@ export function loadSettings(): Settings {
       ...structuredClone(DEFAULTS),
       ...saved,
       players,
-      promptTemplate: currentPromptTemplate(saved.promptTemplate),
-      maxTokens: currentMaxTokens(saved.maxTokens),
-      retries: currentRetries(saved.retries),
     }
   } catch {
     return structuredClone(DEFAULTS)
