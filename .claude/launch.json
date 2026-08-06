@@ -4,7 +4,7 @@
     {
       "name": "grand-tensor",
       "runtimeExecutable": "bun",
-      "runtimeArgs": ["run", "dev", "--", "--port", "5177", "--strictPort"],
+      "runtimeArgs": ["run", "dev"],
       "port": 5177
     }
   ]

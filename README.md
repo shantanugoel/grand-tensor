@@ -45,7 +45,14 @@ bun run build
 ```
 
 `dist/` is a self-contained static bundle with relative asset paths — drop it on Netlify, Vercel,
-GitHub Pages, S3, or anything that serves files.
+GitHub Pages, S3, or anything that serves files. To check it before you deploy:
+
+```bash
+bun run preview
+```
+
+Bun does the bundling itself from the HTML entrypoint, so there is no bundler config to keep in
+sync — `bun run dev` serves the same graph with hot reloading, and `bun run build` writes it out.
 
 ## How it works
 
@@ -57,7 +64,9 @@ GitHub Pages, S3, or anything that serves files.
 | [src/three/voxels.ts](src/three/voxels.ts) | Pieces authored as 7-wide side profiles, revolved or extruded into cubes and merged into one geometry per type |
 | [src/three/arena.ts](src/three/arena.ts) | Board, lights, bloom, camera framing, and the move choreography |
 | [src/three/fx.ts](src/three/fx.ts) | Debris, shockwave rings, floating pixel text, screen shake |
-| [src/ui/](src/ui/) | The HUD overlay and the settings modal |
+| [src/ui/](src/ui/) | The HUD overlay, the settings modal and the small-screen affordances |
+| [src/share.ts](src/share.ts) | Result card text, and encoding/decoding a matchup link |
+| [dev.ts](dev.ts) / [preview.ts](preview.ts) | `Bun.serve` for development with HMR, and for serving the built `dist/` |
 
 Cost is shown per model as well as for the series. OpenRouter reports the exact spend on every
 response and that is used verbatim; for any other endpoint the series reads list pricing from
