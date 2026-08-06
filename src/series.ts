@@ -2,7 +2,7 @@
  *  Pure logic + events: it knows nothing about three.js or the DOM. */
 
 import { Chess, type Color, type Move } from 'chess.js'
-import { addUsage, chat, emptyUsage, fetchModels, type ModelInfo, type Usage } from './llm'
+import { addUsage, chat, ChatError, emptyUsage, fetchModels, type ChatResult, type ModelInfo, type Usage } from './llm'
 import { capRetryPrompt, movePrompt, parseMove, retryPrompt, systemPrompt, type LegalMove } from './prompt'
 import { NO_EFFORT, SPEEDS, type PlayerConfig, type Settings } from './settings'
 
@@ -94,7 +94,17 @@ const newStats = (): PlayerStats => ({
   lastMs: 0,
 })
 
-export type Status = 'idle' | 'running' | 'paused' | 'done' | 'error'
+export type Status = 'idle' | 'running' | 'paused' | 'stalled' | 'done' | 'error'
+
+/** Backoff between connection retries: 2s, 4s, 8s… up to a minute. The ceiling
+ *  matters more than the growth — an unattended series should keep knocking on
+ *  a provider that is down, not drift out to hour-long gaps. */
+const RETRY_BASE_MS = 2000
+const RETRY_MAX_MS = 60_000
+
+/** Jittered so two browsers riding out the same outage don't sync up on it. */
+const backoffMs = (tries: number) =>
+  Math.round(Math.min(RETRY_BASE_MS * 2 ** tries, RETRY_MAX_MS) * (0.75 + Math.random() * 0.5))
 
 /** Why a player ran out of attempts. Spelled the way the game record reads it. */
 export type ForfeitCause = 'illegal moves' | 'token cap'
@@ -118,6 +128,8 @@ export class Series {
 
   private abort = new AbortController()
   private resumeWaiters: (() => void)[] = []
+  /** Resolved with true by `retry()`, false if the series is abandoned. */
+  private stallWaiters: ((go: boolean) => void)[] = []
   /** What the endpoint says about each model: pricing and supported efforts. */
   private models = new Map<string, ModelInfo>()
   private effort: [string, string] = [NO_EFFORT, NO_EFFORT]
@@ -150,9 +162,21 @@ export class Series {
     }
   }
 
+  /** Re-issues the request a stalled series is parked on. The position, the
+   *  score and the pending conversation never went anywhere, so play picks up
+   *  on the same move rather than restarting the series. */
+  retry() {
+    if (this.status !== 'stalled') return
+    this.status = 'running'
+    this.errorMessage = ''
+    this.stallWaiters.splice(0).forEach((fn) => fn(true))
+    this.events.onUpdate()
+  }
+
   stop() {
     this.abort.abort()
     this.resumeWaiters.splice(0).forEach((fn) => fn())
+    this.stallWaiters.splice(0).forEach((fn) => fn(false))
   }
 
   async run() {
@@ -365,24 +389,9 @@ export class Series {
     let sawIllegal = false
 
     for (let attempt = 0; attempt <= this.settings.retries; attempt++) {
-      let result
-      try {
-        result = await chat({
-          baseUrl: this.settings.baseUrl,
-          apiKey: this.settings.apiKey,
-          model: cfg.model,
-          effort: this.effort[player],
-          temperature: cfg.temperature,
-          maxTokens: this.settings.maxTokens,
-          messages,
-          pricing: this.models.get(cfg.model)?.pricing,
-          signal: this.abort.signal,
-        })
-      } catch (err) {
-        if (this.abort.signal.aborted) return null
-        // Transport/auth problems are the operator's to fix — stop the series.
-        throw new Error(`${cfg.model}: ${err instanceof Error ? err.message : String(err)}`)
-      }
+      const result = await this.chatWithRecovery(player, cfg, messages)
+      // Aborted, or stalled and then abandoned.
+      if (!result) return null
 
       this.stats[player].usage = addUsage(this.stats[player].usage, result.usage)
       this.stats[player].calls++
@@ -430,7 +439,87 @@ export class Series {
     return { forfeit: sawIllegal ? 'illegal moves' : 'token cap' }
   }
 
-  private sleep(ms: number) {
+  /** One completion, riding out connection trouble.
+   *
+   *  Transient failures are retried with backoff on their own budget — a dropped
+   *  connection isn't a chess mistake, so it must not spend `settings.retries`
+   *  or count against the player's illegal/capped record. Whatever survives that
+   *  parks the series instead of killing it: a blip an hour into a match should
+   *  cost seconds, not the whole run. Null means aborted or abandoned. */
+  private async chatWithRecovery(
+    player: PlayerIdx,
+    cfg: PlayerConfig,
+    messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
+  ): Promise<ChatResult | null> {
+    let tries = 0
+    for (;;) {
+      try {
+        return await chat({
+          baseUrl: this.settings.baseUrl,
+          apiKey: this.settings.apiKey,
+          model: cfg.model,
+          effort: this.effort[player],
+          temperature: cfg.temperature,
+          maxTokens: this.settings.maxTokens,
+          messages,
+          pricing: this.models.get(cfg.model)?.pricing,
+          signal: this.abort.signal,
+        })
+      } catch (err) {
+        if (this.abort.signal.aborted) return null
+
+        const cap = this.settings.networkRetries
+        const transient = err instanceof ChatError && err.retryable
+        const reason = `${cfg.model}: ${err instanceof Error ? err.message : String(err)}`
+
+        if (transient && (cap === 0 || tries < cap)) {
+          const wait = backoffMs(tries)
+          tries++
+          this.events.onLog({
+            kind: 'warn',
+            player,
+            text: `Connection failed — retrying in ${Math.round(wait / 1000)}s`,
+            detail: cap === 0 ? `${reason} · attempt ${tries + 1}` : `${reason} · attempt ${tries + 1} of ${cap + 1}`,
+          })
+          this.events.onThinking(null)
+          await this.sleep(wait)
+          if (this.abort.signal.aborted) return null
+          this.events.onThinking(player)
+          continue
+        }
+
+        if (!(await this.stall(reason, transient))) return null
+        // Someone cleared it by hand, so the automatic budget starts over.
+        tries = 0
+      }
+    }
+  }
+
+  /** Parks the series on the failed request until `retry()` or `stop()`. False
+   *  means the series was abandoned. */
+  private stall(reason: string, transient: boolean): Promise<boolean> {
+    this.status = 'stalled'
+    this.errorMessage = reason
+    // Registered before anything is announced, so a listener that retries or
+    // stops straight out of the event has something to resolve.
+    const parked = new Promise<boolean>((resolve) => {
+      if (this.abort.signal.aborted) return resolve(false)
+      this.stallWaiters.push(resolve)
+    })
+
+    this.events.onThinking(null)
+    this.events.onLog({
+      kind: 'error',
+      text: `Series stalled — ${reason}`,
+      detail: transient
+        ? 'The connection kept failing. Retry picks up from this same move; nothing is lost.'
+        : 'This one needs a fix — check the API key and model id in Settings, then Retry.',
+    })
+    this.events.onUpdate()
+    return parked
+  }
+
+  protected sleep(ms: number) {
     return new Promise<void>((resolve) => {
       const t = setTimeout(resolve, ms)
       this.abort.signal.addEventListener('abort', () => (clearTimeout(t), resolve()), { once: true })

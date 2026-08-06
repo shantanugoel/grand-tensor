@@ -62,10 +62,18 @@ function newSeries(): Series {
       hud.setThinking(player)
       hud.render(series!)
     },
-    onLog: (entry) => hud.log(entry),
+    onLog: (entry) => {
+      hud.log(entry)
+      // A stall is the one line that has to reach someone who has scrolled away
+      // from the battle log — or walked away from the screen entirely.
+      if (entry.kind === 'error') hud.toast(entry.detail ? `${entry.text} — ${entry.detail}` : entry.text)
+    },
     onUpdate: () => {
       hud.render(series!)
       syncStatus()
+      // Stalls and retries both arrive mid-run, so the buttons can't wait for
+      // the series to finish to catch up with the status.
+      setControls()
     },
   })
 }
@@ -192,6 +200,8 @@ function syncStatus() {
       return hud.setStatus(`GAME ${series.gameIndex + 1}/${series.totalGames} LIVE`, 'live')
     case 'paused':
       return hud.setStatus('PAUSED')
+    case 'stalled':
+      return hud.setStatus('STALLED', 'err')
     case 'done': {
       const leader = series.leader
       return hud.setStatus(leader === null ? 'SERIES DRAWN' : `${settings.players[leader].label.toUpperCase()} WINS`, 'live')
@@ -204,10 +214,14 @@ function syncStatus() {
 }
 
 function setControls() {
-  const running = series?.status === 'running' || series?.status === 'paused'
+  // A stalled series is still live — it is parked mid-move waiting to be sent
+  // again, so Pause doubles as the Retry button rather than Start being re-armed.
+  const stalled = series?.status === 'stalled'
+  const running = series?.status === 'running' || series?.status === 'paused' || stalled
   $<HTMLButtonElement>('#btn-run').disabled = running
   $<HTMLButtonElement>('#btn-pause').disabled = !running
-  $('#btn-pause').textContent = series?.status === 'paused' ? '▶ Resume' : '❚❚ Pause'
+  $('#btn-pause').textContent = stalled ? '↻ Retry' : series?.status === 'paused' ? '▶ Resume' : '❚❚ Pause'
+  $('#btn-pause').classList.toggle('primary', stalled)
 }
 
 /* ---------- controls ---------- */
@@ -245,7 +259,8 @@ $('#btn-run').addEventListener('click', async () => {
 
 $('#btn-pause').addEventListener('click', () => {
   if (!series) return
-  series.status === 'paused' ? series.resume() : series.pause()
+  if (series.status === 'stalled') series.retry()
+  else series.status === 'paused' ? series.resume() : series.pause()
   setControls()
   syncStatus()
 })
@@ -308,7 +323,9 @@ $('#btn-save').addEventListener('click', () => {
   closeModal()
   applySpeed()
   // A live series keeps the config it started with; otherwise pick up the new one.
-  if (series?.status !== 'running' && series?.status !== 'paused') reset()
+  // A stalled one counts as live — fixing the key or the model id and hitting
+  // Retry is the whole point of parking it there.
+  if (series?.status !== 'running' && series?.status !== 'paused' && series?.status !== 'stalled') reset()
 })
 
 /* ---------- sharing ---------- */

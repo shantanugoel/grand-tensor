@@ -93,6 +93,10 @@ export type Settings = {
   maxPlies: number
   /** Re-prompts allowed after an illegal/unparseable move before forfeiting. */
   retries: number
+  /** Connection failures to ride out before the series parks itself and waits
+   *  for a human. 0 means keep trying — which is what an unattended run wants,
+   *  since a stall nobody is there to clear is just a slower halt. */
+  networkRetries: number
   /** Index into SPEEDS. */
   speed: number
   /** Ask each model for a one-line rationale alongside its move. */
@@ -114,6 +118,7 @@ export const DEFAULTS: Settings = {
   games: 4,
   maxPlies: 200,
   retries: 3,
+  networkRetries: 0,
   speed: 0,
   commentary: true,
   promptTemplate: DEFAULT_PROMPT_TEMPLATE,

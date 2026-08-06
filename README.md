@@ -25,6 +25,7 @@ Then open the printed URL, hit **⚙ Settings**, and fill in:
 | Games in series | Colors alternate every game; 1 / 0.5 / 0 scoring decides the champion |
 | Ply limit | Games past this are adjudicated a draw so a series can't hang |
 | Retries before forfeit | Illegal or unparseable moves are re-prompted this many times, then the model loses the game |
+| Connection retry cap | Network and provider failures are retried on their own budget, backing off 2s → 60s, and never count as illegal moves. `0` (the default) keeps retrying; anything else parks the series after that many tries. Either way it stops on the failed move rather than throwing the series away — **Retry** sends it again |
 | Previous games | On by default. Sends every completed game's moves, result and ending reason to both models so they can adapt during a series |
 | Position prompt template | Customize the per-move prompt with variables such as `{{fen}}`, `{{moves}}`, `{{legalMoves}}`, `{{player}}`, and `{{previousGames}}`. The required JSON response rules stay in a separate system message |
 

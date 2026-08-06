@@ -45,6 +45,20 @@ export type ChatRequest = {
   signal?: AbortSignal
 }
 
+/** A failed completion, tagged with whether trying again could plausibly work.
+ *  A dropped connection or an overloaded provider will pass; a rejected key or
+ *  an unknown model id will fail exactly the same way forever. */
+export class ChatError extends Error {
+  constructor(message: string, readonly retryable: boolean) {
+    super(message)
+    this.name = 'ChatError'
+  }
+}
+
+/** Timeouts, rate limits and the whole 5xx family — all of them go away on
+ *  their own. 4xx otherwise means the request itself is wrong. */
+const RETRYABLE_STATUS = new Set([408, 409, 425, 429, 500, 502, 503, 504])
+
 export const emptyUsage = (): Usage => ({ prompt: 0, completion: 0, reasoning: 0, total: 0, cost: 0 })
 
 export function addUsage(a: Usage, b: Usage): Usage {
@@ -83,26 +97,40 @@ export async function chat(req: ChatRequest): Promise<ChatResult> {
   if (isOpenRouter(req.baseUrl)) body.usage = { include: true }
 
   const started = performance.now()
-  const res = await fetch(`${trimUrl(req.baseUrl)}/chat/completions`, {
-    method: 'POST',
-    headers: headers(req),
-    body: JSON.stringify(body),
-    signal: req.signal,
-  })
-  // `fetch` resolves as soon as the headers land, and providers send those long
-  // before a reasoning model has finished thinking — so the clock only stops
-  // once the body is actually in hand.
-  const raw = await res.text()
+  let res: Response
+  let raw: string
+  try {
+    res = await fetch(`${trimUrl(req.baseUrl)}/chat/completions`, {
+      method: 'POST',
+      headers: headers(req),
+      body: JSON.stringify(body),
+      signal: req.signal,
+    })
+    // `fetch` resolves as soon as the headers land, and providers send those long
+    // before a reasoning model has finished thinking — so the clock only stops
+    // once the body is actually in hand.
+    raw = await res.text()
+  } catch (err) {
+    // A caller-driven abort is not a failure — let it through untagged.
+    if (req.signal?.aborted) throw err
+    // `fetch` rejects only when the exchange never completed: DNS, TLS, CORS, or
+    // a connection dropped mid-body. Nothing about the request is wrong, so this
+    // is the most retry-worthy failure there is — "Failed to fetch" lands here.
+    throw new ChatError(err instanceof Error ? err.message : String(err), true)
+  }
+
   const ms = performance.now() - started
+  const retryable = RETRYABLE_STATUS.has(res.status)
   let json: any
   try {
     json = JSON.parse(raw)
   } catch {
-    throw new Error(`HTTP ${res.status}: ${raw.slice(0, 200)}`)
+    // Almost always a gateway's HTML error page rather than the provider.
+    throw new ChatError(`HTTP ${res.status}: ${raw.slice(0, 200)}`, retryable)
   }
   if (!res.ok || json.error) {
     const msg = json?.error?.message ?? json?.message ?? raw.slice(0, 200)
-    throw new Error(`HTTP ${res.status}: ${msg}`)
+    throw new ChatError(`HTTP ${res.status}: ${msg}`, retryable)
   }
 
   const choice = json.choices?.[0] ?? {}

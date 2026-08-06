@@ -14,6 +14,7 @@ const settings = (over: Partial<Settings> = {}): Settings => ({
   games: 1,
   maxPlies: 200,
   retries: 1,
+  networkRetries: 2,
   speed: 0,
   commentary: true,
   promptTemplate: DEFAULT_PROMPT_TEMPLATE,
@@ -44,16 +45,29 @@ function stubEndpoint(replies: (model: string, call: number) => Reply) {
   return sent
 }
 
-const run = async (s: Settings) => {
+/** Backoff waits are the point of the retry loop but nothing to sit through in
+ *  a test, so the only thing overridden is the clock. */
+class InstantSeries extends Series {
+  protected sleep(): Promise<void> {
+    return Promise.resolve()
+  }
+}
+
+function build(s: Settings, onUpdate: (series: Series) => void = () => {}) {
   const logs: LogEntry[] = []
-  const series = new Series(s, {
+  const series: Series = new InstantSeries(s, {
     onMove: () => {},
     onGameStart: () => {},
     onGameEnd: () => {},
     onThinking: () => {},
     onLog: (entry) => logs.push(entry),
-    onUpdate: () => {},
+    onUpdate: () => onUpdate(series),
   })
+  return { series, logs }
+}
+
+const run = async (s: Settings) => {
+  const { series, logs } = build(s)
   await series.run()
   return { series, logs }
 }
@@ -61,6 +75,87 @@ const run = async (s: Settings) => {
 const realFetch = globalThis.fetch
 afterEach(() => {
   globalThis.fetch = realFetch
+})
+
+/** Full control over each chat call: return a Response to answer it, or an Error
+ *  to fail it the way the network does. */
+function stubCalls(handler: (call: number) => Response | Error) {
+  let calls = 0
+  globalThis.fetch = (async (url: any) => {
+    if (String(url).endsWith('/models')) return new Response(JSON.stringify({ data: [] }))
+    const out = handler(++calls)
+    if (out instanceof Error) throw out
+    return out
+  }) as typeof fetch
+  return () => calls
+}
+
+const answer = (move: string) =>
+  new Response(
+    JSON.stringify({
+      choices: [{ message: { content: `{"move": "${move}"}` }, finish_reason: 'stop' }],
+      usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+    }),
+  )
+
+/** A two-ply game: 1. e4 e5, then the ply limit adjudicates a draw. */
+function openingMoves() {
+  const moves = ['e4', 'e5']
+  let played = 0
+  return () => answer(moves[played++] ?? 'e4')
+}
+
+describe('connection failures', () => {
+  test('are ridden out without spending the move budget', async () => {
+    const opening = openingMoves()
+    const calls = stubCalls((call) => (call <= 2 ? new TypeError('Failed to fetch') : opening()))
+
+    const { series, logs } = await run(settings({ maxPlies: 2, networkRetries: 3 }))
+
+    expect(series.status).toBe('done')
+    expect(calls()).toBe(4) // two dropped, then the two real moves
+    // A dropped connection is not a chess mistake, so nothing lands on the record.
+    expect(series.stats[0].illegal).toBe(0)
+    expect(series.stats[0].capped).toBe(0)
+    expect(series.stats[0].calls).toBe(1)
+    expect(logs.some((l) => l.kind === 'warn' && l.text.startsWith('Connection failed'))).toBe(true)
+  })
+
+  test('stall the series once the cap runs out, and retry resumes the same move', async () => {
+    const opening = openingMoves()
+    let offline = true
+    const calls = stubCalls(() => (offline ? new TypeError('Failed to fetch') : opening()))
+
+    // Stand in for someone hitting Retry once the network is back.
+    const { series, logs } = build(settings({ maxPlies: 2, networkRetries: 1 }), (s) => {
+      if (s.status !== 'stalled') return
+      offline = false
+      s.retry()
+    })
+    await series.run()
+
+    expect(series.status).toBe('done')
+    expect(calls()).toBe(4) // the first attempt, its one retry, then both moves
+    expect(logs.some((l) => l.kind === 'error' && l.text.startsWith('Series stalled'))).toBe(true)
+    // The stall cost the position nothing: white still played the move it was on.
+    expect(series.games[0].pgn).toContain('e4')
+    expect(series.stats[0].moves).toBe(1)
+  })
+
+  test('a rejected key stalls at once instead of burning the retry budget', async () => {
+    const calls = stubCalls(() => new Response(JSON.stringify({ error: { message: 'invalid key' } }), { status: 401 }))
+
+    const { series, logs } = build(settings({ maxPlies: 2, networkRetries: 5 }), (s) => {
+      if (s.status === 'stalled') s.stop()
+    })
+    await series.run()
+
+    expect(calls()).toBe(1)
+    expect(series.status).toBe('idle')
+    const stall = logs.find((l) => l.kind === 'error')
+    expect(stall?.text).toContain('401')
+    expect(stall?.detail).toContain('check the API key')
+  })
 })
 
 describe('token-capped replies', () => {
