@@ -69,7 +69,9 @@ Standings are ordered by a **Bradley-Terry** rating fit over every result in the
 the field averages 1500. Beating a strong entrant counts for more than beating a weak one, so
 grinding a weak opponent pulls a rating toward theirs rather than toward 100%. Any single pairing
 contributes at most 40 games to the fit, and entrants with fewer than three distinct opponents — or
-whose results never connect to the main field — are listed but not ranked. Ratings are re-derived
+whose results never connect to the main field — are listed but not ranked, and do not count toward
+the 1500 average either: two players who have only ever met each other say nothing about the level
+of a field they have never played. Ratings are re-derived
 from the stored submissions on every read, never stored, so the method can change without migrating
 anything. Clicking a row opens that entrant's record: who they actually played, and how often.
 

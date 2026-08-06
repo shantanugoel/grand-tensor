@@ -156,14 +156,23 @@ function fit(count: number, pairings: Pairing[]): { ratings: Float64Array; curva
     if (shift < CONVERGENCE) break
   }
 
-  // The likelihood only fixes differences, so the prior alone pins the level.
-  // Recentring makes the anchor mean exact rather than approximate.
-  let mean = 0
-  for (let i = 0; i < count; i++) mean += ratings[i]
-  mean /= count || 1
-  for (let i = 0; i < count; i++) ratings[i] -= mean
-
   return { ratings, curvature }
+}
+
+/** Slides the whole scale so the rated field averages the anchor.
+ *
+ *  Over the rated component only. The likelihood fixes differences, not the
+ *  level, so this is a display convention — but averaging in entrants whose
+ *  results never connect to the field made it one they could move: a single
+ *  isolated clique shifted every published rating, and adding another shifted
+ *  them again. Only players who are actually being compared set the level they
+ *  are compared on. */
+function recenter(ratings: Float64Array, rated: Set<number>) {
+  const members = rated.size ? [...rated] : ratings.map((_, i) => i)
+  let mean = 0
+  for (const i of members) mean += ratings[i]
+  mean /= members.length || 1
+  for (let i = 0; i < ratings.length; i++) ratings[i] -= mean
 }
 
 export function rateEntrants(results: SeriesResult[]): RatedEntrant[] {
@@ -215,8 +224,9 @@ export function rateEntrants(results: SeriesResult[]): RatedEntrant[] {
     })
   }
 
-  const rated = largestComponent(order.length, pairings);
+  const rated = largestComponent(order.length, pairings)
   const { ratings, curvature } = fit(order.length, pairings)
+  recenter(ratings, rated)
 
   return order.map((row, i) => {
     const points = row.wins + row.draws / 2

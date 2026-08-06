@@ -32,6 +32,26 @@ describe('bradley-terry standings', () => {
     expect(find(rated, 'gpt', 'high').rating).toBeGreaterThan(find(rated, 'gpt', 'low').rating)
   })
 
+  test('an unconnected clique does not move the ratings of the rated field', () => {
+    const field: SeriesResult[] = [
+      ...repeat(4, () => series('strong', 'middle', 3, 1, 0)),
+      ...repeat(4, () => series('middle', 'weak', 3, 1, 0)),
+      ...repeat(4, () => series('strong', 'weak', 4, 0, 0)),
+    ]
+    const before = rateEntrants(field)
+
+    // Two entrants who only ever played each other, lopsidedly. They share no
+    // opponent with the field, so nothing about them is comparable to it — and
+    // their arrival must not renumber everyone else.
+    const withOutsiders = rateEntrants([...field, ...repeat(4, () => series('island-a', 'island-b', 4, 0, 0))])
+
+    for (const model of ['strong', 'middle', 'weak'])
+      expect(find(withOutsiders, model).rating).toBe(find(before, model).rating)
+
+    expect(find(withOutsiders, 'island-a').provisional).toBe(true)
+    expect(find(withOutsiders, 'island-b').provisional).toBe(true)
+  })
+
   test('rates a model that only beats weak opponents below one that beats strong ones', () => {
     // weak < middle < strong, established by direct results, and then two
     // challengers with identical raw scores against different opposition.
