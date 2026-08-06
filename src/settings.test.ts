@@ -1,5 +1,18 @@
 import { describe, expect, test } from 'bun:test'
-import { DEFAULTS, effectiveSpeedIndex } from './settings'
+import { currentPromptTemplate, DEFAULT_PROMPT_TEMPLATE, DEFAULTS, effectiveSpeedIndex } from './settings'
+
+describe('currentPromptTemplate', () => {
+  test('upgrades the previous stock prompt but preserves custom prompts', () => {
+    const previousStock = DEFAULT_PROMPT_TEMPLATE.replace(
+      'playing a game of chess as {{color}}',
+      'playing {{color}}',
+    )
+
+    expect(currentPromptTemplate(previousStock)).toBe(DEFAULT_PROMPT_TEMPLATE)
+    expect(currentPromptTemplate('My custom {{fen}} prompt')).toBe('My custom {{fen}} prompt')
+    expect(currentPromptTemplate('')).toBe('')
+  })
+})
 
 describe('effectiveSpeedIndex', () => {
   test('paces an all-random Turbo demo like Blitz', () => {

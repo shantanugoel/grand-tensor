@@ -132,7 +132,8 @@ function applySpeed() {
 }
 speedInput.addEventListener('input', applySpeed)
 
-$<HTMLInputElement>('#rotate').addEventListener('change', (e) => {
+const rotateInput = $<HTMLInputElement>('#rotate')
+rotateInput.addEventListener('change', (e) => {
   arena.autoRotate = (e.target as HTMLInputElement).checked
 })
 
@@ -186,6 +187,7 @@ $('#btn-defaults').addEventListener('click', () => {
 
 speedInput.value = String(settings.speed)
 applySpeed()
+arena.autoRotate = rotateInput.checked
 if (canNativeShare()) $('[data-share="native"]').classList.remove('hidden')
 setupMobile()
 reset()

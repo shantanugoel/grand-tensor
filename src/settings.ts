@@ -39,6 +39,32 @@ export const DEFAULT_PROMPT_TEMPLATE = [
   `Choose your move.`,
 ].join('\n')
 
+/** The original built-in template was persisted like a customization. Upgrade
+ *  that exact stock value while preserving every genuinely edited prompt. */
+const LEGACY_DEFAULT_PROMPT_TEMPLATES = [
+  [
+    `You are {{player}}, playing {{color}} against {{opponent}}.`,
+    `This is game {{gameNumber}} of {{totalGames}}.`,
+    ``,
+    `FEN: {{fen}}`,
+    `Move number: {{moveNumber}}`,
+    `Last move: {{lastMove}}`,
+    `Check status: {{inCheck}}`,
+    ``,
+    `Moves so far: {{moves}}`,
+    ``,
+    `Previous games in this series:`,
+    `{{previousGames}}`,
+    ``,
+    `LEGAL MOVES ({{legalMoveCount}}): {{legalMoves}}`,
+    ``,
+    `Choose your move.`,
+  ].join('\n'),
+]
+
+export const currentPromptTemplate = (saved?: string): string =>
+  saved === undefined || LEGACY_DEFAULT_PROMPT_TEMPLATES.includes(saved) ? DEFAULT_PROMPT_TEMPLATE : saved
+
 /** Turn-speed presets: pause between moves, and how leisurely pieces animate. */
 export const SPEEDS = [
   { label: 'Turbo', delay: 0, anim: 0 },
@@ -107,7 +133,12 @@ export function loadSettings(): Settings {
       ...DEFAULTS.players[i],
       ...p,
     })) as [PlayerConfig, PlayerConfig]
-    return { ...structuredClone(DEFAULTS), ...saved, players }
+    return {
+      ...structuredClone(DEFAULTS),
+      ...saved,
+      players,
+      promptTemplate: currentPromptTemplate(saved.promptTemplate),
+    }
   } catch {
     return structuredClone(DEFAULTS)
   }

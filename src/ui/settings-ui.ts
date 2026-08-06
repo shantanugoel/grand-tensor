@@ -5,7 +5,7 @@
  *  whenever a model id changes. */
 
 import { fetchModels, FALLBACK_EFFORTS, type ModelInfo } from '../llm'
-import { PROMPT_VARIABLES } from '../prompt'
+import { PROMPT_VARIABLES, systemPrompt } from '../prompt'
 import { DEFAULTS, NO_EFFORT, type Settings } from '../settings'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
@@ -67,7 +67,9 @@ export function renderSettings(s: Settings) {
       <legend>PROMPT</legend>
       ${textarea('promptTemplate', 'Position prompt template', s.promptTemplate)}
       <p class="prompt-help">Available variables: ${PROMPT_VARIABLES.map((v) => `<code>{{${v}}}</code>`).join(' ')}</p>
-      <p class="prompt-help">The previous-games variable renders “(not included)” when its match option is turned off. The JSON response rules are added separately.</p>
+      <p class="prompt-help">The previous-games variable renders “(not included)” when its match option is turned off.</p>
+      <label class="field prompt-field">System instructions (sent separately; White example)<textarea data-system-prompt rows="8" readonly>${escapeHtml(systemPrompt('white', s.commentary))}</textarea></label>
+      <p class="prompt-help">The color changes with the turn. These fixed JSON response rules are sent before the editable position prompt.</p>
     </fieldset>
     <datalist id="model-list"></datalist>`
 
@@ -75,6 +77,12 @@ export function renderSettings(s: Settings) {
   ;[0, 1].forEach((i) => {
     renderEfforts(i, s.players[i].effort)
     $(`[data-model="${i}"]`).addEventListener('input', () => renderEfforts(i))
+  })
+  $<HTMLInputElement>('[name="commentary"]').addEventListener('change', (event) => {
+    $<HTMLTextAreaElement>('[data-system-prompt]').value = systemPrompt(
+      'white',
+      (event.target as HTMLInputElement).checked,
+    )
   })
   void refreshCatalog(s)
 }
