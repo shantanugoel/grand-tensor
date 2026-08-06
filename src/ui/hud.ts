@@ -1,7 +1,7 @@
 /** Everything that writes to the DOM overlay: player cards, score, battle log. */
 
 import { material, MAX_MATERIAL, type LogEntry, type PlayerIdx, type Series } from '../series'
-import type { Settings } from '../settings'
+import { NO_EFFORT, type Settings } from '../settings'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
 
@@ -38,7 +38,10 @@ export class Hud {
           <div class="player-name">${escapeHtml(p.label)}</div>
           <div class="player-side" data-side>—</div>
         </div>
-        <div class="player-model">${escapeHtml(p.model)}</div>
+        <div class="player-model">
+          <span class="model-id">${escapeHtml(p.model)}</span>
+          <span class="model-effort" data-effort title="Reasoning effort">${escapeHtml(p.effort)}</span>
+        </div>
         <div class="player-score" data-score>0</div>
         <div class="stat-grid">
           <span>W/D/L <b data-wdl>0/0/0</b></span>
@@ -79,6 +82,16 @@ export class Hud {
       const side = q('side')
       side.textContent = i === white ? 'WHITE' : 'BLACK'
       side.classList.toggle('is-white', i === white)
+      // Configured effort until the series has vetted it against the model, then
+      // whatever is actually going out on the wire.
+      const wanted = this.settings.players[i].effort
+      const effort = series.resolvedEffort?.[i] ?? wanted
+      const effortEl = q('effort')
+      effortEl.textContent = effort
+      effortEl.classList.toggle('is-default', effort === NO_EFFORT)
+      effortEl.title =
+        effort === wanted ? 'Reasoning effort' : `"${wanted}" isn't supported here — using the provider default`
+
       q('score').textContent = String(st.score)
       q('wdl').textContent = `${st.wins}/${st.draws}/${st.losses}`
       q('moves').textContent = String(st.moves)
@@ -98,7 +111,9 @@ export class Hud {
       say.textContent = isThinking ? 'thinking' : series.lastSay[i as PlayerIdx] || ''
     })
 
-    $('#s-ply').textContent = String(series.chess.history().length)
+    // Two different scopes used to sit in two places without saying so: the card
+    // read the live game while the player stats above it ran series-wide.
+    $('#s-ply').textContent = `Game ${series.chess.history().length} · Series ${a.moves + b.moves}`
     $('#s-cost').textContent = fmtCost(a.usage.cost + b.usage.cost)
 
     this.renderKoMeter(series)

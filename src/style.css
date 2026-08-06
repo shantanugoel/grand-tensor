@@ -445,12 +445,37 @@ body {
 }
 
 .player-model {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 10px;
   color: var(--dim);
   margin: 3px 0 8px;
+}
+
+/* The id is the part that gives — the effort chip is short and always fits. */
+.model-id {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.model-effort {
+  flex: none;
+  padding: 2px 5px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* Provider's own default isn't a choice the user made — don't make it shout. */
+.model-effort.is-default {
+  color: var(--dim);
+  opacity: 0.75;
 }
 
 .player-score {

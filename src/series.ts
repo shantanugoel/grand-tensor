@@ -112,11 +112,14 @@ export class Series {
   lastSay: [string, string] = ['', '']
   errorMessage = ''
 
+  /** Per-player effort after checking it against the model, or null until the
+   *  series has run that check — the HUD falls back to the configured value. */
+  resolvedEffort: [string, string] | null = null
+
   private abort = new AbortController()
   private resumeWaiters: (() => void)[] = []
   /** What the endpoint says about each model: pricing and supported efforts. */
   private models = new Map<string, ModelInfo>()
-  /** Per-player effort after checking it against the model. */
   private effort: [string, string] = [NO_EFFORT, NO_EFFORT]
 
   constructor(private settings: Settings, private events: SeriesEvents) {}
@@ -157,6 +160,8 @@ export class Series {
     this.events.onLog({ kind: 'info', text: `Series started — best of ${this.settings.games}` })
     this.models = await fetchModels(this.settings.baseUrl, this.settings.apiKey)
     this.effort = this.settings.players.map((p, i) => this.resolveEffort(p, i as PlayerIdx)) as [string, string]
+    this.resolvedEffort = this.effort
+    this.events.onUpdate()
     try {
       for (this.gameIndex = 0; this.gameIndex < this.settings.games; this.gameIndex++) {
         this.white = (this.gameIndex % 2) as PlayerIdx
