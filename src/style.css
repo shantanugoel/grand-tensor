@@ -513,6 +513,20 @@ body {
 .pip.w1 { background: var(--p1); border-color: transparent; }
 .pip.draw { background: var(--dim); border-color: transparent; }
 
+.share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.btn.tiny {
+  flex: 1 1 auto;
+  padding: 6px 8px;
+  font-size: 11px;
+  border-radius: 8px;
+}
+
 .champion {
   margin-top: 10px;
   padding: 8px;

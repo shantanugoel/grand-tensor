@@ -28,6 +28,16 @@ Then open the printed URL, hit **⚙ Settings**, and fill in:
 
 Set a model id to `random` to run a local demo match with no API key at all.
 
+## Sharing a result
+
+When a series finishes, the panel offers **Result**, **Link**, **𝕏 Post** and — where the browser
+supports it — a native **Share** sheet.
+
+*Result* copies a Wordle-style summary: score, one coloured square per game, total moves, tokens,
+spend and each model's illegal-move count. *Link* copies a URL whose fragment carries the matchup
+(`#a=…&b=…&ae=high&g=6`) — opening it restores those models, efforts and series length and then
+asks the visitor for their own key. Keys are never put in the link.
+
 ## Build & deploy
 
 ```bash

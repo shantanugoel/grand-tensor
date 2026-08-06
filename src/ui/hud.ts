@@ -108,15 +108,15 @@ export class Hud {
     }).join('')
 
     const champ = $('#champion')
-    if (series.status === 'done') {
+    const done = series.status === 'done'
+    champ.classList.toggle('hidden', !done)
+    $('#share').classList.toggle('hidden', !done)
+    if (done) {
       const leader = series.leader
-      champ.classList.remove('hidden')
       champ.textContent =
         leader === null
           ? `SERIES DRAWN ${a.score}-${b.score}`
           : `CHAMPION: ${this.settings.players[leader].label} ${a.score} : ${b.score}`
-    } else {
-      champ.classList.add('hidden')
     }
   }
 

@@ -4,11 +4,15 @@ import { material, MAX_MATERIAL, Series } from './series'
 import { loadSettings, saveSettings, isFirstVisit, DEFAULTS, SPEEDS, type Settings } from './settings'
 import { Hud } from './ui/hud'
 import { readSettings, renderSettings } from './ui/settings-ui'
+import { applyMatchHash, canNativeShare, copyText, nativeShare, resultText, shareUrl, tweetUrl } from './share'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
 
 const firstVisit = isFirstVisit()
 const settings: Settings = loadSettings()
+// A shared link carries the matchup but never a key, so it overrides the models
+// and then still needs the visitor's own credentials.
+const fromLink = applyMatchHash(settings)
 const arena = new Arena($('#stage'))
 const hud = new Hud(settings)
 let series: Series | null = null
@@ -153,6 +157,19 @@ $('#btn-save').addEventListener('click', () => {
   if (series?.status !== 'running' && series?.status !== 'paused') reset()
 })
 
+/* ---------- sharing ---------- */
+
+$('#share').addEventListener('click', async (e) => {
+  const action = (e.target as HTMLElement).closest<HTMLElement>('[data-share]')?.dataset.share
+  if (!series || !action) return
+  const text = resultText(series, settings)
+
+  if (action === 'result') hud.toast((await copyText(text)) ? 'Result copied.' : 'Copy failed.')
+  else if (action === 'link') hud.toast((await copyText(shareUrl(settings))) ? 'Matchup link copied.' : 'Copy failed.')
+  else if (action === 'x') open(tweetUrl(text), '_blank', 'noopener')
+  else if (action === 'native') await nativeShare(text, shareUrl(settings))
+})
+
 $('#btn-defaults').addEventListener('click', () => {
   Object.assign(settings, structuredClone(DEFAULTS), { apiKey: settings.apiKey })
   renderSettings(settings)
@@ -162,5 +179,6 @@ $('#btn-defaults').addEventListener('click', () => {
 
 speedInput.value = String(settings.speed)
 applySpeed()
+if (canNativeShare()) $('[data-share="native"]').classList.remove('hidden')
 reset()
-if (firstVisit) openModal()
+if (firstVisit || fromLink) openModal()
