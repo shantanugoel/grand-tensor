@@ -1,15 +1,30 @@
 import './style.css'
 import './build-info'
+import { Chess } from 'chess.js'
 import { Arena } from './three/arena'
 import { material, MAX_MATERIAL } from './adjudication'
 import { Series, type GameRecord, type PlayerStats } from './series'
 import { loadSettings, saveSettings, isFirstVisit, DEFAULTS, SPEEDS, effectiveSpeedIndex, type Settings } from './settings'
 import { Hud } from './ui/hud'
 import { readSettings, renderSettings } from './ui/settings-ui'
-import { applyMatchHash, canNativeShare, canShareFile, copyText, fmtScore, nativeShare, resultText, shareUrl, tweetUrl } from './share'
-import { cardFile, copyImageToClipboard, downloadImage, renderResultCard } from './share-image'
+import {
+  applyMatchHash,
+  canNativeShare,
+  canShareFile,
+  copyText,
+  fmtScore,
+  matchFilename,
+  nativeShare,
+  resultText,
+  shareUrl,
+  tweetUrl,
+} from './share'
+import { cardFile, copyImageToClipboard, downloadBlob, downloadImage, renderResultCard } from './share-image'
+import { buildStoryboard, cardMsFor, estimateMs, paceFor, POST_LIMIT_MS } from './replay'
+import { canRecordVideo, extensionFor, recordSeriesVideo } from './share-video'
 import { dismissRotateHint, setupMobile } from './ui/mobile'
 import { SummaryModal, type SummaryRow, type SummaryView } from './ui/summary'
+import { VideoProgress } from './ui/video-progress'
 import { Leaderboard } from './leaderboard'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
@@ -27,7 +42,11 @@ const arena = new Arena($('#stage'))
 const hud = new Hud(settings)
 const summary = new SummaryModal()
 const leaderboard = new Leaderboard((message) => hud.toast(message))
+const videoProgress = new VideoProgress()
 let series: Series | null = null
+/** A video export drives the arena and the speed dial itself, so everything that
+ *  would fight it over either is locked out for the duration. */
+let exporting = false
 /** Stats as they stood when the current game began, so the round card can show
  *  what that game alone cost rather than the running series totals. */
 let statsAtGameStart: [PlayerStats, PlayerStats] | null = null
@@ -220,8 +239,9 @@ function setControls() {
   // again, so Pause doubles as the Retry button rather than Start being re-armed.
   const stalled = series?.status === 'stalled'
   const running = series?.status === 'running' || series?.status === 'paused' || stalled
-  $<HTMLButtonElement>('#btn-run').disabled = running
-  $<HTMLButtonElement>('#btn-pause').disabled = !running
+  $<HTMLButtonElement>('#btn-run').disabled = running || exporting
+  $<HTMLButtonElement>('#btn-pause').disabled = !running || exporting
+  $<HTMLButtonElement>('#btn-reset').disabled = exporting
   $('#btn-pause').textContent = stalled ? '↻ Retry' : series?.status === 'paused' ? '▶ Resume' : '❚❚ Pause'
   $('#btn-pause').classList.toggle('primary', stalled)
 }
@@ -289,7 +309,8 @@ function applySpeed() {
   settings.speed = Number(speedInput.value)
   const effectiveIndex = effectiveSpeedIndex(settings)
   const s = SPEEDS[effectiveIndex] ?? SPEEDS[3]
-  arena.speed = s.anim
+  // A video export owns the speed dial while it runs and hands it back here.
+  if (!exporting) arena.speed = s.anim
   $('#speed-label').textContent = effectiveIndex === settings.speed ? s.label : `${s.label} demo`
   saveSettings(settings)
 }
@@ -326,13 +347,13 @@ $('#btn-save').addEventListener('click', () => {
   applySpeed()
   // A live series keeps the config it started with; otherwise pick up the new one.
   // A stalled one counts as live — fixing the key or the model id and hitting
-  // Retry is the whole point of parking it there.
-  if (series?.status !== 'running' && series?.status !== 'paused' && series?.status !== 'stalled') reset()
+  // Retry is the whole point of parking it there. So does a series being
+  // exported: resetting out from under the replay would strand it mid-file.
+  if (!exporting && series?.status !== 'running' && series?.status !== 'paused' && series?.status !== 'stalled')
+    reset()
 })
 
 /* ---------- sharing ---------- */
-
-const slug = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'player'
 
 /** Rendered once per finished series and reused by every share route. Kicked off
  *  as soon as the verdict lands, so a click never waits on the canvas — which
@@ -341,11 +362,84 @@ let card: Promise<File | null> | null = null
 
 function buildCard(): Promise<File | null> {
   card ??= renderResultCard(series!, settings, arena.snapshot())
-    .then((canvas) =>
-      cardFile(canvas, `grand-tensor-${slug(settings.players[0].label)}-vs-${slug(settings.players[1].label)}.png`),
-    )
+    .then((canvas) => cardFile(canvas, matchFilename(settings, 'png')))
     .catch(() => null)
   return card
+}
+
+const fmtMB = (bytes: number) => `${(bytes / 1_048_576).toFixed(1)} MB`
+const fmtDuration = (ms: number) => {
+  const total = Math.round(ms / 1000)
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
+}
+
+/** Replays the series' stored PGNs through the arena at Blitz and records the
+ *  canvas. See share-video.ts for why the video is a replay rather than a
+ *  capture of the match as it was played. */
+async function exportVideo() {
+  if (exporting) return
+  if (!series || series.status !== 'done' || series.games.length === 0)
+    return hud.toast('The video is a replay of a finished series — run one to the end first.')
+  if (!canRecordVideo()) return hud.toast('This browser can’t record the canvas to a video file.')
+
+  const active = series
+  const story = buildStoryboard({
+    games: active.games,
+    names: [settings.players[0].label, settings.players[1].label],
+    totalGames: active.totalGames,
+    url: shareUrl(settings),
+  })
+  const anim = paceFor(story.totalPlies, cardMsFor(story.games.length))
+  const runtime = estimateMs(story.totalPlies, cardMsFor(story.games.length), anim)
+
+  // The replay has to be the thing on screen, and it starts from move one of
+  // game one — so the verdict card comes down and the board goes with it.
+  summary.close()
+  dismissRotateHint()
+
+  const finalFen = active.chess.fen()
+  const controller = new AbortController()
+  exporting = true
+  setControls()
+  arena.speed = anim
+  videoProgress.open(() => {
+    controller.abort()
+    videoProgress.finishing('Cancelling — flushing the encoder…')
+  })
+  hud.toast(
+    runtime > POST_LIMIT_MS
+      ? `Replaying the series — about ${fmtDuration(runtime)} of video. That is past X's 2:20 cap; it downloads all the same.`
+      : `Replaying the series — about ${fmtDuration(runtime)} of video.`,
+  )
+
+  try {
+    const blob = await recordSeriesVideo({
+      arena,
+      storyboard: story,
+      anim,
+      signal: controller.signal,
+      onProgress: ({ fraction, label }) =>
+        videoProgress.update(fraction, `${label} — ${Math.round(fraction * 100)}%`),
+    })
+
+    if (!blob) {
+      hud.toast('Video export cancelled.')
+    } else {
+      // WebM nearly everywhere, MP4 where that is all the browser records.
+      const name = matchFilename(settings, extensionFor(blob.type))
+      hud.toast(downloadBlob(blob, name) ? `Saved ${name} — ${fmtMB(blob.size)}.` : 'Could not save the video.')
+    }
+  } catch (err) {
+    hud.toast(`Video export failed — ${err instanceof Error ? err.message : String(err)}`)
+  } finally {
+    exporting = false
+    videoProgress.close()
+    // Back to the position the series ended on, whether the replay got there
+    // under its own steam or was cancelled halfway through game two.
+    arena.setPosition(new Chess(finalFen))
+    applySpeed()
+    setControls()
+  }
 }
 
 async function shareImage() {
@@ -384,6 +478,7 @@ async function share(action: string) {
 
   if (action === 'result') hud.toast((await copyText(text)) ? 'Result copied.' : 'Copy failed.')
   else if (action === 'image') await shareImage()
+  else if (action === 'video') await exportVideo()
   else if (action === 'link') hud.toast((await copyText(shareUrl(settings))) ? 'Matchup link copied.' : 'Copy failed.')
   else if (action === 'x') await postToX(text)
   else if (action === 'native') await nativeShare(text, shareUrl(settings), await buildCard())
@@ -413,6 +508,8 @@ applySpeed()
 arena.autoRotate = rotateInput.checked
 if (canNativeShare())
   document.querySelectorAll('[data-share="native"]').forEach((el) => el.classList.remove('hidden'))
+if (!canRecordVideo())
+  document.querySelectorAll('[data-share="video"]').forEach((el) => el.classList.add('hidden'))
 setupMobile()
 reset()
 if (firstVisit || fromLink) openModal()

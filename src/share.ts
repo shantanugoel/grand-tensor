@@ -52,6 +52,15 @@ export function applyMatchHash(s: Settings): boolean {
 
 export const fmtScore = (n: number) => (Number.isInteger(n) ? String(n) : `${Math.floor(n)}½`)
 
+/** Filename-safe form of a player label. */
+export const slug = (s: string) =>
+  s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'player'
+
+/** One naming scheme for everything a match can be downloaded as, so the card
+ *  and the video land next to each other in the downloads folder. */
+export const matchFilename = (s: Settings, ext: string) =>
+  `grand-tensor-${slug(s.players[0].label)}-vs-${slug(s.players[1].label)}.${ext}`
+
 const fmtTokens = (n: number) =>
   n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${Math.round(n / 1000)}k` : String(n)
 

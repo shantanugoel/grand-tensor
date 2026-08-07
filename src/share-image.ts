@@ -16,7 +16,9 @@ const BAND = 258
 /** Room the stat table has between the verdict line and the footer URL. */
 const TABLE_MAX_H = 176
 
-const COLORS = {
+/** Shared with the video overlay, so the two exports of one match can't drift
+ *  into different palettes. */
+export const COLORS = {
   bg: '#060810',
   panel: '#0b0f1c',
   line: 'rgba(122, 160, 255, 0.18)',
@@ -27,8 +29,8 @@ const COLORS = {
   p1: '#ff5fd2',
 }
 
-const PIXEL = `'Press Start 2P', ui-monospace, monospace`
-const MONO = `'JetBrains Mono', ui-monospace, monospace`
+export const PIXEL = `'Press Start 2P', ui-monospace, monospace`
+export const MONO = `'JetBrains Mono', ui-monospace, monospace`
 
 const fmtTokens = (n: number) =>
   n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)
@@ -47,7 +49,7 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
 }
 
 /** Trims with an ellipsis so a long model id can't run off the card. */
-function fit(ctx: CanvasRenderingContext2D, text: string, max: number): string {
+export function fit(ctx: CanvasRenderingContext2D, text: string, max: number): string {
   if (ctx.measureText(text).width <= max) return text
   let out = text
   while (out.length > 1 && ctx.measureText(`${out}…`).width > max) out = out.slice(0, -1)
@@ -281,13 +283,13 @@ export async function copyImageToClipboard(file: File): Promise<boolean> {
   }
 }
 
-/** The consolation prize where the clipboard won't take an image. */
-export function downloadImage(file: File): boolean {
+/** Hands a blob to the browser's downloader. */
+export function downloadBlob(blob: Blob, filename: string): boolean {
   try {
-    const url = URL.createObjectURL(file)
+    const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = file.name
+    link.download = filename
     link.click()
     setTimeout(() => URL.revokeObjectURL(url), 10_000)
     return true
@@ -295,3 +297,6 @@ export function downloadImage(file: File): boolean {
     return false
   }
 }
+
+/** The consolation prize where the clipboard won't take an image. */
+export const downloadImage = (file: File): boolean => downloadBlob(file, file.name)

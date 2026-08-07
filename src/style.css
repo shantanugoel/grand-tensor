@@ -1235,6 +1235,77 @@ body {
   accent-color: var(--p0);
 }
 
+/* ---------- video export ---------- */
+
+/* The replay runs on the live arena, so everything reading the finished series'
+   numbers has to get out of the way — it is describing a board that has jumped
+   back to move one. */
+body.exporting .panel,
+body.exporting .ko,
+body.exporting .dock,
+body.exporting #announce {
+  opacity: 0.16;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.video-progress {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--dock-h, 70px) + 88px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 31;
+  width: min(440px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  backdrop-filter: blur(10px);
+}
+
+.vp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vp-title {
+  font-family: var(--pixel);
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--p0);
+}
+
+.vp-head .btn.tiny {
+  flex: 0 0 auto;
+}
+
+.vp-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.vp-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--p0), var(--p1));
+  transition: width 0.25s linear;
+}
+
+.vp-label {
+  font-size: 11px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- misc ---------- */
 
 .hidden {

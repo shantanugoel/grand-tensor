@@ -61,6 +61,12 @@ export class Arena {
   /** Multiplier on animation length; the UI shrinks it in turbo mode. */
   speed = 1
 
+  /** Set while the video export is capturing. Called with the freshly drawn
+   *  canvas at the end of every frame — the same task as the draw, which is the
+   *  only moment a renderer with no preserved drawing buffer can be read back.
+   *  See `snapshot()` for the same constraint in its one-shot form. */
+  onFrame: ((canvas: HTMLCanvasElement) => void) | null = null
+
   constructor(private container: HTMLElement) {
     // Phones get a lighter setup: no shadow pass, a capped pixel ratio and a
     // cheaper bloom. Everything else is identical.
@@ -109,6 +115,10 @@ export class Arena {
 
   set autoRotate(on: boolean) {
     this.controls.autoRotate = on
+  }
+
+  get canvas(): HTMLCanvasElement {
+    return this.renderer.domElement
   }
 
   private buildLights() {
@@ -405,6 +415,16 @@ export class Arena {
     this.camera.position.add(this.fx.shakeOffset)
     this.composer.render()
     this.camera.position.sub(this.fx.shakeOffset)
+
+    if (this.onFrame) {
+      // A capture that throws must not take the render loop down with it — the
+      // arena outlives any one export.
+      try {
+        this.onFrame(this.renderer.domElement)
+      } catch {
+        this.onFrame = null
+      }
+    }
   }
 
   private resize = () => {
