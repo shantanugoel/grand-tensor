@@ -99,7 +99,23 @@ export async function retrying<T>(
   }
 }
 
-const chatWithRetry = (req: ChatRequest): Promise<ChatResult> => retrying(() => chat(req))
+/** A request that never returns is indistinguishable from a slow one, and this
+ *  benchmark waits on models that legitimately think for half an hour — so the
+ *  deadline is generous and configurable rather than absent. A stall is treated
+ *  as retryable: it is a connection that died quietly, which is exactly the case
+ *  another attempt fixes. */
+const chatWithRetry = (req: ChatRequest, timeoutMs: number): Promise<ChatResult> =>
+  retrying(async () => {
+    try {
+      // Fresh per attempt — a signal already timed out would abort the retry
+      // before it was sent.
+      return await chat({ ...req, signal: AbortSignal.timeout(timeoutMs) })
+    } catch (err) {
+      if (err instanceof Error && (err.name === 'TimeoutError' || err.name === 'AbortError'))
+        throw new ChatError(`no response within ${Math.round(timeoutMs / 1000)}s`, true)
+      throw err
+    }
+  })
 
 const pct = (x: number) => `${(x * 100).toFixed(1)}%`
 const cp = (x: number) => x.toFixed(1)
@@ -145,6 +161,9 @@ async function main() {
   // that way silently compares two different amounts of thinking, so a benchmark
   // wanting a like-for-like answer has to pin this.
   const effort = String(args.effort ?? 'default')
+  // Generous by default: a single move at max effort was measured at 37 minutes,
+  // so a tight deadline would discard real answers rather than catch stalls.
+  const timeoutMs = Number(args.timeout ?? 900) * 1000
 
   const models = String(args.models ?? '')
     .split(',')
@@ -218,23 +237,26 @@ async function main() {
             ms: 0,
           }
           try {
-            const result = await chatWithRetry({
-              baseUrl,
-              apiKey,
-              model,
-              temperature,
-              maxTokens,
-              effort,
-              pricing: modelInfo.get(model)?.pricing,
-              messages: variant.build({
-                position,
-                legal,
-                color,
+            const result = await chatWithRetry(
+              {
+                baseUrl,
+                apiKey,
+                model,
+                temperature,
                 maxTokens,
-                player: model,
-                opponent: 'opponent',
-              }),
-            })
+                effort,
+                pricing: modelInfo.get(model)?.pricing,
+                messages: variant.build({
+                  position,
+                  legal,
+                  color,
+                  maxTokens,
+                  player: model,
+                  opponent: 'opponent',
+                }),
+              },
+              timeoutMs,
+            )
             base.promptTokens = result.usage.prompt
             base.completionTokens = result.usage.completion
             base.reasoningTokens = result.usage.reasoning
