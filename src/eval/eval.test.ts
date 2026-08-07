@@ -132,6 +132,30 @@ describe('annotated moves', () => {
     const fen = 'rnbqkbnr/ppp1pppp/8/3p4/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2'
     expect(annotatedMoves(fen)).toContain('exd5 [e4-d5 takes P(1)]')
   })
+
+  test('a safe move carries no landing-square warning', () => {
+    const line = annotatedMoves(START).split('\n').find((l) => l.startsWith('Nf3 '))!
+    expect(line).toBe('Nf3 [g1-f3]')
+  })
+
+  test('the measured Qxb6 blunder is flagged, and the right move is not', () => {
+    // The exact position where Luna played Qxb6 (queen takes a pawn onto a square
+    // two pieces still cover) instead of Ba6, losing 899cp.
+    const fen = '2r2rk1/p6p/1pn1bp2/2qp2p1/5p2/1Q3N2/PR1BBPPP/3N1RK1 w - - 6 22'
+    const lines = annotatedMoves(fen).split('\n')
+    const blunder = lines.find((l) => l.startsWith('Qxb6 '))!
+    expect(blunder).toContain('takes P(1)')
+    expect(blunder).toContain('your Q(9) attacked by a7,c5')
+    expect(lines.find((l) => l.startsWith('Ba6 '))).toBe('Ba6 [e2-a6]')
+  })
+
+  test('an undefended landing square is called out as hanging', () => {
+    // Black bishop can drop to b4 where only the a3 pawn covers it.
+    const fen = 'rnbqk1nr/pppp1ppp/8/4p3/1b6/P7/1PPPPPPP/RNBQKBNR b KQkq - 0 3'
+    const line = annotatedMoves(fen).split('\n').find((l) => l.startsWith('Bxa3 '))
+    expect(line).toContain('HANGS')
+    expect(line).toContain('defended by nothing')
+  })
 })
 
 describe('variants', () => {

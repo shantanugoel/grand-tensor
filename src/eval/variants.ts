@@ -105,17 +105,45 @@ export function tacticalBrief(fen: string): string {
   ].join('\n')
 }
 
-/** Annotates each legal move with its origin square, so the model is not left
- *  reverse-engineering which piece "Nc5" refers to when two knights can go there. */
+/** Annotates each legal move with its origin square and what happens to the piece
+ *  once it lands there.
+ *
+ *  The origin square stops the model reverse-engineering which knight "Nc5" means.
+ *  The landing-square status targets the blunder this benchmark actually measures:
+ *  recapturing with the wrong piece (`Qxa6` where `Bxa6` was right) is not a
+ *  failure to see the capture, it is a failure to check whether the square is
+ *  still defended afterwards.
+ *
+ *  Squares are only annotated when the opponent attacks them, so the extra tokens
+ *  land on the moves where they change the answer. The wording stays descriptive
+ *  rather than advisory — a contested square is often exactly where a good move
+ *  goes, and labelling every one of them "unsafe" would just trade blunders for
+ *  timidity. */
 export function annotatedMoves(fen: string): string {
   const chess = new Chess(fen)
   return chess
     .moves({ verbose: true })
     .map((m) => {
       const captured = m.captured ? ` takes ${m.captured.toUpperCase()}(${PIECE_VALUE[m.captured]})` : ''
-      return `${m.san} [${m.from}-${m.to}${captured}]`
+
+      // Attackers are read from the position *after* the move, which is the only
+      // position in which the question "can they take it back?" has an answer.
+      const after = new Chess(fen)
+      after.move(m.san)
+      const them = m.color === 'w' ? 'b' : 'w'
+      const attackers = after.attackers(m.to, them)
+      let landing = ''
+      if (attackers.length) {
+        const defenders = after.attackers(m.to, m.color)
+        const piece = `${m.piece.toUpperCase()}(${PIECE_VALUE[m.piece]})`
+        landing = defenders.length
+          ? ` — ${m.to} contested: your ${piece} attacked by ${attackers.join(',')}, defended by ${defenders.join(',')}`
+          : ` — HANGS: your ${piece} on ${m.to} attacked by ${attackers.join(',')}, defended by nothing`
+      }
+
+      return `${m.san} [${m.from}-${m.to}${captured}]${landing}`
     })
-    .join('  ')
+    .join('\n')
 }
 
 const IMPROVED_TEMPLATE = [
@@ -147,6 +175,7 @@ export const scaffolded: Variant = {
       ``,
       `Think inside "threats" and "candidates" BEFORE committing to "move".`,
       `Check specifically: after your move, is the piece you moved defended? Does it leave anything hanging?`,
+      `A check or a capture is not automatically good. Before playing one, compare what you win against what the piece you moved is worth on the square it lands on.`,
       ``,
       `"move" MUST be copied verbatim from the LEGAL MOVES list you are given.`,
       `No markdown, no code fences, no explanation outside the JSON.`,
@@ -160,7 +189,7 @@ export const scaffolded: Variant = {
       ``,
       tacticalBrief(ctx.position.fen),
       ``,
-      `LEGAL MOVES (${ctx.legal.length}), each with its origin square:`,
+      `LEGAL MOVES (${ctx.legal.length}), with origin square and what attacks the square you land on:`,
       annotatedMoves(ctx.position.fen),
       ``,
       `Choose your move.`,
