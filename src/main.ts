@@ -272,7 +272,7 @@ function reset() {
   // Frees whatever round is parked on the countdown before the series is swapped.
   summary.close()
   card = null
-  leaderboard.clear()
+  leaderboard.idle()
   series = newSeries()
   hud.clearLog()
   hud.setThinking(null)

@@ -4,6 +4,7 @@ import {
   circuitFor,
   DEFAULT_CIRCUIT,
   entrantKey,
+  LEADERBOARD_WINDOW_DAYS,
   type Circuit,
   type EntrantResponse,
   type EntrantSeries,
@@ -33,31 +34,29 @@ type Env = {
   CORS_ORIGINS: string
 }
 
+/** Tickets issued before the deadline was removed also carry an `expiresAt`,
+ *  which is simply ignored: the signature covers the encoded blob as it was
+ *  written, so an extra field costs nothing and old tickets keep verifying. */
 type TicketPayload = {
   version: 1
   protocol: string
   configHash: string
+  /** When the ticket was issued, which is when the match started — the only
+   *  timestamp for a match that the server can attest to rather than be told. */
   issuedAt: number
-  expiresAt: number
   nonce: string
 }
 
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
-const TICKET_LIFETIME_MS = 6 * 60 * 60 * 1000
-const WINDOW_DAYS = 30
+const WINDOW_DAYS = LEADERBOARD_WINDOW_DAYS
+const WINDOW_MS = WINDOW_DAYS * 24 * 60 * 60 * 1000
 
 /** The whole window is read into the Worker on a standings cache miss, because
  *  the rating fit needs opponent identities that a GROUP BY would throw away.
  *  Nothing else bounds that read, so this does — newest first, so growth past
  *  the ceiling drops the oldest results rather than failing the request. */
 const WINDOW_SERIES_LIMIT = 20_000
-
-/** How long a submitter may withdraw a result. Deletion exists to undo a mistake,
- *  not to curate a record: an open-ended window lets anyone submit every series
- *  and then delete the losses, which bends the standings without a single
- *  fabricated game. Short enough that the only thing it can undo is a misclick. */
-const DELETE_WINDOW_MS = 15 * 60 * 1000
 
 /** Per browser, per model pairing, per day. Sized so a full effort sweep of one
  *  matchup (three levels, both directions) fits in a single sitting. */
@@ -87,13 +86,11 @@ async function hmac(secret: string, value: string) {
 }
 
 async function signTicket(env: Env, config: ProtocolConfig, circuit: Circuit) {
-  const now = Date.now()
   const payload: TicketPayload = {
     version: 1,
     protocol: circuit.id,
     configHash: await sha256(JSON.stringify(config)),
-    issuedAt: now,
-    expiresAt: now + TICKET_LIFETIME_MS,
+    issuedAt: Date.now(),
     nonce: crypto.randomUUID(),
   }
   const encoded = base64url(encoder.encode(JSON.stringify(payload)))
@@ -101,31 +98,36 @@ async function signTicket(env: Env, config: ProtocolConfig, circuit: Circuit) {
   return `${encoded}.${signature}`
 }
 
-async function verifyTicket(env: Env, ticket: string, config: ProtocolConfig) {
+/** A ticket no longer expires. It never guarded much on its own — Turnstile, the
+ *  daily quotas, the content-hash uniqueness and the PGN replay are what actually
+ *  bound abuse — and the one thing a deadline reliably did was refuse the honest
+ *  case: a series that finished while its owner was away from the machine. What
+ *  the ticket still does is bind the config that was validated before play to the
+ *  submission that claims to have played it, and carry a server-issued timestamp
+ *  for when that was. Returns the payload so the caller can date the result. */
+async function verifyTicket(env: Env, ticket: string, config: ProtocolConfig): Promise<TicketPayload | null> {
   const [encoded, signature, extra] = ticket.split('.')
-  if (!encoded || !signature || extra) return false
+  if (!encoded || !signature || extra) return null
   const expected = await hmac(env.RUN_TICKET_SECRET, encoded)
   const actual = fromBase64url(signature)
-  if (expected.length !== actual.length) return false
+  if (expected.length !== actual.length) return null
   let mismatch = 0
   expected.forEach((byte, index) => (mismatch |= byte ^ actual[index]))
-  if (mismatch !== 0) return false
+  if (mismatch !== 0) return null
 
   let payload: TicketPayload
   try {
     payload = JSON.parse(decoder.decode(fromBase64url(encoded))) as TicketPayload
   } catch {
-    return false
+    return null
   }
-  const now = Date.now()
-  return (
+  const valid =
     payload.version === 1 &&
     payload.protocol === circuitFor(config.maxTokens)?.id &&
-    payload.issuedAt <= now &&
-    payload.expiresAt >= now &&
-    payload.expiresAt - payload.issuedAt === TICKET_LIFETIME_MS &&
+    Number.isFinite(payload.issuedAt) &&
+    payload.issuedAt <= Date.now() &&
     payload.configHash === (await sha256(JSON.stringify(config)))
-  )
+  return valid ? payload : null
 }
 
 const list = (value: string) =>
@@ -147,7 +149,7 @@ function corsHeaders(origin: string | null) {
   })
   if (origin) {
     headers.set('Access-Control-Allow-Origin', origin)
-    headers.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
+    headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
     headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
     headers.set('Access-Control-Max-Age', '86400')
     headers.set('Vary', 'Origin')
@@ -225,12 +227,32 @@ async function issueTicket(request: Request, env: Env, origin: string) {
   return json({ ticket: await signTicket(env, config, circuit), protocol: circuit.id }, 201, origin)
 }
 
+/** Refusals carry a `code` as well as a message, because the client now keeps an
+ *  unsubmitted result in local storage and has to decide whether to keep holding
+ *  it. `stale` and `duplicate` are the two that will never succeed on a retry;
+ *  everything else is worth waiting out, and the difference is not something a
+ *  status code or a prose message can be relied on to carry. */
 async function submit(request: Request, env: Env, origin: string) {
   const submission = await validateSubmission(await readJson(request))
-  if (!(await verifyTicket(env, submission.ticket, submission.config)))
-    return json({ error: 'This run ticket is invalid or expired.' }, 403, origin)
+  const ticket = await verifyTicket(env, submission.ticket, submission.config)
+  if (!ticket) return json({ error: 'This run ticket is not valid for this match.', code: 'ticket' }, 403, origin)
+
+  // The one bound left on ticket age, and it is the standings window rather than
+  // a deadline: a result older than the window can never appear in a table, so
+  // accepting it would be storing a row and reporting a success for something
+  // nobody will ever see. Saying so is more honest than a silent 201.
+  if (ticket.issuedAt < Date.now() - WINDOW_MS)
+    return json(
+      {
+        error: `This match is older than the ${WINDOW_DAYS}-day standings window and can no longer be counted.`,
+        code: 'stale',
+      },
+      409,
+      origin,
+    )
+
   if (!(await verifyTurnstile(request, env, submission.turnstileToken)))
-    return json({ error: 'Anti-bot verification failed. Please try again.' }, 403, origin)
+    return json({ error: 'Anti-bot verification failed. Please try again.', code: 'turnstile' }, 403, origin)
   await validateKnownModels(submission.config)
 
   const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
@@ -241,13 +263,11 @@ async function submit(request: Request, env: Env, origin: string) {
   const pairHash = await sha256(pair)
   const burstKey = await anonymizedHash(env.ABUSE_HASH_SECRET, ip)
   const { success } = await env.SUBMIT_RATE_LIMITER.limit({ key: `submit:${burstKey}` })
-  if (!success) return json({ error: 'Too many submissions. Try again shortly.' }, 429, origin)
+  if (!success) return json({ error: 'Too many submissions. Try again shortly.', code: 'rate_limited' }, 429, origin)
 
   const dayStart = Date.parse(`${date}T00:00:00.000Z`)
   const contentHash = await sha256(submission.canonical)
   const id = crypto.randomUUID()
-  const deleteToken = `${crypto.randomUUID()}${crypto.randomUUID()}`
-  const deleteHash = await sha256(deleteToken)
   const now = Date.now()
 
   // The quotas are conditions on the INSERT rather than queries in front of it.
@@ -260,13 +280,22 @@ async function submit(request: Request, env: Env, origin: string) {
   // The ranking entity is (model, effort), but the thing a farmer manipulates is
   // the matchup — folding effort in here would multiply one browser's daily
   // ceiling by the number of effort combinations instead of holding it flat.
+  // Both are counted on `created_at`, i.e. today's uploads, not on when the
+  // matches were played: a backdated `played_at` is under the submitter's control
+  // in the sense that matters here, since nothing stops someone holding a stack
+  // of finished runs and releasing them together.
+  //
+  // `content_hash` is the dedup, and it hashes the result alone — config plus
+  // games, no ticket and no identity. So the same series submitted twice is one
+  // row whether it arrives twice in a minute or twice a week apart, and a replay
+  // of somebody else's PGNs under a fresh ticket is refused for the same reason.
   try {
     const inserted = await env.DB.prepare(
       `INSERT INTO submissions (
-        id, content_hash, protocol, app_version, created_at,
+        id, content_hash, protocol, app_version, created_at, played_at,
         model_a, effort_a, model_b, effort_b,
         score_a_x2, score_b_x2, wins_a, draws_a, losses_a, games,
-        payload_json, install_hash, network_hash, pair_hash, delete_hash
+        payload_json, install_hash, network_hash, pair_hash
       )
       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
       WHERE (SELECT COUNT(*) FROM submissions WHERE created_at >= ? AND install_hash = ? AND pair_hash = ?) < ?
@@ -278,6 +307,7 @@ async function submit(request: Request, env: Env, origin: string) {
         submission.protocol,
         submission.appVersion,
         now,
+        ticket.issuedAt,
         submission.config.players[0].model,
         submission.config.players[0].effort,
         submission.config.players[1].model,
@@ -292,7 +322,6 @@ async function submit(request: Request, env: Env, origin: string) {
         installHash,
         networkHash,
         pairHash,
-        deleteHash,
         dayStart,
         installHash,
         pairHash,
@@ -308,11 +337,11 @@ async function submit(request: Request, env: Env, origin: string) {
     if (!inserted.meta.changes) return quotaRefusal(env, origin, dayStart, installHash, pairHash)
   } catch (error) {
     if (error instanceof Error && /unique/i.test(error.message))
-      return json({ error: 'This result has already been submitted.' }, 409, origin)
+      return json({ error: 'This result has already been submitted.', code: 'duplicate' }, 409, origin)
     throw error
   }
 
-  return json({ id, deleteToken, message: `Result added to the ${submission.circuit.name}.` }, 201, origin)
+  return json({ id, message: `Result added to the ${submission.circuit.name}.` }, 201, origin)
 }
 
 async function quotaRefusal(env: Env, origin: string, dayStart: number, installHash: string, pairHash: string) {
@@ -322,15 +351,15 @@ async function quotaRefusal(env: Env, origin: string, dayStart: number, installH
     .bind(dayStart, installHash, pairHash)
     .first<{ count: number }>()
   return (installed?.count ?? 0) >= INSTALL_DAILY_PAIR_QUOTA
-    ? json({ error: 'This browser has contributed enough results for this matchup today.' }, 429, origin)
-    : json({ error: 'This network has reached today’s anonymous contribution limit.' }, 429, origin)
+    ? json({ error: 'This browser has contributed enough results for this matchup today.', code: 'quota' }, 429, origin)
+    : json({ error: 'This network has reached today’s anonymous contribution limit.', code: 'quota' }, 429, origin)
 }
 
 const DISCLOSURE =
   'Community-reported matches. PGN legality and board results are checked; model identity is not cryptographically verified.'
 
 type SeriesRow = {
-  created_at: number
+  played_at: number
   model_a: string
   effort_a: string
   model_b: string
@@ -342,14 +371,19 @@ type SeriesRow = {
 
 /** Every series in the window for one circuit. The rating fit is a fold over all
  *  of them, so they are read whole rather than pre-aggregated in SQL — grouping
- *  in the query would throw away exactly the opponent identities the fit needs. */
+ *  in the query would throw away exactly the opponent identities the fit needs.
+ *
+ *  Windowed on when the games were played, not when they were uploaded, so a
+ *  result submitted the next morning still describes the day it was actually
+ *  played — and one submitted a month later ages out on its own schedule instead
+ *  of arriving in the window brand new. */
 function windowSeries(env: Env, circuit: Circuit) {
   return env.DB.prepare(
-    `SELECT created_at, model_a, effort_a, model_b, effort_b, wins_a, draws_a, losses_a
-     FROM submissions WHERE protocol = ? AND created_at >= ?
-     ORDER BY created_at DESC LIMIT ?`,
+    `SELECT played_at, model_a, effort_a, model_b, effort_b, wins_a, draws_a, losses_a
+     FROM submissions WHERE protocol = ? AND played_at >= ?
+     ORDER BY played_at DESC LIMIT ?`,
   )
-    .bind(circuit.id, Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000, WINDOW_SERIES_LIMIT)
+    .bind(circuit.id, Date.now() - WINDOW_MS, WINDOW_SERIES_LIMIT)
     .all<SeriesRow>()
 }
 
@@ -438,7 +472,7 @@ async function entrant(
     draws += row.draws_a
     losses += theirs
     history.push({
-      playedAt: row.created_at,
+      playedAt: row.played_at,
       opponentModel: other.model,
       opponentEffort: other.effort,
       games: mine + row.draws_a + theirs,
@@ -482,31 +516,6 @@ async function entrant(
   return json(body, 200, origin, 'public, max-age=60, stale-while-revalidate=300')
 }
 
-async function removeSubmission(request: Request, env: Env, origin: string, id: string) {
-  const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '')
-  if (!token || token.length > 200) return json({ error: 'Missing deletion token.' }, 401, origin)
-  const deleteHash = await sha256(token)
-  const result = await env.DB.prepare(
-    'DELETE FROM submissions WHERE id = ? AND delete_hash = ? AND created_at >= ?',
-  )
-    .bind(id, deleteHash, Date.now() - DELETE_WINDOW_MS)
-    .run()
-  if (result.meta.changes) return json({ deleted: true }, 200, origin)
-
-  // Separated so an expired window doesn't read as a bad token. A row that still
-  // exists and matches the token is simply past the point of being withdrawable.
-  const stale = await env.DB.prepare('SELECT 1 FROM submissions WHERE id = ? AND delete_hash = ?')
-    .bind(id, deleteHash)
-    .first()
-  if (stale)
-    return json(
-      { error: `A submitted result can only be withdrawn within ${DELETE_WINDOW_MS / 60_000} minutes.` },
-      403,
-      origin,
-    )
-  return json({ error: 'Submission not found.' }, 404, origin)
-}
-
 export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url)
@@ -544,9 +553,6 @@ export default {
         return await issueTicket(request, env, origin!)
       if (request.method === 'POST' && url.pathname === '/api/v1/submissions')
         return await submit(request, env, origin!)
-      const deletion = url.pathname.match(/^\/api\/v1\/submissions\/([0-9a-f-]{36})$/i)
-      if (request.method === 'DELETE' && deletion)
-        return await removeSubmission(request, env, origin!, deletion[1])
       return json({ error: 'Not found.' }, 404, origin)
     } catch (error) {
       if (error instanceof ClientError) return json({ error: error.message }, 400, origin)

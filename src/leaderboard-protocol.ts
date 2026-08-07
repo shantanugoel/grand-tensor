@@ -10,6 +10,11 @@ export const LEADERBOARD_API =
 
 export const LEADERBOARD_APP_VERSION = '1.0.0'
 
+/** How far back the standings look. Shared because it is also the only deadline
+ *  left on a result: a match older than the window can never appear in a table,
+ *  so the server refuses it and the client stops offering to send it. */
+export const LEADERBOARD_WINDOW_DAYS = 30
+
 /** A ranked bucket. Everything about a match is pinned except the models, so
  *  standings compare players rather than settings. The completion budget is the
  *  one axis allowed to differ, and it differs by circuit rather than freely:

@@ -6,10 +6,17 @@
  *  as they will be in production rather than mocked away. */
 
 import { Database } from 'bun:sqlite'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-const MIGRATION = readFileSync(join(import.meta.dir, 'migrations/0001_initial.sql'), 'utf8')
+/** Every migration, in the order Wrangler would apply them — read from the
+ *  directory rather than named one by one, so adding one cannot leave the tests
+ *  passing against a schema production no longer has. */
+const MIGRATIONS_DIR = join(import.meta.dir, 'migrations')
+const MIGRATIONS = readdirSync(MIGRATIONS_DIR)
+  .filter((name) => name.endsWith('.sql'))
+  .sort()
+  .map((name) => readFileSync(join(MIGRATIONS_DIR, name), 'utf8'))
 
 /** Just enough of D1's surface for worker/index.ts: prepare/bind/run/first/all,
  *  and the `meta.changes` the quota path reads to tell a refusal from a write. */
@@ -52,9 +59,9 @@ export type Harness = {
 
 export function harness(overrides: Record<string, unknown> = {}): Harness {
   const database = new Database(':memory:')
-  // Run whole, not split on ';': the migration carries comments, and splitting
-  // leaves comment-only fragments that are not statements.
-  database.run(MIGRATION)
+  // Each file runs whole, not split on ';': the migrations carry comments, and
+  // splitting leaves comment-only fragments that are not statements.
+  for (const migration of MIGRATIONS) database.run(migration)
 
   const calls: string[] = []
   const turnstile = { pass: true, action: 'leaderboard_submit', hostname: 'grandtensor.shantanugoel.com' }

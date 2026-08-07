@@ -1,8 +1,10 @@
 import {
+  circuitFor,
   CIRCUITS,
   DEFAULT_CIRCUIT,
   LEADERBOARD_API,
   LEADERBOARD_APP_VERSION,
+  LEADERBOARD_WINDOW_DAYS,
   protocolConfig,
   submissionReason,
   type Circuit,
@@ -21,6 +23,24 @@ type PreparedRun = {
   circuit?: Circuit
   ticket?: string
   reason?: string
+}
+
+/** A finished ranked result that has not been sent yet.
+ *
+ *  It outlives the page, because the run it describes usually outlives the
+ *  person watching it: a ten-game series finishes into an empty room, and the
+ *  browser gets closed, or reloaded, or the laptop sleeps for a day. Nothing
+ *  here needs the live `Series` — the games are already reduced to what the
+ *  submission actually sends, so what is stored is the request, minus the
+ *  Turnstile token that has to be solved fresh each time. */
+type PendingSubmission = {
+  version: 1
+  ticket: string
+  config: ProtocolConfig
+  games: SubmittedGame[]
+  /** Series score, kept only so the confirmation dialog can show the matchup
+   *  without the `Series` object that produced it. */
+  score: [number, number]
 }
 
 type LeaderboardConfig = {
@@ -51,7 +71,10 @@ declare global {
 }
 
 const INSTALLATION_KEY = 'grand-tensor:leaderboard-installation'
-const DELETION_KEY = 'grand-tensor:leaderboard-deletions'
+const PENDING_KEY = 'grand-tensor:pending-submission'
+/** Withdrawal is gone, so the tokens saved under this key can never be spent.
+ *  Cleared on load rather than left behind, since they were only ever secrets. */
+const LEGACY_DELETION_KEY = 'grand-tensor:leaderboard-deletions'
 const $ = <T extends HTMLElement = HTMLElement>(selector: string) => document.querySelector(selector) as T
 
 function installationId() {
@@ -62,14 +85,114 @@ function installationId() {
   return id
 }
 
+/** Carries the server's refusal `code` as well as its prose, because whether a
+ *  saved result is kept or dropped turns on which refusal it was. */
+class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string,
+  ) {
+    super(message)
+  }
+}
+
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${LEADERBOARD_API}${path}`, {
     ...init,
     headers: { 'Content-Type': 'application/json', ...init?.headers },
   })
-  const body = (await response.json().catch(() => ({}))) as { error?: string } & T
-  if (!response.ok) throw new Error(body.error || `Leaderboard request failed (${response.status}).`)
+  const body = (await response.json().catch(() => ({}))) as { error?: string; code?: string } & T
+  if (!response.ok)
+    throw new ApiError(body.error || `Leaderboard request failed (${response.status}).`, response.status, body.code)
   return body
+}
+
+/** The two refusals a saved result can never recover from: the window it belongs
+ *  to has closed, or the board already has it. Everything else — a failed
+ *  challenge, a quota, a service having a bad afternoon — is worth holding on
+ *  to, so the result stays put and the button stays live. */
+const isTerminalRefusal = (error: unknown) =>
+  error instanceof ApiError && (error.code === 'stale' || error.code === 'duplicate')
+
+/** Reads the issue time out of the app's own run ticket. The payload half is
+ *  base64url JSON and is not a secret — the signature is what makes the ticket
+ *  worth anything, and only the server can check that. This is used solely to
+ *  stop offering a result the server is bound to refuse as stale; anything
+ *  unreadable is left alone and allowed to fail honestly at the server. */
+function ticketIssuedAt(ticket: string): number | null {
+  try {
+    const encoded = ticket.split('.')[0]
+    const padded = encoded.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (encoded.length % 4)) % 4)
+    const issuedAt = (JSON.parse(atob(padded)) as { issuedAt?: unknown }).issuedAt
+    return typeof issuedAt === 'number' && Number.isFinite(issuedAt) ? issuedAt : null
+  } catch {
+    return null
+  }
+}
+
+function isPending(value: unknown): value is PendingSubmission {
+  const pending = value as PendingSubmission | null
+  return (
+    !!pending &&
+    pending.version === 1 &&
+    typeof pending.ticket === 'string' &&
+    Array.isArray(pending.games) &&
+    pending.games.length > 0 &&
+    Array.isArray(pending.score) &&
+    pending.score.length === 2 &&
+    !!pending.config &&
+    Array.isArray(pending.config.players) &&
+    pending.config.players.length === 2 &&
+    circuitFor(pending.config.maxTokens) !== null
+  )
+}
+
+/** Anything that fails to parse, fails to typecheck, or has aged past the
+ *  standings window is dropped here rather than kept and refused later. */
+function loadPending(): PendingSubmission | null {
+  let stored: string | null = null
+  try {
+    stored = localStorage.getItem(PENDING_KEY)
+  } catch {
+    return null
+  }
+  if (!stored) return null
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(stored)
+  } catch {
+    parsed = null
+  }
+  if (!isPending(parsed)) {
+    dropPending()
+    return null
+  }
+
+  const issuedAt = ticketIssuedAt(parsed.ticket)
+  if (issuedAt !== null && issuedAt < Date.now() - LEADERBOARD_WINDOW_DAYS * 24 * 60 * 60 * 1000) {
+    dropPending()
+    return null
+  }
+  return parsed
+}
+
+function savePending(pending: PendingSubmission) {
+  try {
+    localStorage.setItem(PENDING_KEY, JSON.stringify(pending))
+  } catch {
+    // A full or disabled store costs the user the ability to submit after a
+    // reload, and nothing else. The in-memory result still works this session.
+  }
+}
+
+function dropPending() {
+  try {
+    localStorage.removeItem(PENDING_KEY)
+  } catch {
+    /* nothing to do — the entry is unreachable either way */
+  }
 }
 
 let turnstileLoading: Promise<TurnstileApi> | null = null
@@ -114,23 +237,33 @@ function cell(row: HTMLTableRowElement, value: string | Node, className?: string
 
 export class Leaderboard {
   private prepared: PreparedRun | null = null
-  private completed: { series: Series; prepared: PreparedRun } | null = null
+  /** The result the Submit button offers, restored from storage on load. There
+   *  is one slot: a finished ranked match replaces whatever it held, and only
+   *  submitting it — or the server saying it can never be taken — empties it. */
+  private pending: PendingSubmission | null = null
+  /** Why the *last finished* match could not be submitted, shown when there is
+   *  nothing pending to offer instead. */
+  private ineligibleReason: string | null = null
   private configPromise: Promise<LeaderboardConfig> | null = null
   private widgetId: string | null = null
   private standingsCircuit: Circuit = DEFAULT_CIRCUIT
 
   constructor(private toast: (message: string) => void) {
+    localStorage.removeItem(LEGACY_DELETION_KEY)
     $('#btn-leaderboard').addEventListener('click', () => void this.openStandings())
     $('#btn-submit-leaderboard').addEventListener('click', () => void this.openSubmission())
+    $('#btn-pending-submit').addEventListener('click', () => void this.openSubmission())
     $('#btn-leaderboard-close').addEventListener('click', () => this.close())
     $('#leaderboard-modal').addEventListener('click', (event) => {
       if (event.target === $('#leaderboard-modal')) this.close()
     })
-    this.setSubmitState(false, 'Finish an eligible ranked match to submit it.')
+    this.pending = loadPending()
+    this.refreshSubmitState()
   }
 
   async prepare(settings: Settings): Promise<PreparedRun> {
-    this.completed = null
+    // A match in progress hides the button rather than clearing what is behind
+    // it: abandoning a run should not cost the result of the one before it.
     this.setSubmitState(false, 'Match in progress.')
     const eligibility = await protocolConfig(settings)
     if (!eligibility.config || !eligibility.circuit) {
@@ -158,24 +291,57 @@ export class Leaderboard {
 
   complete(series: Series, prepared: PreparedRun) {
     if (series.status !== 'done') return
-    this.completed = { series, prepared }
-    const ready = Boolean(prepared.config && prepared.ticket)
-    this.setSubmitState(
-      ready,
-      prepared.reason ?? `Submit this anonymous result to the ${prepared.circuit?.name ?? 'leaderboard'}.`,
-    )
+    this.ineligibleReason = prepared.reason ?? null
+
+    if (prepared.config && prepared.ticket) {
+      try {
+        this.pending = {
+          version: 1,
+          ticket: prepared.ticket,
+          config: prepared.config,
+          games: this.gamesForSubmission(series),
+          score: [series.stats[0].score, series.stats[1].score],
+        }
+        savePending(this.pending)
+      } catch (error) {
+        // An ending the protocol has no name for. The match is unsubmittable,
+        // but whatever was already pending is still good and still offered.
+        this.ineligibleReason = error instanceof Error ? error.message : 'This match cannot be submitted.'
+      }
+    }
+    this.refreshSubmitState()
   }
 
-  clear() {
+  /** Called when the board is reset. Deliberately not a reset of the pending
+   *  result: clearing the arena is about the next match, not a decision to throw
+   *  away the last one. */
+  idle() {
     this.prepared = null
-    this.completed = null
-    this.setSubmitState(false, 'Finish an eligible ranked match to submit it.')
+    this.ineligibleReason = null
+    this.refreshSubmitState()
+  }
+
+  private refreshSubmitState() {
+    if (this.pending) {
+      const circuit = circuitFor(this.pending.config.maxTokens)
+      return this.setSubmitState(
+        true,
+        `Submit your last ${circuit?.name ?? 'ranked'} result. It is saved here until you do.`,
+      )
+    }
+    this.setSubmitState(false, this.ineligibleReason ?? 'Finish an eligible ranked match to submit it.')
   }
 
   private setSubmitState(enabled: boolean, title: string) {
     const button = $<HTMLButtonElement>('#btn-submit-leaderboard')
     button.disabled = !enabled
     button.title = title
+
+    // The topbar copy is shown only when there is genuinely something saved to
+    // send, so it reads as a reminder rather than as another piece of chrome.
+    const waiting = $<HTMLButtonElement>('#btn-pending-submit')
+    waiting.classList.toggle('hidden', !this.pending)
+    waiting.title = title
   }
 
   private leaderboardConfig() {
@@ -361,6 +527,15 @@ export class Leaderboard {
     }
   }
 
+  /** Forgets the saved result for good, in memory and on disk, and leaves the
+   *  button explaining what happened to it. */
+  private discardPending(note: string) {
+    this.pending = null
+    dropPending()
+    this.ineligibleReason = note
+    this.refreshSubmitState()
+  }
+
   private gamesForSubmission(series: Series): SubmittedGame[] {
     return series.games.map((game) => {
       const reason = submissionReason(game.reason)
@@ -377,12 +552,12 @@ export class Leaderboard {
   }
 
   private async openSubmission() {
-    const completed = this.completed
-    if (!completed?.prepared.config || !completed.prepared.ticket || !completed.prepared.circuit) {
-      this.toast(completed?.prepared.reason ?? 'This match is not eligible for ranked standings.')
+    const pending = this.pending
+    const circuit = pending && circuitFor(pending.config.maxTokens)
+    if (!pending || !circuit) {
+      this.toast(this.ineligibleReason ?? 'This match is not eligible for ranked standings.')
       return
     }
-    const circuit = completed.prepared.circuit
 
     this.open(`Submit to the ${circuit.name}`)
     const content = $('#leaderboard-content')
@@ -392,11 +567,11 @@ export class Leaderboard {
       `This is optional. Grand Tensor uploads exact model IDs, ${circuit.name} settings, results and PGNs. It never uploads API keys, player labels, prompts, commentary, token usage, latency or cost.`
     const matchup = document.createElement('div')
     matchup.className = 'leaderboard-matchup'
-    matchup.textContent = `${completed.prepared.config.players[0].model}  ${completed.series.stats[0].score}–${completed.series.stats[1].score}  ${completed.prepared.config.players[1].model}`
+    matchup.textContent = `${pending.config.players[0].model}  ${fmtPoints(pending.score[0])}–${fmtPoints(pending.score[1])}  ${pending.config.players[1].model}`
     const disclosure = document.createElement('p')
     disclosure.className = 'leaderboard-note'
     disclosure.textContent =
-      'The server replays every PGN and checks the board result. Because model calls happen in your browser, the model identity remains community-reported.'
+      'The server replays every PGN and checks the board result. Because model calls happen in your browser, the model identity remains community-reported. A submitted result is final and cannot be withdrawn. It is dated to when the match was played rather than to now, and it is kept on this device until you send it — so there is no hurry, and no advantage in waiting.'
     const widget = document.createElement('div')
     widget.className = 'turnstile-host'
     const actions = document.createElement('div')
@@ -449,21 +624,30 @@ export class Leaderboard {
             appVersion: LEADERBOARD_APP_VERSION,
             protocol: circuit.id,
             installationId: installationId(),
-            ticket: completed.prepared.ticket!,
+            ticket: pending.ticket,
             turnstileToken: token,
-            config: completed.prepared.config!,
-            games: this.gamesForSubmission(completed.series),
+            config: pending.config,
+            games: pending.games,
           }
-          const result = await api<{ id: string; deleteToken: string; message: string }>('/v1/submissions', {
+          const result = await api<{ id: string; message: string }>('/v1/submissions', {
             method: 'POST',
             body: JSON.stringify(payload),
           })
-          this.rememberDeletion(result.id, result.deleteToken)
-          this.setSubmitState(false, 'This result has been submitted.')
+          this.discardPending('This result has been submitted.')
           this.close()
           this.toast(result.message)
         } catch (error) {
-          this.toast(error instanceof Error ? error.message : 'Submission failed.')
+          // Only a refusal that can never be retried takes the result away. A
+          // quota, a failed challenge or a service outage leaves it saved, so
+          // the button is still there tomorrow.
+          const message = error instanceof Error ? error.message : 'Submission failed.'
+          if (isTerminalRefusal(error)) {
+            this.discardPending(message)
+            this.close()
+            this.toast(message)
+            return
+          }
+          this.toast(message)
           token = ''
           submit.textContent = 'Verify to retry'
           turnstile.reset(this.widgetId!)
@@ -475,13 +659,4 @@ export class Leaderboard {
     }
   }
 
-  private rememberDeletion(id: string, token: string) {
-    try {
-      const saved = JSON.parse(localStorage.getItem(DELETION_KEY) ?? '[]') as { id: string; token: string }[]
-      saved.push({ id, token })
-      localStorage.setItem(DELETION_KEY, JSON.stringify(saved.slice(-100)))
-    } catch {
-      localStorage.setItem(DELETION_KEY, JSON.stringify([{ id, token }]))
-    }
-  }
 }

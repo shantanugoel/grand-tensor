@@ -51,6 +51,11 @@
       <div class="topbar-right">
         <div id="status-chip" class="chip">IDLE</div>
         <button id="btn-leaderboard" class="btn ghost" title="Standard Circuit standings"><span class="wide-only">♜ Standings</span><span class="narrow-only">♜</span></button>
+        <!-- The result card's Submit button is only on screen while the match
+             that produced it still is. A saved result outlives both, so it needs
+             somewhere to be reachable from: this appears only when one is
+             waiting, and disappears the moment it has been sent. -->
+        <button id="btn-pending-submit" class="btn primary hidden"><span class="wide-only">♜ Submit</span><span class="narrow-only">♜↑</span></button>
         <button id="btn-fullscreen" class="btn ghost hidden" title="Fullscreen landscape">⛶</button>
         <button id="btn-settings" class="btn ghost"><span class="wide-only">⚙ Settings</span><span class="narrow-only">⚙</span></button>
       </div>

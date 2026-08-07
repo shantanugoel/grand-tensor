@@ -82,6 +82,34 @@ every PGN and derives the scores itself. Since model calls still happen directly
 model identity is explicitly described as community-reported rather than cryptographically
 verified.
 
+A submission is authorised by a **run ticket**, issued when the match starts, signed over the
+configuration, and good until the result ages out. It does not expire on a clock: a long series
+tends to finish while nobody is at the machine, and a deadline mostly refused the honest case —
+Turnstile, the daily quotas, the content hash and the PGN replay are what actually bound abuse. So a
+result is dated by **when it was played** — the ticket's own issue time, the one timestamp about a
+match the server can attest to rather than be told — and not by when it was uploaded. Coming back
+the next morning and submitting puts the games where they belong in the 30-day window rather than
+backdating today's board; the only refusal left is a match already older than that window, which
+could never have appeared in a table anyway. Uploading the same result twice is one row: the content
+hash covers the configuration and the games alone, so a duplicate is refused whether it arrives
+twice in a minute or under a fresh ticket a week later.
+
+A finished ranked result is **saved on the device** until it is sent, so it survives a reload, a
+closed tab, or a laptop that slept for a day — the run it describes usually outlives the person
+watching it. What is stored is the submission itself minus the anti-bot token: the models, the
+settings, the games and the ticket, never the API key or the player labels. While one is waiting, a
+**♜ Submit** button appears in the top bar, because the result card that normally carries it is only
+on screen while the match that produced it is. There is one slot: a new ranked match replaces it,
+and sending it is what empties it. It is also dropped without being sent in the two cases where
+sending could never work — the board already has that exact result, or the match has aged past the
+window — and kept in every other case, so a failed challenge, a daily quota or an outage costs a
+retry rather than the result.
+
+A submitted result is **final**. There was once a fifteen-minute withdrawal window for undoing a
+misclick, which is exactly the window that stopped being reachable once submitting moved hours past
+the match; a delete path that only ever fires late is a way to curate a record, not to fix a
+mistake. The way to not submit a result is not to submit it.
+
 The leaderboard API lives in `worker/`. In production it shares the site's origin
 at `grandtensor.shantanugoel.com/api/v1/*`; locally Wrangler serves both halves together:
 
@@ -175,7 +203,7 @@ changes; the dev server reports `dev`.
 | [src/three/fx.ts](src/three/fx.ts) | Debris, shockwave rings, floating pixel text, screen shake |
 | [src/ui/](src/ui/) | The HUD overlay, the settings modal and the small-screen affordances |
 | [src/share.ts](src/share.ts) | Result card text, and encoding/decoding a matchup link |
-| [src/leaderboard.ts](src/leaderboard.ts) | Optional submission flow, Turnstile, and standings UI |
+| [src/leaderboard.ts](src/leaderboard.ts) | Optional submission flow, the saved pending result, Turnstile, and standings UI |
 | [worker/](worker/) | Cloudflare Worker API, PGN validation, abuse controls, and D1 migrations |
 | [dev.ts](dev.ts) / [preview.ts](preview.ts) | `Bun.serve` for development with HMR, and for serving the built `dist/` |
 | [build.ts](build.ts) / [deploy.ts](deploy.ts) | Type-check and bundle the site, and deploy the full-stack Worker — both stamping the commit from [build-id.ts](build-id.ts) |

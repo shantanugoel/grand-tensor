@@ -1,7 +1,7 @@
 /** End-to-end tests for the Worker's HTTP surface, against real SQLite running
  *  the real migration. Everything here goes through `worker.fetch` — the routing,
  *  the CORS gate, ticket signing, Turnstile, the quota conditions on the INSERT,
- *  the rating fit, and the deletion window. */
+ *  the rating fit, and how a result is dated. */
 
 import { afterEach, describe, expect, test } from 'bun:test'
 import worker from './index'
@@ -185,7 +185,8 @@ describe('submission', () => {
     const { response, body } = await submit(h)
     expect(response.status).toBe(201)
     expect(body.message).toContain('Standard Circuit')
-    expect(body.deleteToken).toBeTruthy()
+    // Nothing is handed back that could withdraw the row later.
+    expect(body.deleteToken).toBeUndefined()
 
     const row = h.database.query('SELECT * FROM submissions').get() as any
     expect(row.protocol).toBe('standard')
@@ -228,7 +229,7 @@ describe('submission', () => {
       games: games(4),
     })
     expect(response.status).toBe(403)
-    expect((await response.json()).error).toContain('invalid or expired')
+    expect((await response.json()).error).toContain('not valid for this match')
   })
 
   test('refuses a ticket issued for a different config', async () => {
@@ -294,6 +295,18 @@ describe('submission', () => {
 })
 
 describe('daily quotas', () => {
+  /** A filler row, written by column name rather than positionally so a future
+   *  migration cannot silently shift a value into the wrong column. Binds are
+   *  created_at, played_at, install_hash, network_hash, pair_hash. */
+  const pad = (id: string) =>
+    `INSERT INTO submissions (
+       id, content_hash, protocol, app_version, created_at, played_at,
+       model_a, effort_a, model_b, effort_b,
+       score_a_x2, score_b_x2, wins_a, draws_a, losses_a, games,
+       payload_json, install_hash, network_hash, pair_hash
+     ) VALUES ('${id}','hash-${id}','standard','1.0.0',?,?,'vendor/model-a','default','vendor/model-b','high',
+       4,4,2,0,2,4,'{}',?,?,?)`
+
   test('caps one browser on one matchup, and counts pairings independently', async () => {
     const h = start()
     // The quota is 8; four distinct 4-game series is all the distinct PGNs the
@@ -307,12 +320,7 @@ describe('daily quotas', () => {
 
     // Backfill to the ceiling, then the next real submission must be refused.
     const row = h.database.query('SELECT install_hash, pair_hash FROM submissions LIMIT 1').get() as any
-    for (let i = 0; i < 4; i++)
-      h.database.run(
-        `INSERT INTO submissions VALUES ('pad${i}','padhash${i}','standard','1.0.0',?,'vendor/model-a','default',
-         'vendor/model-b','high',4,4,2,0,2,4,'{}',?,'net',?,'del${i}')`,
-        [Date.now(), row.install_hash, row.pair_hash],
-      )
+    for (let i = 0; i < 4; i++) h.database.run(pad(`pad${i}`), [Date.now(), Date.now(), row.install_hash, 'net', row.pair_hash])
 
     const blocked = await submit(h, { seed: 99 })
     expect(blocked.response.status).toBe(429)
@@ -336,11 +344,7 @@ describe('daily quotas', () => {
     expect(first.response.status).toBe(201)
     const row = h.database.query('SELECT network_hash FROM submissions LIMIT 1').get() as any
     for (let i = 0; i < 100; i++)
-      h.database.run(
-        `INSERT INTO submissions VALUES ('n${i}','nhash${i}','standard','1.0.0',?,'x/a','default','x/b','high',
-         4,4,2,0,2,4,'{}','other-install',?,'pair${i}','del${i}')`,
-        [Date.now(), row.network_hash],
-      )
+      h.database.run(pad(`n${i}`), [Date.now(), Date.now(), 'other-install', row.network_hash, `pair${i}`])
 
     const blocked = await submit(h, { seed: 1, installationId: '0198a530-7b3c-7d21-8f47-000000000001' })
     expect(blocked.response.status).toBe(429)
@@ -348,51 +352,139 @@ describe('daily quotas', () => {
   })
 })
 
-describe('withdrawal window', () => {
-  const del = (h: Harness, id: string, token: string) =>
-    worker.fetch(
-      request(`/api/v1/submissions/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
-      h.env as any,
-      {} as any,
+describe('submitting long after the match', () => {
+  /** Rewrites the ticket's own timestamp and re-signs it, which is the only way
+   *  to simulate a run that finished hours or weeks ago: the server issues the
+   *  ticket, so `issuedAt` is not something a test can pass in. */
+  async function aged(h: Harness, cfg: ProtocolConfig, issuedAt: number) {
+    const { ticket } = await ticketFor(h, cfg)
+    const [encoded] = ticket.split('.')
+    const payload = { ...JSON.parse(Buffer.from(encoded, 'base64url').toString()), issuedAt }
+    const body = Buffer.from(JSON.stringify(payload)).toString('base64url')
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(h.env.RUN_TICKET_SECRET),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
     )
+    const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body))
+    return `${body}.${Buffer.from(new Uint8Array(signature)).toString('base64url')}`
+  }
 
-  test('withdraws a fresh submission', async () => {
+  const withTicket = (h: Harness, cfg: ProtocolConfig, ticket: string, list: ReturnType<typeof games>) =>
+    post(h, '/api/v1/submissions', {
+      schemaVersion: 1,
+      appVersion: LEADERBOARD_APP_VERSION,
+      protocol: DEFAULT_CIRCUIT.id,
+      installationId: '0198a530-7b3c-7d21-8f47-6381c9d9d643',
+      ticket,
+      turnstileToken: 'token',
+      config: cfg,
+      games: list,
+    })
+
+  test('accepts a result whose ticket was issued days ago', async () => {
     const h = start()
-    const { body } = await submit(h)
-    const response = await del(h, body.id, body.deleteToken)
-    expect(response.status).toBe(200)
+    const cfg = await config()
+    const threeDays = Date.now() - 3 * 24 * 60 * 60 * 1000
+    const response = await withTicket(h, cfg, await aged(h, cfg, threeDays), games(4))
+    expect(response.status).toBe(201)
+
+    // Dated to the match, not to the upload — and the upload time is still kept,
+    // because the daily quotas are counted on it.
+    const row = h.database.query('SELECT created_at, played_at FROM submissions').get() as any
+    expect(row.played_at).toBe(threeDays)
+    expect(row.created_at).toBeGreaterThan(threeDays)
+  })
+
+  test('a result plays into the window of the day it was played, not the day it was sent', async () => {
+    const h = start()
+    const cfg = await config()
+    const ancient = Date.now() - 29 * 24 * 60 * 60 * 1000
+    expect((await withTicket(h, cfg, await aged(h, cfg, ancient), games(4))).status).toBe(201)
+
+    // Inside the window today; the next test's clock would push it out.
+    const body = (await (await worker.fetch(request('/api/v1/standings'), h.env as any, {} as any)).json()) as any
+    expect(body.standings.length).toBe(2)
+  })
+
+  test('refuses a match older than the standings window rather than storing an invisible row', async () => {
+    const h = start()
+    const cfg = await config()
+    const response = await withTicket(h, cfg, await aged(h, cfg, Date.now() - 31 * 24 * 60 * 60 * 1000), games(4))
+    expect(response.status).toBe(409)
+    expect((await response.json()).error).toContain('30-day standings window')
     expect((h.database.query('SELECT COUNT(*) AS n FROM submissions').get() as any).n).toBe(0)
   })
 
-  test('refuses once the window has passed, and keeps the row', async () => {
+  /** The client keeps an unsubmitted result in local storage and has to decide
+   *  whether a refusal is worth holding it for. Only these two are terminal, and
+   *  the difference is carried by the code rather than by the status or the
+   *  prose — 409 covers both a duplicate and a stale match, and 403 covers both
+   *  a bad ticket and a failed challenge. */
+  test('labels every refusal with a code, and only stale and duplicate are terminal', async () => {
     const h = start()
-    const { body } = await submit(h)
-    h.database.run('UPDATE submissions SET created_at = ?', [Date.now() - 16 * 60 * 1000])
+    const cfg = await config()
+    const code = async (response: Response) => ({ status: response.status, code: (await response.json()).code })
 
-    const response = await del(h, body.id, body.deleteToken)
+    expect(await code(await withTicket(h, cfg, 'not.aticket', games(4)))).toEqual({ status: 403, code: 'ticket' })
+    expect(await code(await withTicket(h, cfg, await aged(h, cfg, Date.now() - 31 * 864e5), games(4)))).toEqual({
+      status: 409,
+      code: 'stale',
+    })
+
+    // `submit` has already read these bodies, so they are inspected in hand.
+    expect((await submit(h)).response.status).toBe(201)
+    const repeat = await submit(h)
+    expect([repeat.response.status, repeat.body.code]).toEqual([409, 'duplicate'])
+
+    h.turnstile.pass = false
+    const challenged = await submit(h, { seed: 1 })
+    expect([challenged.response.status, challenged.body.code]).toEqual([403, 'turnstile'])
+    h.turnstile.pass = true
+
+    // The limiter gates ticket issuance too, so the ticket is taken first.
+    const spare = await aged(h, cfg, Date.now() - 1000)
+    h.rateLimit.allow = false
+    expect(await code(await withTicket(h, cfg, spare, games(4, '1. g4 e5 2. f3 Qh4#')))).toEqual({
+      status: 429,
+      code: 'rate_limited',
+    })
+  })
+
+  test('refuses a ticket dated in the future', async () => {
+    const h = start()
+    const cfg = await config()
+    const response = await withTicket(h, cfg, await aged(h, cfg, Date.now() + 60 * 60 * 1000), games(4))
     expect(response.status).toBe(403)
-    expect((await response.json()).error).toContain('15 minutes')
-    // The point of the whole change: a losing result cannot be curated away.
-    expect((h.database.query('SELECT COUNT(*) AS n FROM submissions').get() as any).n).toBe(1)
   })
 
-  test('refuses a wrong token as not-found, without leaking that the row exists', async () => {
+  test('deduplicates the same result no matter how much later the second copy arrives', async () => {
     const h = start()
-    const { body } = await submit(h)
-    const response = await del(h, body.id, 'wrong-token')
-    expect(response.status).toBe(404)
+    const cfg = await config()
+    expect((await withTicket(h, cfg, await aged(h, cfg, Date.now() - 60 * 60 * 1000), games(4))).status).toBe(201)
+    // A different ticket for the same games: the content hash covers the result
+    // alone, so the second copy is refused however it was authorised.
+    const repeat = await withTicket(h, cfg, await aged(h, cfg, Date.now() - 30 * 60 * 1000), games(4))
+    expect(repeat.status).toBe(409)
+    expect((await repeat.json()).error).toContain('already been submitted')
     expect((h.database.query('SELECT COUNT(*) AS n FROM submissions').get() as any).n).toBe(1)
   })
 
-  test('requires a token at all', async () => {
+  test('no longer exposes a way to withdraw a submitted result', async () => {
     const h = start()
     const { body } = await submit(h)
     const response = await worker.fetch(
-      request(`/api/v1/submissions/${body.id}`, { method: 'DELETE' }),
+      request(`/api/v1/submissions/${body.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer anything-at-all' },
+      }),
       h.env as any,
       {} as any,
     )
-    expect(response.status).toBe(401)
+    expect(response.status).toBe(404)
+    expect((h.database.query('SELECT COUNT(*) AS n FROM submissions').get() as any).n).toBe(1)
   })
 })
 
@@ -510,10 +602,12 @@ describe('standings and entrant records', () => {
     expect(response.status).toBe(400)
   })
 
-  test('excludes results older than the window', async () => {
+  test('excludes results played longer ago than the window', async () => {
     const h = start()
     await submit(h)
-    h.database.run('UPDATE submissions SET created_at = ?', [Date.now() - 31 * 24 * 60 * 60 * 1000])
+    // Aged on play time, with the upload left as recent as it really was: an old
+    // match does not come back into the window by being submitted today.
+    h.database.run('UPDATE submissions SET played_at = ?', [Date.now() - 31 * 24 * 60 * 60 * 1000])
     const body = (await (await worker.fetch(request('/api/v1/standings'), h.env as any, {} as any)).json()) as any
     expect(body.standings).toEqual([])
   })
