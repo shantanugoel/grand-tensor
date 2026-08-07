@@ -41,6 +41,8 @@ type Attempt = {
   best: string | null
   promptTokens: number
   completionTokens: number
+  /** Part of `completionTokens`, and the number that explains a truncation. */
+  reasoningTokens: number
   cost: number
   ms: number
 }
@@ -99,6 +101,12 @@ async function main() {
   const temperature = Number(args.temperature ?? 0)
   const concurrency = Number(args.concurrency ?? 4)
   const setPath = String(args.positions ?? 'eval/positions.json')
+
+  // Left unset, each provider applies its own default — which differs by model
+  // (medium for gpt-5.6-luna, high for deepseek-v4-flash). Comparing two models
+  // that way silently compares two different amounts of thinking, so a benchmark
+  // wanting a like-for-like answer has to pin this.
+  const effort = String(args.effort ?? 'default')
 
   const models = String(args.models ?? '')
     .split(',')
@@ -163,6 +171,7 @@ async function main() {
             best: null,
             promptTokens: 0,
             completionTokens: 0,
+            reasoningTokens: 0,
             cost: 0,
             ms: 0,
           }
@@ -173,7 +182,7 @@ async function main() {
               model,
               temperature,
               maxTokens,
-              effort: 'default',
+              effort,
               pricing: modelInfo.get(model)?.pricing,
               messages: variant.build({
                 position,
@@ -186,6 +195,7 @@ async function main() {
             })
             base.promptTokens = result.usage.prompt
             base.completionTokens = result.usage.completion
+            base.reasoningTokens = result.usage.reasoning
             base.cost = result.usage.cost
             base.ms = result.ms
 
@@ -251,7 +261,13 @@ async function main() {
     const spend = attempts.filter((a) => a.model === model)
     const cost = spend.reduce((t, a) => t + a.cost, 0)
     const completion = spend.reduce((t, a) => t + a.completionTokens, 0)
-    console.log(`    tokens: ${completion} completion   cost: $${cost.toFixed(4)}`)
+    const reasoning = spend.reduce((t, a) => t + a.reasoningTokens, 0)
+    const answered = spend.filter((a) => a.completionTokens > 0)
+    const perCall = answered.length ? Math.round(reasoning / answered.length) : 0
+    console.log(
+      `    effort=${effort}  avg reasoning/call: ${perCall} of ${maxTokens} budget` +
+        `  (${completion} completion total)   cost: $${cost.toFixed(4)}`,
+    )
   }
 
   if (args.json) {

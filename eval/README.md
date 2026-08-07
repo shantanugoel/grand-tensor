@@ -40,6 +40,7 @@ bun run eval --models "openai/gpt-5.6-luna" --variants baseline,scaffolded --lim
 | `--depth` | `12` | Engine depth for grading |
 | `--concurrency` | `4` | Model calls in flight |
 | `--temperature` | `0` | Kept at 0 so reruns are comparable |
+| `--effort` | `default` | Reasoning effort. See the warning below |
 | `--positions` | `eval/positions.json` | Position set |
 | `--json` | — | Write per-move detail to a file |
 
@@ -63,6 +64,23 @@ The last line is the only one worth drawing a conclusion from. It is a **paired*
 bootstrap over positions both arms played, so position difficulty cancels out.
 If the interval spans zero it says `no significant difference`, and that is the
 honest reading no matter how good the means look.
+
+## Pin the effort before comparing two models
+
+`--effort default` sends no reasoning parameter at all, so **each provider applies
+its own default, and those differ by model**: `gpt-5.6-luna` defaults to `medium`,
+`deepseek-v4-flash-0731` to `high`. Left alone, a two-model run compares two
+different amounts of thinking and reports the difference as if it were skill.
+
+Pass `--effort low` (or whatever both models support) for a like-for-like number.
+Note the supported sets differ too — DeepSeek V4 Flash offers `max/high/low` with
+no `medium`, so an exact match with Luna is not always available. When it isn't,
+run each effort separately rather than pretending one number covers both.
+
+Effort also drives truncation: OpenRouter allots roughly 80% of `max_tokens` to
+reasoning at high effort, so a 16k cap leaves ~3k for the answer. A model that
+reasons past that emits no move, which is a budget failure rather than a chess
+one — `trunc` in the report, not `illegal`.
 
 ## Why these choices
 
