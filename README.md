@@ -116,9 +116,18 @@ at `grandtensor.shantanugoel.com/api/v1/*`; locally Wrangler serves both halves 
 ```bash
 bun run leaderboard:migrate:local   # local D1, once per new migration
 bun run cloudflare:dev
-bun run leaderboard:migrate:remote  # production D1
-bun run deploy
+bun run deploy                      # migrates production D1, then deploys
 ```
+
+`bun run deploy` applies any unapplied production migration before it uploads, because
+`wrangler deploy` does not and the two must not drift — the Worker deploys from a GitHub push
+through Cloudflare's own builder, where nobody is at a terminal to remember the step. Wrangler
+records what it has already applied, so the migrate step is a no-op on a deploy that adds none, and
+if it cannot reach D1 the deploy aborts before uploading: an unmigrated schema keeps serving the old
+Worker rather than meeting a new one that expects columns it does not have. A schema change is still
+briefly visible in production between the migration landing and the new Worker taking over — the
+window is seconds, and it is why a migration that drops a column the live code still writes is worth
+splitting in two if the endpoint matters more than this one does.
 
 Wrangler is pinned as a development dependency. Production values for `TURNSTILE_SECRET`,
 `RUN_TICKET_SECRET`, and `ABUSE_HASH_SECRET` belong in Cloudflare Worker secret storage, never in
