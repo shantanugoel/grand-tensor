@@ -1,4 +1,4 @@
-import { DEFAULT_PROMPT_TEMPLATE, type Settings } from './settings'
+import { DEFAULT_PROMPT_TEMPLATE, normalizeReasoningEffort, type Settings } from './settings'
 
 const runtimeHostname = typeof location === 'undefined' ? '' : location.hostname
 const runtimeOrigin = typeof location === 'undefined' ? '' : location.origin
@@ -302,7 +302,9 @@ export function inspectEligibility(settings: Settings): Eligibility {
   })
   // An entrant is (model, effort), so the same model at two efforts is a legal
   // and unusually informative pairing. Only an exact self-match is refused.
-  const entrants = settings.players.map((player) => entrantKey({ model: player.model.trim(), effort: player.effort }))
+  const entrants = settings.players.map((player) =>
+    entrantKey({ model: player.model.trim(), effort: normalizeReasoningEffort(player.effort) }),
+  )
   if (entrants[0] === entrants[1])
     issues.push({
       field: 'p1_model',
@@ -331,7 +333,7 @@ export async function protocolConfig(
       promptHash: await sha256(DEFAULT_PROMPT_TEMPLATE),
       players: settings.players.map((player) => ({
         model: player.model.trim(),
-        effort: player.effort,
+        effort: normalizeReasoningEffort(player.effort),
         temperature: player.temperature,
       })) as [ProtocolPlayer, ProtocolPlayer],
     },

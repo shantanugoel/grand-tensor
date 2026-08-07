@@ -18,6 +18,10 @@ export const NO_EFFORT = 'default'
  *  setting it honours, and it answers in three seconds instead of twelve minutes. */
 export const REASONING_OFF = 'off'
 
+/** Canonicalise the provider's name for disabled reasoning to the app's. */
+export const normalizeReasoningEffort = (effort: Effort): Effort =>
+  effort === 'none' ? REASONING_OFF : effort
+
 export type PlayerConfig = {
   /** Display name shown in the HUD. */
   label: string
@@ -142,10 +146,10 @@ export function loadSettings(): Settings {
     const raw = localStorage.getItem(KEY)
     if (!raw) return structuredClone(DEFAULTS)
     const saved = JSON.parse(raw) as Partial<Settings>
-    const players = (saved.players ?? DEFAULTS.players).map((p, i) => ({
-      ...DEFAULTS.players[i],
-      ...p,
-    })) as [PlayerConfig, PlayerConfig]
+    const players = (saved.players ?? DEFAULTS.players).map((p, i) => {
+      const player = { ...DEFAULTS.players[i], ...p }
+      return { ...player, effort: normalizeReasoningEffort(player.effort) }
+    }) as [PlayerConfig, PlayerConfig]
     return {
       ...structuredClone(DEFAULTS),
       ...saved,

@@ -4,7 +4,7 @@
  *  never the API key, so opening one prompts you for your own. */
 
 import type { Series } from './series'
-import type { Effort, Settings } from './settings'
+import { normalizeReasoningEffort, type Effort, type Settings } from './settings'
 
 /** Efforts are provider-defined, so a shared link is only sanity-checked here;
  *  the series re-checks it against the model before the first request. */
@@ -15,10 +15,10 @@ export function matchHash(s: Settings): string {
   const p = new URLSearchParams({
     an: s.players[0].label,
     a: s.players[0].model,
-    ae: s.players[0].effort,
+    ae: normalizeReasoningEffort(s.players[0].effort),
     bn: s.players[1].label,
     b: s.players[1].model,
-    be: s.players[1].effort,
+    be: normalizeReasoningEffort(s.players[1].effort),
     g: String(s.games),
   })
   return `#${p}`
@@ -35,7 +35,8 @@ export function applyMatchHash(s: Settings): boolean {
   const p = new URLSearchParams(raw)
   if (!p.get('a') && !p.get('b')) return false
 
-  const effort = (v: string | null, fallback: Effort): Effort => (v && looksLikeEffort(v) ? v : fallback)
+  const effort = (v: string | null, fallback: Effort): Effort =>
+    normalizeReasoningEffort(v && looksLikeEffort(v) ? v : fallback)
 
   ;[0, 1].forEach((i) => {
     const key = i === 0 ? 'a' : 'b'

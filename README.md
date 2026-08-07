@@ -22,7 +22,7 @@ Then open the printed URL, hit **⚙ Settings**, and fill in:
 | Base URL | Any OpenAI-compatible `/chat/completions` host. Default: `https://openrouter.ai/api/v1` |
 | API key | Stored in this browser only, sent only to the base URL above |
 | Model id | e.g. `deepseek/deepseek-v4-flash-0731`, `openai/gpt-5.6-luna`. The field autocompletes from the endpoint's `/models` |
-| Reasoning effort | Only the levels the chosen model actually accepts — read from its `/models` entry, so `deepseek-v4-flash-0731` offers max/high/low with no medium while `gpt-5.6-luna` adds xhigh and none. `default` sends nothing and lets the provider choose (the dropdown names which level that is). Sent as `reasoning.effort` on OpenRouter, `reasoning_effort` elsewhere |
+| Reasoning effort | Only the levels the chosen model actually accepts — read from its `/models` entry, so `deepseek-v4-flash-0731` offers max/high/low with no medium while `gpt-5.6-luna` adds xhigh. Models with optional reasoning get one `off (no reasoning)` choice; provider metadata's equivalent `none` value is folded into it. `default` sends nothing and lets the provider choose (the dropdown names which level that is). Sent as `reasoning.effort` on OpenRouter, `reasoning_effort` elsewhere |
 | Games in series | Colors alternate every game; 1 / 0.5 / 0 scoring decides the champion |
 | Ply limit | Games past this are adjudicated so a series can't hang — a side five or more points of material ahead takes the point, anything closer is a draw |
 | Retries before forfeit | A reply that names an illegal move, or that never produces the JSON at all, is re-prompted this many times; then the model loses the game |

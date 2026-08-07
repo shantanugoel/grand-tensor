@@ -5,7 +5,7 @@ import { Chess, type Move } from 'chess.js'
 import { adjudicate, adjudicationReason } from './adjudication'
 import { addUsage, chat, ChatError, emptyUsage, fetchModels, type ChatResult, type ModelInfo, type Usage } from './llm'
 import { capRetryPrompt, cleanPgn, movePrompt, parseMove, retryPrompt, systemPrompt, type LegalMove } from './prompt'
-import { NO_EFFORT, SPEEDS, type PlayerConfig, type Settings } from './settings'
+import { NO_EFFORT, normalizeReasoningEffort, REASONING_OFF, SPEEDS, type PlayerConfig, type Settings } from './settings'
 
 export type PlayerIdx = 0 | 1
 
@@ -211,9 +211,21 @@ export class Series {
    *  that dropped an effort level. Rather than let the request 400, fall back to
    *  the provider default and say so once, up front. */
   private resolveEffort(cfg: PlayerConfig, player: PlayerIdx): string {
-    if (cfg.effort === NO_EFFORT) return NO_EFFORT
-    const supported = this.models.get(cfg.model)?.efforts
-    if (!supported || supported.includes(cfg.effort)) return cfg.effort
+    const requested = normalizeReasoningEffort(cfg.effort)
+    if (requested === NO_EFFORT) return NO_EFFORT
+    const info = this.models.get(cfg.model)
+    if (!info) return requested
+
+    // OpenRouter advertises disabled reasoning both as the `none` pseudo-effort
+    // and as `mandatory: false`. The app exposes one unambiguous name for that
+    // state. Accept the old/provider spelling too, so saved and shared settings
+    // made before the UI was normalised keep doing what their author intended.
+    if (requested === REASONING_OFF && info.canDisable === true) {
+      return REASONING_OFF
+    }
+
+    const supported = info.efforts
+    if (!supported || supported.includes(requested)) return requested
 
     this.events.onLog({
       kind: 'warn',

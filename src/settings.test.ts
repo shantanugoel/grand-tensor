@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import { DEFAULTS, effectiveSpeedIndex } from './settings'
+import { DEFAULTS, effectiveSpeedIndex, normalizeReasoningEffort } from './settings'
+
+test('normalizes the provider spelling for disabled reasoning', () => {
+  expect(normalizeReasoningEffort('none')).toBe('off')
+  expect(normalizeReasoningEffort('low')).toBe('low')
+})
 
 describe('effectiveSpeedIndex', () => {
   test('paces an all-random Turbo demo like Blitz', () => {

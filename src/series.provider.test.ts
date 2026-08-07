@@ -40,13 +40,13 @@ type Reply = { content?: string | null; reasoning?: string; finish?: string }
 /** A provider that answers each move by consulting `reply`, and plays a real
  *  legal move whenever that returns nothing — so a game can actually progress
  *  while one specific reply shape is under test. */
-function provider(reply: (model: string, call: number) => Reply | null) {
+function provider(reply: (model: string, call: number) => Reply | null, models: any[] = []) {
   const sent: any[] = []
   const calls = new Map<string, number>()
   const board = new Chess()
 
   globalThis.fetch = (async (url: any, init?: any) => {
-    if (String(url).endsWith('/models')) return Response.json({ data: [] })
+    if (String(url).endsWith('/models')) return Response.json({ data: models })
     const body = JSON.parse(init.body)
     sent.push(body)
     const n = (calls.get(body.model) ?? 0) + 1
@@ -187,6 +187,36 @@ describe('what the provider is sent', () => {
     // "default" effort means the parameter is not sent at all.
     expect(sent[0].reasoning).toBeUndefined()
     expect(sent[0].reasoning_effort).toBeUndefined()
+  })
+
+  test('accepts optional reasoning as off and sends the disable request', async () => {
+    const models = [
+      {
+        id: 'alpha',
+        reasoning: { supported_efforts: ['max', 'high', 'low'], mandatory: false },
+      },
+      {
+        id: 'beta',
+        reasoning: { supported_efforts: ['max', 'xhigh', 'high', 'medium', 'low', 'none'], mandatory: false },
+      },
+    ]
+    const sent = provider(() => null, models)
+    const configured = settings({
+      baseUrl: 'https://openrouter.ai/api/v1',
+      maxPlies: 2,
+      players: [
+        { label: 'Alpha', model: 'alpha', effort: 'off', temperature: 0.2 },
+        // Old links and settings may still carry OpenRouter's spelling.
+        { label: 'Beta', model: 'beta', effort: 'none', temperature: 0.2 },
+      ],
+    })
+
+    const { series, logs } = await run(configured)
+
+    expect(series.resolvedEffort).toEqual(['off', 'off'])
+    expect(logs.some((entry) => entry.kind === 'warn')).toBe(false)
+    expect(sent[0].reasoning).toEqual({ enabled: false })
+    expect(sent[1].reasoning).toEqual({ enabled: false })
   })
 
   test('replays finished games into later prompts without their result token', async () => {

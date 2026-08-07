@@ -7,7 +7,7 @@
 import { fetchModels, FALLBACK_EFFORTS, type ModelInfo } from '../llm'
 import { PROMPT_VARIABLES, systemPrompt } from '../prompt'
 import { CIRCUITS, inspectEligibility } from '../leaderboard-protocol'
-import { DEFAULTS, NO_EFFORT, REASONING_OFF, type Settings } from '../settings'
+import { DEFAULTS, NO_EFFORT, normalizeReasoningEffort, REASONING_OFF, type Settings } from '../settings'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
 
@@ -141,6 +141,10 @@ function renderEfforts(i: number, preferred?: string) {
   const model = $<HTMLInputElement>(`[data-model="${i}"]`).value.trim()
   const info = known.get(model)
   const current = preferred ?? select.value ?? NO_EFFORT
+  // `none` is the provider spelling for disabled reasoning. Keep one label and
+  // one persisted value instead of presenting `none` and `off` as if they were
+  // different controls.
+  const normalisedCurrent = normalizeReasoningEffort(current)
 
   // Known model: exactly what it accepts, which may be nothing. Unknown model
   // or no catalog at all: a superset, so a custom endpoint or an unlisted
@@ -163,7 +167,7 @@ function renderEfforts(i: number, preferred?: string) {
   ].join('')
 
   const selectable = canDisable ? [...options, REASONING_OFF] : options
-  select.value = selectable.includes(current) ? current : NO_EFFORT
+  select.value = selectable.includes(normalisedCurrent) ? normalisedCurrent : NO_EFFORT
   const noneOffered = info != null && selectable.length === 0
   select.disabled = noneOffered
   select.title = noneOffered ? `${model} does not expose reasoning effort levels` : ''

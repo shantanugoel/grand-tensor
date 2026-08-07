@@ -33,7 +33,7 @@ export type ModelInfo = {
 
 /** Offered when the endpoint says nothing about a model, so a custom server
  *  still lets you pick something rather than locking you to the default. */
-export const FALLBACK_EFFORTS = ['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']
+export const FALLBACK_EFFORTS = ['minimal', 'low', 'medium', 'high', 'xhigh', 'max']
 
 export type ChatRequest = {
   baseUrl: string
@@ -197,7 +197,7 @@ export async function fetchModels(baseUrl: string, apiKey: string): Promise<Map<
       // the block but no effort list reasons some other way (a token budget,
       // say), so there is still no effort to choose.
       const efforts = Array.isArray(m.reasoning?.supported_efforts)
-        ? m.reasoning.supported_efforts.filter((e: unknown) => typeof e === 'string')
+        ? m.reasoning.supported_efforts.filter((e: unknown) => typeof e === 'string' && e !== 'none')
         : m.reasoning
           ? []
           : undefined
