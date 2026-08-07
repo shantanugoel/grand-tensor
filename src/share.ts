@@ -50,7 +50,13 @@ export function applyMatchHash(s: Settings): boolean {
   return true
 }
 
-export const fmtScore = (n: number) => (Number.isInteger(n) ? String(n) : `${Math.floor(n)}½`)
+/** Chess scores the way a chess result is written: half points as ½, and a lone
+ *  half with no leading zero — "2½–½", not "2½–0½". */
+export const fmtScore = (n: number) => {
+  if (Number.isInteger(n)) return String(n)
+  const whole = Math.floor(n)
+  return whole ? `${whole}½` : '½'
+}
 
 /** Filename-safe form of a player label. */
 export const slug = (s: string) =>
@@ -64,16 +70,21 @@ export const matchFilename = (s: Settings, ext: string) =>
 const fmtTokens = (n: number) =>
   n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${Math.round(n / 1000)}k` : String(n)
 
-/** Wordle-style summary: one square per game, coloured by who took it. */
-export function resultText(series: Series, s: Settings): string {
-  const [a, b] = series.stats
-  const squares = series.games
+/** Wordle-style strip: one square per game, coloured by who took it. */
+export function resultSquares(series: Series): string {
+  return series.games
     .map((rec) => {
       if (rec.result === '1/2-1/2') return '⬜'
       const winner = rec.result === '1-0' ? rec.white : 1 - rec.white
       return winner === 0 ? '🟦' : '🟪'
     })
     .join('')
+}
+
+/** The full breakdown, for the clipboard — somewhere to paste the numbers. */
+export function resultText(series: Series, s: Settings): string {
+  const [a, b] = series.stats
+  const squares = resultSquares(series)
 
   const leader = series.leader
   const verdict =
@@ -101,6 +112,38 @@ export function resultText(series: Series, s: Settings): string {
   ].join('\n')
 }
 
+/** The timeline version. A stat dump scrolls past; a scoreline, a strip of
+ *  squares and one odd detail get read, and the link is the point of the post. */
+export function postText(series: Series, s: Settings): string {
+  const [a, b] = series.stats
+  // The squares need a key, and the headline has to name both players anyway —
+  // so the colours ride along with the names rather than costing another line.
+  const [x, y] = [`🟦 ${s.players[0].label}`, `🟪 ${s.players[1].label}`]
+  const games = series.games.length
+
+  const leader = series.leader
+  const headline =
+    leader === null
+      ? `${x} and ${y} finished ${games} games of chess dead level, ${fmtScore(a.score)}–${fmtScore(b.score)}.`
+      : leader === 0
+        ? `${x} beat ${y} ${fmtScore(a.score)}–${fmtScore(b.score)} over ${games} games of chess. 🏆`
+        : `${y} beat ${x} ${fmtScore(b.score)}–${fmtScore(a.score)} over ${games} games of chess. 🏆`
+
+  const illegal = a.illegal + b.illegal
+  const hook = illegal
+    ? `${illegal} illegal move${illegal === 1 ? '' : 's'} attempted along the way.`
+    : `Not one illegal move between them.`
+
+  return [
+    `♟ ${headline}`,
+    resultSquares(series),
+    ``,
+    hook,
+    `Pick two models, watch them fight ↓`,
+    shareUrl(s),
+  ].join('\n')
+}
+
 export async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text)
@@ -119,8 +162,10 @@ export async function copyText(text: string): Promise<boolean> {
   }
 }
 
+/** Plain text intent: one URL, no media upload, no share sheet. Desktop opens
+ *  the web composer, mobile hands off to the app if it is installed. */
 export function tweetUrl(text: string): string {
-  return `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`
+  return `https://x.com/intent/post?text=${encodeURIComponent(text)}`
 }
 
 export const canNativeShare = () => typeof navigator.share === 'function'

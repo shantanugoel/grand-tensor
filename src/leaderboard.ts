@@ -15,6 +15,7 @@ import {
   type StandingsResponse,
   type SubmittedGame,
 } from './leaderboard-protocol'
+import { fmtScore } from './share'
 import type { Series } from './series'
 import type { Settings } from './settings'
 
@@ -212,10 +213,6 @@ function loadTurnstile(): Promise<TurnstileApi> {
     document.head.appendChild(script)
   })
   return turnstileLoading
-}
-
-function fmtPoints(points: number) {
-  return Number.isInteger(points) ? String(points) : `${Math.floor(points)}½`
 }
 
 /** `default` means no effort parameter was sent at all, which is a real entrant
@@ -450,7 +447,7 @@ export class Leaderboard {
     cell(tr, row.model)
     cell(tr, effortChip(row.effort))
     cell(tr, row.provisional ? '—' : `${row.rating} ±${row.ratingMargin}`)
-    cell(tr, `${row.scorePct.toFixed(1)}% (${fmtPoints(row.points)})`)
+    cell(tr, `${row.scorePct.toFixed(1)}% (${fmtScore(row.points)})`)
     cell(tr, `${row.wins}/${row.draws}/${row.losses}`)
     cell(tr, String(row.opponents))
     cell(tr, String(row.games))
@@ -567,7 +564,7 @@ export class Leaderboard {
       `This is optional. Grand Tensor uploads exact model IDs, ${circuit.name} settings, results and PGNs. It never uploads API keys, player labels, prompts, commentary, token usage, latency or cost.`
     const matchup = document.createElement('div')
     matchup.className = 'leaderboard-matchup'
-    matchup.textContent = `${pending.config.players[0].model}  ${fmtPoints(pending.score[0])}–${fmtPoints(pending.score[1])}  ${pending.config.players[1].model}`
+    matchup.textContent = `${pending.config.players[0].model}  ${fmtScore(pending.score[0])}–${fmtScore(pending.score[1])}  ${pending.config.players[1].model}`
     const disclosure = document.createElement('p')
     disclosure.className = 'leaderboard-note'
     disclosure.textContent =

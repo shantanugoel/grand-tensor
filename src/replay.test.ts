@@ -158,13 +158,13 @@ describe('buildStoryboard', () => {
     expect(story.games[0].scoreBefore).toEqual(['0', '0'])
     expect(story.games[0].scoreAfter).toEqual(['1', '0'])
     expect(story.games[1].scoreBefore).toEqual(['1', '0'])
-    // fmtScore spells a lone half point "0½", the same as the HUD does.
-    expect(story.games[1].scoreAfter).toEqual(['1½', '0½'])
+    // A lone half point is written "½", the same as the HUD does.
+    expect(story.games[1].scoreAfter).toEqual(['1½', '½'])
   })
 
   test('closes on the final score and the crown', () => {
     const lines = built().outro.lines.map((l) => l.text)
-    expect(lines[0]).toBe('1½ – 0½')
+    expect(lines[0]).toBe('1½ – ½')
     expect(lines[1]).toBe('ALPHA TAKES THE CROWN')
     expect(lines[2]).toBe('https://example.test/#a=x')
   })
@@ -176,7 +176,7 @@ describe('buildStoryboard', () => {
       totalGames: 1,
       url: 'u',
     })
-    expect(story.outro.lines[0].text).toBe('0½ – 0½')
+    expect(story.outro.lines[0].text).toBe('½ – ½')
     expect(story.outro.lines[1].text).toBe('DEAD HEAT AFTER 1')
   })
 

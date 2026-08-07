@@ -10,11 +10,11 @@ import { readSettings, renderSettings } from './ui/settings-ui'
 import {
   applyMatchHash,
   canNativeShare,
-  canShareFile,
   copyText,
   fmtScore,
   matchFilename,
   nativeShare,
+  postText,
   resultText,
   shareUrl,
   tweetUrl,
@@ -450,38 +450,27 @@ async function shareImage() {
   else hud.toast('Could not copy the image.')
 }
 
-/** X's post intent takes no media — there is no URL parameter for it, and their
- *  media upload needs OAuth. So the card rides along one of two ways: the
- *  platform share sheet where that carries files, or the clipboard everywhere
- *  else, with the composer opened ready for a paste. */
-async function postToX(text: string) {
-  const file = await buildCard()
-
-  if (file && canShareFile(file)) {
-    hud.toast('Pick X in the share sheet to post with the card attached.')
-    return nativeShare(text, shareUrl(settings), file)
-  }
-
-  const copied = file ? await copyImageToClipboard(file) : false
-  const win = open(tweetUrl(text), '_blank', 'noopener')
-  if (!win) return hud.toast(copied ? 'Card copied — allow pop-ups to open the composer.' : 'Allow pop-ups to open the composer.')
+/** X's post intent takes no media, and chasing that with the share sheet cost
+ *  more than it bought. Text and a link it is — the same one step everywhere. */
+function postToX() {
+  if (!series) return
+  const win = open(tweetUrl(postText(series, settings)), '_blank', 'noopener')
   hud.toast(
-    copied
-      ? 'Composer opened — paste (⌘V / Ctrl+V) to attach the card. X can’t take it from a link.'
-      : 'Composer opened. Use ⧉ Image to copy the card, then paste it into the post.',
+    win
+      ? 'Composer opened — 🖼 Image copies the card if you want it attached.'
+      : 'Allow pop-ups to open the X composer.',
   )
 }
 
 async function share(action: string) {
   if (!series) return
-  const text = resultText(series, settings)
 
-  if (action === 'result') hud.toast((await copyText(text)) ? 'Result copied.' : 'Copy failed.')
+  if (action === 'result') hud.toast((await copyText(resultText(series, settings))) ? 'Result copied.' : 'Copy failed.')
   else if (action === 'image') await shareImage()
   else if (action === 'video') await exportVideo()
   else if (action === 'link') hud.toast((await copyText(shareUrl(settings))) ? 'Matchup link copied.' : 'Copy failed.')
-  else if (action === 'x') await postToX(text)
-  else if (action === 'native') await nativeShare(text, shareUrl(settings), await buildCard())
+  else if (action === 'x') postToX()
+  else if (action === 'native') await nativeShare(postText(series, settings), shareUrl(settings), await buildCard())
   else if (action === 'submit') {
     // The verdict card owns the submission flow; this is just a shortcut to it.
     summary.close()
