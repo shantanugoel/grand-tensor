@@ -143,8 +143,12 @@ async function main() {
     console.log(`Positions: ${set.positions.length} written to ${setPath}`)
   }
 
+  // Offset matters for short probes: the set is ordered by game and then by ply,
+  // so the first entries are all openings — the phase where models reason least
+  // and blunder least. Sizing a token budget from those would underestimate it.
+  const offset = Number(args.offset ?? 0)
   const limit = Number(args.limit ?? set.positions.length)
-  const positions = set.positions.slice(0, limit)
+  const positions = set.positions.slice(offset, offset + limit)
 
   const grader = new Grader(engine, depth)
   console.log(`Priming engine at depth ${depth} over ${positions.length} positions...`)
