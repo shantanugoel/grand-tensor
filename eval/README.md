@@ -42,7 +42,16 @@ bun run eval --models "openai/gpt-5.6-luna" --variants baseline,scaffolded --lim
 | `--temperature` | `0` | Kept at 0 so reruns are comparable |
 | `--effort` | `default` | Reasoning effort. See the warning below |
 | `--positions` | `eval/positions.json` | Position set |
-| `--json` | — | Write per-move detail to a file |
+| `--json` | — | Stream per-move detail to a file, one JSON object per line |
+| `--timeout` | `900` | Seconds before a stalled request is retried |
+
+Rows are written as they are graded, so a run you interrupt keeps everything it
+finished — and Ctrl-C prints the summary for that partial set rather than
+discarding it. The file is JSON Lines; read it back with `jq -s`:
+
+```bash
+jq -s '[.[] | select(.cpl >= 300)] | length' out.json
+```
 
 ## Reading the output
 

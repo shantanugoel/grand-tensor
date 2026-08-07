@@ -214,6 +214,30 @@ async function main() {
     // Pricing is a nicety; the run does not depend on it.
   }
 
+  /** Written as each move is graded rather than once at the end.
+   *
+   *  A run that was killed at 159 of 160 moves left nothing behind, because the
+   *  results only existed in memory until the last one landed — and the runs
+   *  worth interrupting are exactly the long ones whose data is most expensive
+   *  to recreate. One JSON object per line, so a partial file is still a valid
+   *  file: `jq -s` reads it back as an array, and a truncated final line costs
+   *  one row rather than the lot. */
+  const sink = args.json ? Bun.file(String(args.json)).writer() : null
+
+  // Kept alongside pooled()'s return value, which only materialises at the end.
+  // The interrupt handler reports from this.
+  const done: Attempt[] = []
+  const record = (attempt: Attempt): Attempt => {
+    done.push(attempt)
+    if (sink) {
+      // One write per line and an immediate flush: the point is surviving a kill,
+      // which a buffer defeats.
+      sink.write(JSON.stringify(attempt) + '\n')
+      sink.flush()
+    }
+    return attempt
+  }
+
   const jobs: (() => Promise<Attempt>)[] = []
   for (const model of models) {
     for (const variant of variants) {
@@ -268,7 +292,7 @@ async function main() {
               // Same distinction the arena draws: a reply that ran out of budget
               // never made a move, and blaming that on chess would be wrong.
               base.failure = result.finish === 'length' || !result.text.trim() ? 'truncated' : 'illegal'
-              return base
+              return record(base)
             }
             // One attempt per position, no retries. Retries are a property of the
             // arena, not of move quality, and allowing them here would let a model
@@ -277,16 +301,29 @@ async function main() {
             base.san = parsed.san
             base.cpl = grade.cpl
             base.best = grade.best
-            return base
+            return record(base)
           } catch (err) {
             base.failure = 'error'
             console.error(`  ${model}/${variant.name}/${position.id}: ${err instanceof Error ? err.message : err}`)
-            return base
+            return record(base)
           }
         })
       }
     }
   }
+
+  // Ctrl-C on a long run used to throw away every move already graded. The rows
+  // are on disk by now either way; this is so the summary is too, without having
+  // to go and re-read the file.
+  let interrupted = false
+  process.on('SIGINT', () => {
+    if (interrupted) process.exit(130) // A second Ctrl-C means they mean it.
+    interrupted = true
+    console.log(`\n\nInterrupted after ${done.length} of ${jobs.length} moves. Reporting what finished:\n`)
+    report(done)
+    sink?.end()
+    process.exit(130)
+  })
 
   console.log(`Running ${jobs.length} graded moves (${models.length} models x ${variants.length} variants x ${positions.length} positions)...`)
   const runStart = performance.now()
@@ -306,54 +343,55 @@ async function main() {
     )
   })
   console.log(`Done in ${((performance.now() - runStart) / 1000).toFixed(1)}s\n`)
-
-  console.log('=== RESULTS ===')
-  const cplByKey = new Map<string, Map<string, number>>()
-  for (const model of models) {
-    console.log(`\n${model}`)
-    for (const variant of variants) {
-      const rows = attempts.filter((a) => a.model === model && a.variant === variant.name)
-      const scored = rows.filter((a) => a.cpl !== null)
-      const byPosition = new Map(scored.map((a) => [a.position.id, a.cpl!]))
-      cplByKey.set(`${model}|${variant.name}`, byPosition)
-      printSummary(variant.name, summarize(scored.map((a) => a.cpl!)), {
-        illegal: rows.filter((a) => a.failure === 'illegal').length,
-        truncated: rows.filter((a) => a.failure === 'truncated').length,
-        error: rows.filter((a) => a.failure === 'error').length,
-      })
-    }
-
-    // Paired comparisons against the first variant listed.
-    if (variants.length > 1) {
-      const control = cplByKey.get(`${model}|${variants[0].name}`)!
-      for (const variant of variants.slice(1)) {
-        const c = comparePaired(control, cplByKey.get(`${model}|${variant.name}`)!)
-        const verdict = c.significant ? (c.meanDiff > 0 ? 'BETTER' : 'WORSE') : 'no significant difference'
-        console.log(
-          `    ${variants[0].name} -> ${variant.name}: ${cp(c.meanDiff)} cp ` +
-            `(95% CI ${cp(c.ci95[0])} to ${cp(c.ci95[1])}, paired n=${c.n}) — ${verdict}`,
-        )
-      }
-    }
-
-    const spend = attempts.filter((a) => a.model === model)
-    const cost = spend.reduce((t, a) => t + a.cost, 0)
-    const completion = spend.reduce((t, a) => t + a.completionTokens, 0)
-    const reasoning = spend.reduce((t, a) => t + a.reasoningTokens, 0)
-    const answered = spend.filter((a) => a.completionTokens > 0)
-    const perCall = answered.length ? Math.round(reasoning / answered.length) : 0
-    console.log(
-      `    effort=${effort}  avg reasoning/call: ${perCall} of ${maxTokens} budget` +
-        `  (${completion} completion total)   cost: $${cost.toFixed(4)}`,
-    )
-  }
-
-  if (args.json) {
-    await Bun.write(String(args.json), JSON.stringify(attempts, null, 2))
-    console.log(`\nPer-move detail written to ${args.json}`)
-  }
-
+  report(attempts)
+  sink?.end()
+  if (args.json) console.log(`\nPer-move detail in ${args.json}`)
   await engine.close()
+
+  /** Printed from whatever has finished, so an interrupted run still says what
+   *  it learned. Closes over the run's configuration rather than taking it as
+   *  arguments, because the signal handler has no way to pass any. */
+  function report(rows: Attempt[]) {
+    console.log('=== RESULTS ===')
+    const cplByKey = new Map<string, Map<string, number>>()
+    for (const model of models) {
+      console.log(`\n${model}`)
+      for (const variant of variants) {
+        const forArm = rows.filter((a) => a.model === model && a.variant === variant.name)
+        const scored = forArm.filter((a) => a.cpl !== null)
+        cplByKey.set(`${model}|${variant.name}`, new Map(scored.map((a) => [a.position.id, a.cpl!])))
+        printSummary(variant.name, summarize(scored.map((a) => a.cpl!)), {
+          illegal: forArm.filter((a) => a.failure === 'illegal').length,
+          truncated: forArm.filter((a) => a.failure === 'truncated').length,
+          error: forArm.filter((a) => a.failure === 'error').length,
+        })
+      }
+
+      // Paired comparisons against the first variant listed.
+      if (variants.length > 1) {
+        const control = cplByKey.get(`${model}|${variants[0].name}`)!
+        for (const variant of variants.slice(1)) {
+          const c = comparePaired(control, cplByKey.get(`${model}|${variant.name}`)!)
+          const verdict = c.significant ? (c.meanDiff > 0 ? 'BETTER' : 'WORSE') : 'no significant difference'
+          console.log(
+            `    ${variants[0].name} -> ${variant.name}: ${cp(c.meanDiff)} cp ` +
+              `(95% CI ${cp(c.ci95[0])} to ${cp(c.ci95[1])}, paired n=${c.n}) — ${verdict}`,
+          )
+        }
+      }
+
+      const spend = rows.filter((a) => a.model === model)
+      const cost = spend.reduce((t, a) => t + a.cost, 0)
+      const completion = spend.reduce((t, a) => t + a.completionTokens, 0)
+      const reasoning = spend.reduce((t, a) => t + a.reasoningTokens, 0)
+      const answered = spend.filter((a) => a.completionTokens > 0)
+      const perCall = answered.length ? Math.round(reasoning / answered.length) : 0
+      console.log(
+        `    effort=${effort}  avg reasoning/call: ${perCall} of ${maxTokens} budget` +
+          `  (${completion} completion total)   cost: $${cost.toFixed(4)}`,
+      )
+    }
+  }
 }
 
 // Only when run as a command. Without this, importing anything from here — the
