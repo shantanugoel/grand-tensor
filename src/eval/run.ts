@@ -7,7 +7,7 @@
  *  from the environment — Bun loads .env automatically. */
 
 import { Chess } from 'chess.js'
-import { chat, fetchModels, type ModelInfo } from '../llm'
+import { chat, ChatError, type ChatRequest, type ChatResult, fetchModels, type ModelInfo } from '../llm'
 import { parseMove, type LegalMove } from '../prompt'
 import { Engine, engineAvailable } from './engine'
 import { Grader } from './cpl'
@@ -68,6 +68,38 @@ async function pooled<T>(
   await Promise.all(workers)
   return results
 }
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/** One completion, riding out transient provider failures.
+ *
+ *  The arena already does this in `chatWithRecovery`; the benchmark did not, and
+ *  a rate-limited provider turned into missing rows rather than a slower run.
+ *  That is worse than it sounds: the positions that 429 are whichever ones were
+ *  in flight when the limit hit, so the holes are not random and the surviving
+ *  sample is quietly biased.
+ *
+ *  Backoff is jittered because the whole point is that several workers hit the
+ *  limit at once — retrying them in lockstep just rebuilds the burst that caused
+ *  it. A non-retryable failure (bad key, unknown model) is raised immediately;
+ *  no amount of waiting fixes those. */
+export async function retrying<T>(
+  send: () => Promise<T>,
+  attempts = 5,
+  wait: (ms: number) => Promise<unknown> = sleep,
+): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await send()
+    } catch (err) {
+      if (attempt >= attempts || !(err instanceof ChatError) || !err.retryable) throw err
+      const backoff = Math.min(30_000, 1000 * 2 ** attempt)
+      await wait(backoff * (0.5 + Math.random()))
+    }
+  }
+}
+
+const chatWithRetry = (req: ChatRequest): Promise<ChatResult> => retrying(() => chat(req))
 
 const pct = (x: number) => `${(x * 100).toFixed(1)}%`
 const cp = (x: number) => x.toFixed(1)
@@ -186,7 +218,7 @@ async function main() {
             ms: 0,
           }
           try {
-            const result = await chat({
+            const result = await chatWithRetry({
               baseUrl,
               apiKey,
               model,
@@ -302,7 +334,12 @@ async function main() {
   await engine.close()
 }
 
-main().catch((err) => {
-  console.error(err)
-  process.exit(1)
-})
+// Only when run as a command. Without this, importing anything from here — the
+// tests import `retrying` — starts a benchmark and then exits the process for
+// want of a --models flag.
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error(err)
+    process.exit(1)
+  })
+}

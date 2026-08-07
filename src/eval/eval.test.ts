@@ -6,6 +6,8 @@ import { comparePaired, summarize } from './stats'
 import { generate, fromPgn } from './positions'
 import { annotatedMoves, baseline, scaffolded, tacticalBrief } from './variants'
 import { systemPrompt } from '../prompt'
+import { ChatError } from '../llm'
+import { retrying } from './run'
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
@@ -82,6 +84,76 @@ describe('stats', () => {
     const base = new Map([['a', 10], ['b', 20]])
     const partial = new Map([['a', 5]])
     expect(comparePaired(base, partial).n).toBe(1)
+  })
+})
+
+describe('transient failure handling', () => {
+  const noWait = async () => {}
+
+  test('rides out a retryable failure and returns the eventual success', async () => {
+    let calls = 0
+    const result = await retrying(
+      async () => {
+        if (++calls < 3) throw new ChatError('HTTP 429: Provider returned error', true)
+        return 'ok'
+      },
+      5,
+      noWait,
+    )
+    expect(result).toBe('ok')
+    expect(calls).toBe(3)
+  })
+
+  test('a non-retryable failure is raised at once, not retried', async () => {
+    // A rejected key or an unknown model fails identically forever; retrying it
+    // only turns a fast error into a slow one.
+    let calls = 0
+    await expect(
+      retrying(
+        async () => {
+          calls++
+          throw new ChatError('HTTP 401: no credit', false)
+        },
+        5,
+        noWait,
+      ),
+    ).rejects.toThrow('401')
+    expect(calls).toBe(1)
+  })
+
+  test('gives up after the attempt budget rather than looping forever', async () => {
+    let calls = 0
+    await expect(
+      retrying(
+        async () => {
+          calls++
+          throw new ChatError('HTTP 429', true)
+        },
+        3,
+        noWait,
+      ),
+    ).rejects.toThrow('429')
+    expect(calls).toBe(4) // the first try plus three retries
+  })
+
+  test('backoff grows and is jittered, so workers do not retry in lockstep', async () => {
+    const waits: number[] = []
+    await expect(
+      retrying(
+        async () => {
+          throw new ChatError('HTTP 429', true)
+        },
+        3,
+        async (ms) => void waits.push(ms),
+      ),
+    ).rejects.toThrow()
+    expect(waits).toHaveLength(3)
+    // Jitter is +/-50% of 1s, 2s, 4s, so the bands cannot overlap but no two
+    // runs produce the same delay.
+    expect(waits[0]).toBeGreaterThanOrEqual(500)
+    expect(waits[0]).toBeLessThan(1500)
+    expect(waits[2]).toBeGreaterThanOrEqual(2000)
+    expect(waits[2]).toBeLessThan(6000)
   })
 })
 
