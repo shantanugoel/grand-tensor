@@ -1,0 +1,1831 @@
+{
+  "seed": 1,
+  "depth": 6,
+  "generated": "2026-08-07T17:34:26.304Z",
+  "positions": [
+    {
+      "id": "gen-1-0-9",
+      "fen": "r1bqkbnr/p1pppppp/8/1p6/PPn5/5PPN/2PPP2P/RNBQKB1R b KQkq - 0 5",
+      "pgn": "1. g3 Nc6 2. f3 Na5 3. Nh3 b5 4. b4 Nc4 5. a4",
+      "lastMove": "a4",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-0-14",
+      "fen": "r1bqkbnr/p2p1ppp/4p3/1p6/1Pn5/2N2PPN/2PPP2P/R1BQKB1R w KQkq - 0 8",
+      "pgn": "1. g3 Nc6 2. f3 Na5 3. Nh3 b5 4. b4 Nc4 5. a4 c6 6. axb5 cxb5 7. Nc3 e6",
+      "lastMove": "e6",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-0-21",
+      "fen": "r1b1kb1r/p2p1ppp/1q2pn2/8/1P6/B1P2PPN/3PP2P/R2QKB1R b KQkq - 0 11",
+      "pgn": "1. g3 Nc6 2. f3 Na5 3. Nh3 b5 4. b4 Nc4 5. a4 c6 6. axb5 cxb5 7. Nc3 e6 8. Nxb5 Qb6 9. Na3 Nxa3 10. Bxa3 Nf6 11. c3",
+      "lastMove": "c3",
+      "ply": 21,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-0-28",
+      "fen": "r4rk1/pb1p1pp1/1q2pn2/1P5p/8/R1P1PPPN/3P3P/3QKB1R w K - 1 15",
+      "pgn": "1. g3 Nc6 2. f3 Na5 3. Nh3 b5 4. b4 Nc4 5. a4 c6 6. axb5 cxb5 7. Nc3 e6 8. Nxb5 Qb6 9. Na3 Nxa3 10. Bxa3 Nf6 11. c3 Bb7 12. e3 h5 13. b5 Bxa3 14. Rxa3 O-O",
+      "lastMove": "O-O",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-0-35",
+      "fen": "rr4k1/1b1p1pp1/P2qpn2/7p/8/2P1PPPN/3P3P/R2QKB1R b K - 0 18",
+      "pgn": "1. g3 Nc6 2. f3 Na5 3. Nh3 b5 4. b4 Nc4 5. a4 c6 6. axb5 cxb5 7. Nc3 e6 8. Nxb5 Qb6 9. Na3 Nxa3 10. Bxa3 Nf6 11. c3 Bb7 12. e3 h5 13. b5 Bxa3 14. Rxa3 O-O 15. Qe2 Rfb8 16. Qd1 Qd6 17. Ra1 a6 18. bxa6",
+      "lastMove": "bxa6",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-0-42",
+      "fen": "r5k1/3p1pp1/3qpnb1/7p/8/2P1PPP1/3PBN1P/3QK2R w K - 2 22",
+      "pgn": "1. g3 Nc6 2. f3 Na5 3. Nh3 b5 4. b4 Nc4 5. a4 c6 6. axb5 cxb5 7. Nc3 e6 8. Nxb5 Qb6 9. Na3 Nxa3 10. Bxa3 Nf6 11. c3 Bb7 12. e3 h5 13. b5 Bxa3 14. Rxa3 O-O 15. Qe2 Rfb8 16. Qd1 Qd6 17. Ra1 a6 18. bxa6 Bxa6 19. Be2 Bd3 20. Rxa8 Rxa8 21. Nf2 Bg6",
+      "lastMove": "Bg6",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-0-51",
+      "fen": "6k1/2qp1pp1/5nb1/4p2p/2Q5/2PBPPP1/1r1P1N1P/4K2R b K - 1 26",
+      "pgn": "1. g3 Nc6 2. f3 Na5 3. Nh3 b5 4. b4 Nc4 5. a4 c6 6. axb5 cxb5 7. Nc3 e6 8. Nxb5 Qb6 9. Na3 Nxa3 10. Bxa3 Nf6 11. c3 Bb7 12. e3 h5 13. b5 Bxa3 14. Rxa3 O-O 15. Qe2 Rfb8 16. Qd1 Qd6 17. Ra1 a6 18. bxa6 Bxa6 19. Be2 Bd3 20. Rxa8 Rxa8 21. Nf2 Bg6 22. Qb3 Rb8 23. Qa4 Rb2 24. Qd4 Qc7 25. Bd3 e5 26. Qc4",
+      "lastMove": "Qc4",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-0-60",
+      "fen": "6k1/5pp1/5n2/3p3p/4p3/2PbPPPB/r2P1N1P/4K2R w K - 0 31",
+      "pgn": "1. g3 Nc6 2. f3 Na5 3. Nh3 b5 4. b4 Nc4 5. a4 c6 6. axb5 cxb5 7. Nc3 e6 8. Nxb5 Qb6 9. Na3 Nxa3 10. Bxa3 Nf6 11. c3 Bb7 12. e3 h5 13. b5 Bxa3 14. Rxa3 O-O 15. Qe2 Rfb8 16. Qd1 Qd6 17. Ra1 a6 18. bxa6 Bxa6 19. Be2 Bd3 20. Rxa8 Rxa8 21. Nf2 Bg6 22. Qb3 Rb8 23. Qa4 Rb2 24. Qd4 Qc7 25. Bd3 e5 26. Qc4 Qxc4 27. Bxc4 d5 28. Ba6 Ra2 29. Bc8 Bd3 30. Bh3 e4",
+      "lastMove": "e4",
+      "ply": 60,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-0-69",
+      "fen": "6k1/5p2/8/3p2pB/4n3/2P1P1P1/2bP3P/r2NK2R b K - 0 35",
+      "pgn": "1. g3 Nc6 2. f3 Na5 3. Nh3 b5 4. b4 Nc4 5. a4 c6 6. axb5 cxb5 7. Nc3 e6 8. Nxb5 Qb6 9. Na3 Nxa3 10. Bxa3 Nf6 11. c3 Bb7 12. e3 h5 13. b5 Bxa3 14. Rxa3 O-O 15. Qe2 Rfb8 16. Qd1 Qd6 17. Ra1 a6 18. bxa6 Bxa6 19. Be2 Bd3 20. Rxa8 Rxa8 21. Nf2 Bg6 22. Qb3 Rb8 23. Qa4 Rb2 24. Qd4 Qc7 25. Bd3 e5 26. Qc4 Qxc4 27. Bxc4 d5 28. Ba6 Ra2 29. Bc8 Bd3 30. Bh3 e4 31. Bf1 Ra1+ 32. Nd1 Bc2 33. Be2 g5 34. fxe4 Nxe4 35. Bxh5",
+      "lastMove": "Bxh5",
+      "ply": 69,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-0-84",
+      "fen": "8/6k1/8/3p2p1/6p1/2PbP3/3rBK1P/4R3 w - - 0 43",
+      "pgn": "1. g3 Nc6 2. f3 Na5 3. Nh3 b5 4. b4 Nc4 5. a4 c6 6. axb5 cxb5 7. Nc3 e6 8. Nxb5 Qb6 9. Na3 Nxa3 10. Bxa3 Nf6 11. c3 Bb7 12. e3 h5 13. b5 Bxa3 14. Rxa3 O-O 15. Qe2 Rfb8 16. Qd1 Qd6 17. Ra1 a6 18. bxa6 Bxa6 19. Be2 Bd3 20. Rxa8 Rxa8 21. Nf2 Bg6 22. Qb3 Rb8 23. Qa4 Rb2 24. Qd4 Qc7 25. Bd3 e5 26. Qc4 Qxc4 27. Bxc4 d5 28. Ba6 Ra2 29. Bc8 Bd3 30. Bh3 e4 31. Bf1 Ra1+ 32. Nd1 Bc2 33. Be2 g5 34. fxe4 Nxe4 35. Bxh5 f5 36. Be2 Kg7 37. Rf1 Nc5 38. g4 Nd3+ 39. Bxd3 Rxd1+ 40. Kf2 Rxd2+ 41. Be2 Bd3 42. Re1 fxg4",
+      "lastMove": "fxg4",
+      "ply": 84,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-1-9",
+      "fen": "rnbqkbnr/pp2p1pp/2p5/3p1p2/2PP3P/5NP1/PP2PP2/RNBQKB1R b KQkq - 1 5",
+      "pgn": "1. g3 f6 2. d4 f5 3. h4 c6 4. c4 d5 5. Nf3",
+      "lastMove": "Nf3",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-1-14",
+      "fen": "rnbqk2r/pp2b1pp/2p1pn2/3p1p2/2PP1B1P/2N2NP1/PP2PP2/R2QKB1R w KQkq - 4 8",
+      "pgn": "1. g3 f6 2. d4 f5 3. h4 c6 4. c4 d5 5. Nf3 e6 6. Bf4 Nf6 7. Nc3 Be7",
+      "lastMove": "Be7",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-1-21",
+      "fen": "r1b1qrk1/pp1nb1pp/2p1pn2/3p1p2/2PP1B1P/P1N1PNP1/1PQ1BP2/R3K2R b KQ - 0 11",
+      "pgn": "1. g3 f6 2. d4 f5 3. h4 c6 4. c4 d5 5. Nf3 e6 6. Bf4 Nf6 7. Nc3 Be7 8. e3 O-O 9. Be2 Nbd7 10. Qc2 Qe8 11. a3",
+      "lastMove": "a3",
+      "ply": 21,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-1-28",
+      "fen": "r1bbqrk1/pp4pp/2p1p3/3p1p2/2PPnBnP/P1N1PNP1/1PQ1BP2/2R1K2R w K - 7 15",
+      "pgn": "1. g3 f6 2. d4 f5 3. h4 c6 4. c4 d5 5. Nf3 e6 6. Bf4 Nf6 7. Nc3 Be7 8. e3 O-O 9. Be2 Nbd7 10. Qc2 Qe8 11. a3 Ne4 12. Ng5 Bd8 13. Rc1 Ndf6 14. Nf3 Ng4",
+      "lastMove": "Ng4",
+      "ply": 28,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-1-35",
+      "fen": "r1b1qrk1/pp4pp/2p1pb2/3p1p2/P1PPnBnP/1QN1PNP1/1P2BPK1/2R2R2 b - - 0 18",
+      "pgn": "1. g3 f6 2. d4 f5 3. h4 c6 4. c4 d5 5. Nf3 e6 6. Bf4 Nf6 7. Nc3 Be7 8. e3 O-O 9. Be2 Nbd7 10. Qc2 Qe8 11. a3 Ne4 12. Ng5 Bd8 13. Rc1 Ndf6 14. Nf3 Ng4 15. O-O Bd7 16. Qb3 Bc8 17. Kg2 Bf6 18. a4",
+      "lastMove": "a4",
+      "ply": 35,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-1-42",
+      "fen": "r1b1qrk1/pp4pp/2p2b2/3pPp2/P1P2BnP/1Qn1P1P1/1PR1BPK1/4NR2 w - - 0 22",
+      "pgn": "1. g3 f6 2. d4 f5 3. h4 c6 4. c4 d5 5. Nf3 e6 6. Bf4 Nf6 7. Nc3 Be7 8. e3 O-O 9. Be2 Nbd7 10. Qc2 Qe8 11. a3 Ne4 12. Ng5 Bd8 13. Rc1 Ndf6 14. Nf3 Ng4 15. O-O Bd7 16. Qb3 Bc8 17. Kg2 Bf6 18. a4 Bd8 19. Rc2 Bf6 20. Ne1 e5 21. dxe5 Nxc3",
+      "lastMove": "Nxc3",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-1-51",
+      "fen": "r1b1qrk1/pp4pp/5n2/P2p1p2/5P1P/1QP2NP1/2R1BPK1/5R2 b - - 0 26",
+      "pgn": "1. g3 f6 2. d4 f5 3. h4 c6 4. c4 d5 5. Nf3 e6 6. Bf4 Nf6 7. Nc3 Be7 8. e3 O-O 9. Be2 Nbd7 10. Qc2 Qe8 11. a3 Ne4 12. Ng5 Bd8 13. Rc1 Ndf6 14. Nf3 Ng4 15. O-O Bd7 16. Qb3 Bc8 17. Kg2 Bf6 18. a4 Bd8 19. Rc2 Bf6 20. Ne1 e5 21. dxe5 Nxc3 22. bxc3 Bxe5 23. cxd5 Bxf4 24. exf4 Nf6 25. Nf3 cxd5 26. a5",
+      "lastMove": "a5",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-1-60",
+      "fen": "r2q2k1/1p2r1pp/p3bn2/P2p1p2/B1P2P1P/1Q3NP1/2R2PK1/R7 w - - 2 31",
+      "pgn": "1. g3 f6 2. d4 f5 3. h4 c6 4. c4 d5 5. Nf3 e6 6. Bf4 Nf6 7. Nc3 Be7 8. e3 O-O 9. Be2 Nbd7 10. Qc2 Qe8 11. a3 Ne4 12. Ng5 Bd8 13. Rc1 Ndf6 14. Nf3 Ng4 15. O-O Bd7 16. Qb3 Bc8 17. Kg2 Bf6 18. a4 Bd8 19. Rc2 Bf6 20. Ne1 e5 21. dxe5 Nxc3 22. bxc3 Bxe5 23. cxd5 Bxf4 24. exf4 Nf6 25. Nf3 cxd5 26. a5 Rf7 27. Bb5 Qd8 28. Ra1 Re7 29. c4 a6 30. Ba4 Be6",
+      "lastMove": "Be6",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-1-69",
+      "fen": "2r3k1/1pr2bpp/p4n2/q1PpNp2/B4P1P/1Q4P1/2R2PK1/3R4 b - - 6 35",
+      "pgn": "1. g3 f6 2. d4 f5 3. h4 c6 4. c4 d5 5. Nf3 e6 6. Bf4 Nf6 7. Nc3 Be7 8. e3 O-O 9. Be2 Nbd7 10. Qc2 Qe8 11. a3 Ne4 12. Ng5 Bd8 13. Rc1 Ndf6 14. Nf3 Ng4 15. O-O Bd7 16. Qb3 Bc8 17. Kg2 Bf6 18. a4 Bd8 19. Rc2 Bf6 20. Ne1 e5 21. dxe5 Nxc3 22. bxc3 Bxe5 23. cxd5 Bxf4 24. exf4 Nf6 25. Nf3 cxd5 26. a5 Rf7 27. Bb5 Qd8 28. Ra1 Re7 29. c4 a6 30. Ba4 Be6 31. Rd1 Qxa5 32. c5 Bf7 33. Ne5 Rc8 34. Qa3 Rec7 35. Qb3",
+      "lastMove": "Qb3",
+      "ply": 69,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-1-84",
+      "fen": "r5k1/6pp/2R1b3/1p2Np2/3pnP1P/6P1/5PK1/2R5 w - - 1 43",
+      "pgn": "1. g3 f6 2. d4 f5 3. h4 c6 4. c4 d5 5. Nf3 e6 6. Bf4 Nf6 7. Nc3 Be7 8. e3 O-O 9. Be2 Nbd7 10. Qc2 Qe8 11. a3 Ne4 12. Ng5 Bd8 13. Rc1 Ndf6 14. Nf3 Ng4 15. O-O Bd7 16. Qb3 Bc8 17. Kg2 Bf6 18. a4 Bd8 19. Rc2 Bf6 20. Ne1 e5 21. dxe5 Nxc3 22. bxc3 Bxe5 23. cxd5 Bxf4 24. exf4 Nf6 25. Nf3 cxd5 26. a5 Rf7 27. Bb5 Qd8 28. Ra1 Re7 29. c4 a6 30. Ba4 Be6 31. Rd1 Qxa5 32. c5 Bf7 33. Ne5 Rc8 34. Qa3 Rec7 35. Qb3 Be6 36. Rdc1 Ne4 37. Bd7 Rxd7 38. Nxd7 Qb5 39. Qxb5 axb5 40. Ne5 d4 41. c6 bxc6 42. Rxc6 Ra8",
+      "lastMove": "Ra8",
+      "ply": 84,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-2-9",
+      "fen": "rnb1kb1r/pp1ppppp/2p5/q4n2/4P3/1PNP4/P1PB1PPP/R2QKBNR b KQkq - 0 5",
+      "pgn": "1. b3 c6 2. d3 Qa5+ 3. Nc3 Nh6 4. Bd2 Nf5 5. e4",
+      "lastMove": "e4",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-2-14",
+      "fen": "rnb1kb1r/pp3ppp/2pp3n/q3p3/2BPP3/1PN5/P1PB1PPP/R2QK1NR w KQkq - 0 8",
+      "pgn": "1. b3 c6 2. d3 Qa5+ 3. Nc3 Nh6 4. Bd2 Nf5 5. e4 Nh6 6. d4 d6 7. Bc4 e5",
+      "lastMove": "e5",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-2-21",
+      "fen": "rnbq1rk1/pp2Nppp/2pp3n/4p3/2BPP3/1P3N2/P1PB1PPP/R2Q1RK1 b - - 0 11",
+      "pgn": "1. b3 c6 2. d3 Qa5+ 3. Nc3 Nh6 4. Bd2 Nf5 5. e4 Nh6 6. d4 d6 7. Bc4 e5 8. Nf3 Be7 9. O-O O-O 10. Nd5 Qd8 11. Nxe7+",
+      "lastMove": "Nxe7+",
+      "ply": 21,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-2-28",
+      "fen": "rnb1qrk1/p4ppp/2p4n/1p2p1B1/4P3/1P3N2/P1P1BPPP/R2Q1RK1 w - - 0 15",
+      "pgn": "1. b3 c6 2. d3 Qa5+ 3. Nc3 Nh6 4. Bd2 Nf5 5. e4 Nh6 6. d4 d6 7. Bc4 e5 8. Nf3 Be7 9. O-O O-O 10. Nd5 Qd8 11. Nxe7+ Qxe7 12. Bg5 Qe8 13. dxe5 b5 14. Be2 dxe5",
+      "lastMove": "dxe5",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-2-35",
+      "fen": "rnb1r1k1/p4p1p/2p1q2p/1p6/4P3/1P3NQ1/P1P1BPPP/R4RK1 b - - 2 18",
+      "pgn": "1. b3 c6 2. d3 Qa5+ 3. Nc3 Nh6 4. Bd2 Nf5 5. e4 Nh6 6. d4 d6 7. Bc4 e5 8. Nf3 Be7 9. O-O O-O 10. Nd5 Qd8 11. Nxe7+ Qxe7 12. Bg5 Qe8 13. dxe5 b5 14. Be2 dxe5 15. Bxh6 gxh6 16. Qd6 Qe6 17. Qxe5 Re8 18. Qg3+",
+      "lastMove": "Qg3+",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-2-42",
+      "fen": "r1b1r1k1/3n1p1p/2p4p/pp6/4P3/1P1B1NP1/P1P2PP1/R2R2K1 w - - 0 22",
+      "pgn": "1. b3 c6 2. d3 Qa5+ 3. Nc3 Nh6 4. Bd2 Nf5 5. e4 Nh6 6. d4 d6 7. Bc4 e5 8. Nf3 Be7 9. O-O O-O 10. Nd5 Qd8 11. Nxe7+ Qxe7 12. Bg5 Qe8 13. dxe5 b5 14. Be2 dxe5 15. Bxh6 gxh6 16. Qd6 Qe6 17. Qxe5 Re8 18. Qg3+ Qg6 19. Rfd1 Nd7 20. Bd3 Qxg3 21. hxg3 a5",
+      "lastMove": "a5",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-2-51",
+      "fen": "r3r1k1/5p1p/2p1b1np/1p6/p3P2N/1P3PP1/P1P1BKP1/2RR4 b - - 3 26",
+      "pgn": "1. b3 c6 2. d3 Qa5+ 3. Nc3 Nh6 4. Bd2 Nf5 5. e4 Nh6 6. d4 d6 7. Bc4 e5 8. Nf3 Be7 9. O-O O-O 10. Nd5 Qd8 11. Nxe7+ Qxe7 12. Bg5 Qe8 13. dxe5 b5 14. Be2 dxe5 15. Bxh6 gxh6 16. Qd6 Qe6 17. Qxe5 Re8 18. Qg3+ Qg6 19. Rfd1 Nd7 20. Bd3 Qxg3 21. hxg3 a5 22. Nh4 Ne5 23. Be2 Ng6 24. f3 a4 25. Kf2 Be6 26. Rac1",
+      "lastMove": "Rac1",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-2-60",
+      "fen": "r3r3/4kp1p/2pRb3/1p2n2p/4P2N/1P3PP1/2P1BKP1/2R5 w - - 1 31",
+      "pgn": "1. b3 c6 2. d3 Qa5+ 3. Nc3 Nh6 4. Bd2 Nf5 5. e4 Nh6 6. d4 d6 7. Bc4 e5 8. Nf3 Be7 9. O-O O-O 10. Nd5 Qd8 11. Nxe7+ Qxe7 12. Bg5 Qe8 13. dxe5 b5 14. Be2 dxe5 15. Bxh6 gxh6 16. Qd6 Qe6 17. Qxe5 Re8 18. Qg3+ Qg6 19. Rfd1 Nd7 20. Bd3 Qxg3 21. hxg3 a5 22. Nh4 Ne5 23. Be2 Ng6 24. f3 a4 25. Kf2 Be6 26. Rac1 h5 27. Rd6 Ne5 28. Ke3 Kf8 29. Kf2 axb3 30. axb3 Ke7",
+      "lastMove": "Ke7",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-2-69",
+      "fen": "r2r4/4kp1p/8/2p1nP1p/1p6/1P2KPP1/2P1B1P1/2RR4 b - - 2 35",
+      "pgn": "1. b3 c6 2. d3 Qa5+ 3. Nc3 Nh6 4. Bd2 Nf5 5. e4 Nh6 6. d4 d6 7. Bc4 e5 8. Nf3 Be7 9. O-O O-O 10. Nd5 Qd8 11. Nxe7+ Qxe7 12. Bg5 Qe8 13. dxe5 b5 14. Be2 dxe5 15. Bxh6 gxh6 16. Qd6 Qe6 17. Qxe5 Re8 18. Qg3+ Qg6 19. Rfd1 Nd7 20. Bd3 Qxg3 21. hxg3 a5 22. Nh4 Ne5 23. Be2 Ng6 24. f3 a4 25. Kf2 Be6 26. Rac1 h5 27. Rd6 Ne5 28. Ke3 Kf8 29. Kf2 axb3 30. axb3 Ke7 31. Rd4 c5 32. Rdd1 b4 33. Nf5+ Bxf5 34. exf5 Red8 35. Ke3",
+      "lastMove": "Ke3",
+      "ply": 69,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-2-84",
+      "fen": "8/5pkp/7R/1rp2P2/1p4P1/1P4P1/2Pr2P1/2R2K2 w - - 2 43",
+      "pgn": "1. b3 c6 2. d3 Qa5+ 3. Nc3 Nh6 4. Bd2 Nf5 5. e4 Nh6 6. d4 d6 7. Bc4 e5 8. Nf3 Be7 9. O-O O-O 10. Nd5 Qd8 11. Nxe7+ Qxe7 12. Bg5 Qe8 13. dxe5 b5 14. Be2 dxe5 15. Bxh6 gxh6 16. Qd6 Qe6 17. Qxe5 Re8 18. Qg3+ Qg6 19. Rfd1 Nd7 20. Bd3 Qxg3 21. hxg3 a5 22. Nh4 Ne5 23. Be2 Ng6 24. f3 a4 25. Kf2 Be6 26. Rac1 h5 27. Rd6 Ne5 28. Ke3 Kf8 29. Kf2 axb3 30. axb3 Ke7 31. Rd4 c5 32. Rdd1 b4 33. Nf5+ Bxf5 34. exf5 Red8 35. Ke3 Kf6 36. Rh1 Rd5 37. Rxh5 Re8 38. Kf2 Rd2 39. Kf1 Ng4 40. Bb5 Rb8 41. fxg4 Rxb5 42. Rh6+ Kg7",
+      "lastMove": "Kg7",
+      "ply": 84,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-3-9",
+      "fen": "rnbqkb1r/pp1p2pp/5p2/2P2p2/8/8/PPP2PPP/RNBQKBNR b KQkq - 0 5",
+      "pgn": "1. d4 f5 2. e4 Nf6 3. e5 c5 4. exf6 exf6 5. dxc5",
+      "lastMove": "dxc5",
+      "ply": 9,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-3-14",
+      "fen": "r1bqk2r/pp1p3p/2n2pp1/2b2p2/8/8/PPP2PPP/RNBQKBNR w KQkq - 0 8",
+      "pgn": "1. d4 f5 2. e4 Nf6 3. e5 c5 4. exf6 exf6 5. dxc5 Nc6 6. Qh5+ g6 7. Qd1 Bxc5",
+      "lastMove": "Bxc5",
+      "ply": 14,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-3-21",
+      "fen": "r1b1k2r/pp2b2p/2n2pp1/q2p1p2/N7/2P2N2/PP3PPP/R1BQKB1R b KQkq - 2 11",
+      "pgn": "1. d4 f5 2. e4 Nf6 3. e5 c5 4. exf6 exf6 5. dxc5 Nc6 6. Qh5+ g6 7. Qd1 Bxc5 8. Nc3 d5 9. Na4 Qa5+ 10. c3 Be7 11. Nf3",
+      "lastMove": "Nf3",
+      "ply": 21,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-3-28",
+      "fen": "r1b2rk1/pp5p/5p2/q2p1pp1/Nn6/5N2/P2B1PPP/R2QKB1R w KQ - 2 15",
+      "pgn": "1. d4 f5 2. e4 Nf6 3. e5 c5 4. exf6 exf6 5. dxc5 Nc6 6. Qh5+ g6 7. Qd1 Bxc5 8. Nc3 d5 9. Na4 Qa5+ 10. c3 Be7 11. Nf3 g5 12. b4 Bxb4 13. cxb4 Nxb4 14. Bd2 O-O",
+      "lastMove": "O-O",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-3-35",
+      "fen": "2r2rk1/pp1b3p/5p2/q2p2p1/1n3p2/2N2N2/P2BBPPP/1R1Q1RK1 b - - 1 18",
+      "pgn": "1. d4 f5 2. e4 Nf6 3. e5 c5 4. exf6 exf6 5. dxc5 Nc6 6. Qh5+ g6 7. Qd1 Bxc5 8. Nc3 d5 9. Na4 Qa5+ 10. c3 Be7 11. Nf3 g5 12. b4 Bxb4 13. cxb4 Nxb4 14. Bd2 O-O 15. Be2 Bd7 16. Nc3 Rac8 17. O-O f4 18. Rb1",
+      "lastMove": "Rb1",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-3-42",
+      "fen": "2r2rk1/p6p/1pn1bp2/2qp2p1/5p2/1Q3N2/PR1BBPPP/3N1RK1 w - - 6 22",
+      "pgn": "1. d4 f5 2. e4 Nf6 3. e5 c5 4. exf6 exf6 5. dxc5 Nc6 6. Qh5+ g6 7. Qd1 Bxc5 8. Nc3 d5 9. Na4 Qa5+ 10. c3 Be7 11. Nf3 g5 12. b4 Bxb4 13. cxb4 Nxb4 14. Bd2 O-O 15. Be2 Bd7 16. Nc3 Rac8 17. O-O f4 18. Rb1 b6 19. Rb2 Nc6 20. Qb3 Be6 21. Nd1 Qc5",
+      "lastMove": "Qc5",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-3-51",
+      "fen": "2rr1q2/p4k1p/1pn1bp2/3p2p1/5p2/3Q1N1P/PR1BBPPK/3N1R2 b - - 8 26",
+      "pgn": "1. d4 f5 2. e4 Nf6 3. e5 c5 4. exf6 exf6 5. dxc5 Nc6 6. Qh5+ g6 7. Qd1 Bxc5 8. Nc3 d5 9. Na4 Qa5+ 10. c3 Be7 11. Nf3 g5 12. b4 Bxb4 13. cxb4 Nxb4 14. Bd2 O-O 15. Be2 Bd7 16. Nc3 Rac8 17. O-O f4 18. Rb1 b6 19. Rb2 Nc6 20. Qb3 Be6 21. Nd1 Qc5 22. h3 Kg7 23. Qa4 Rfd8 24. Qb3 Kf7 25. Kh2 Qf8 26. Qd3",
+      "lastMove": "Qd3",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-3-60",
+      "fen": "2rr4/p3nk1p/1p5q/6p1/3p1pb1/Q6P/PR1BBPPK/5R2 w - - 0 31",
+      "pgn": "1. d4 f5 2. e4 Nf6 3. e5 c5 4. exf6 exf6 5. dxc5 Nc6 6. Qh5+ g6 7. Qd1 Bxc5 8. Nc3 d5 9. Na4 Qa5+ 10. c3 Be7 11. Nf3 g5 12. b4 Bxb4 13. cxb4 Nxb4 14. Bd2 O-O 15. Be2 Bd7 16. Nc3 Rac8 17. O-O f4 18. Rb1 b6 19. Rb2 Nc6 20. Qb3 Be6 21. Nd1 Qc5 22. h3 Kg7 23. Qa4 Rfd8 24. Qb3 Kf7 25. Kh2 Qf8 26. Qd3 Qh6 27. Ne3 Ne7 28. Qa3 d4 29. Ng4 Bxg4 30. Nxg5+ fxg5",
+      "lastMove": "fxg5",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-3-69",
+      "fen": "3r4/p1r3kp/1p5q/4R1p1/3p1pB1/1Q5P/PR1B1PP1/6K1 b - - 0 35",
+      "pgn": "1. d4 f5 2. e4 Nf6 3. e5 c5 4. exf6 exf6 5. dxc5 Nc6 6. Qh5+ g6 7. Qd1 Bxc5 8. Nc3 d5 9. Na4 Qa5+ 10. c3 Be7 11. Nf3 g5 12. b4 Bxb4 13. cxb4 Nxb4 14. Bd2 O-O 15. Be2 Bd7 16. Nc3 Rac8 17. O-O f4 18. Rb1 b6 19. Rb2 Nc6 20. Qb3 Be6 21. Nd1 Qc5 22. h3 Kg7 23. Qa4 Rfd8 24. Qb3 Kf7 25. Kh2 Qf8 26. Qd3 Qh6 27. Ne3 Ne7 28. Qa3 d4 29. Ng4 Bxg4 30. Nxg5+ fxg5 31. Bxg4 Rc7 32. Qb3+ Kg7 33. Re1 Ng6 34. Kg1 Ne5 35. Rxe5",
+      "lastMove": "Rxe5",
+      "ply": 69,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-3-84",
+      "fen": "7k/p7/1p2B2p/7R/3r1p2/P2p3P/1RrB1PPK/8 w - - 1 43",
+      "pgn": "1. d4 f5 2. e4 Nf6 3. e5 c5 4. exf6 exf6 5. dxc5 Nc6 6. Qh5+ g6 7. Qd1 Bxc5 8. Nc3 d5 9. Na4 Qa5+ 10. c3 Be7 11. Nf3 g5 12. b4 Bxb4 13. cxb4 Nxb4 14. Bd2 O-O 15. Be2 Bd7 16. Nc3 Rac8 17. O-O f4 18. Rb1 b6 19. Rb2 Nc6 20. Qb3 Be6 21. Nd1 Qc5 22. h3 Kg7 23. Qa4 Rfd8 24. Qb3 Kf7 25. Kh2 Qf8 26. Qd3 Qh6 27. Ne3 Ne7 28. Qa3 d4 29. Ng4 Bxg4 30. Nxg5+ fxg5 31. Bxg4 Rc7 32. Qb3+ Kg7 33. Re1 Ng6 34. Kg1 Ne5 35. Rxe5 d3 36. Rf5 Qc6 37. Rxg5+ Kh8 38. Kh2 h6 39. Rh5 Rd4 40. a3 Qd6 41. Qe6 Qxe6 42. Bxe6 Rc2",
+      "lastMove": "Rc2",
+      "ply": 84,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-4-9",
+      "fen": "rnbqkb1r/ppp3pp/3p3n/4pp2/2P2P2/N3P3/PP1PB1PP/R1BQK1NR b KQkq - 1 5",
+      "pgn": "1. f4 f5 2. c4 Nh6 3. Na3 d6 4. e3 e5 5. Be2",
+      "lastMove": "Be2",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-4-14",
+      "fen": "rnbqkb1r/pp3n1p/2pp2p1/4pp2/2PP1P2/4P3/PPN1B1PP/R1BQK1NR w KQkq - 0 8",
+      "pgn": "1. f4 f5 2. c4 Nh6 3. Na3 d6 4. e3 e5 5. Be2 Nf7 6. d4 c6 7. Nc2 g6",
+      "lastMove": "g6",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-4-21",
+      "fen": "rnbQk2r/1p3nbp/2p3p1/pP2pp2/2P2P2/4P3/P1N1B1PP/R1B1K1NR b KQkq - 0 11",
+      "pgn": "1. f4 f5 2. c4 Nh6 3. Na3 d6 4. e3 e5 5. Be2 Nf7 6. d4 c6 7. Nc2 g6 8. b4 a5 9. b5 Bg7 10. dxe5 dxe5 11. Qxd8+",
+      "lastMove": "Qxd8+",
+      "ply": 21,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-4-28",
+      "fen": "r2k3r/1p3nbp/2n1b1p1/pp2Pp2/2P5/4PN2/PBN1B1PP/R3K2R w KQ - 1 15",
+      "pgn": "1. f4 f5 2. c4 Nh6 3. Na3 d6 4. e3 e5 5. Be2 Nf7 6. d4 c6 7. Nc2 g6 8. b4 a5 9. b5 Bg7 10. dxe5 dxe5 11. Qxd8+ Kxd8 12. Bb2 Be6 13. Nf3 cxb5 14. fxe5 Nc6",
+      "lastMove": "Nc6",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-4-35",
+      "fen": "2rk3r/1p3nbp/6p1/pp2Pp2/2Bn4/4PN2/PB4PP/1K1R3R b - - 0 18",
+      "pgn": "1. f4 f5 2. c4 Nh6 3. Na3 d6 4. e3 e5 5. Be2 Nf7 6. d4 c6 7. Nc2 g6 8. b4 a5 9. b5 Bg7 10. dxe5 dxe5 11. Qxd8+ Kxd8 12. Bb2 Be6 13. Nf3 cxb5 14. fxe5 Nc6 15. Ncd4 Nxd4 16. O-O-O Rc8 17. Kb1 Bxc4 18. Bxc4",
+      "lastMove": "Bxc4",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-4-42",
+      "fen": "2r1k2r/1p4bp/4P1p1/p4pn1/2pN4/B3P3/P5PP/1K1R3R w - - 1 22",
+      "pgn": "1. f4 f5 2. c4 Nh6 3. Na3 d6 4. e3 e5 5. Be2 Nf7 6. d4 c6 7. Nc2 g6 8. b4 a5 9. b5 Bg7 10. dxe5 dxe5 11. Qxd8+ Kxd8 12. Bb2 Be6 13. Nf3 cxb5 14. fxe5 Nc6 15. Ncd4 Nxd4 16. O-O-O Rc8 17. Kb1 Bxc4 18. Bxc4 bxc4 19. Nxd4 Ke7 20. Ba3+ Ke8 21. e6 Ng5",
+      "lastMove": "Ng5",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-4-51",
+      "fen": "2r1k1r1/1p2b2R/4nBp1/pN3p2/2p5/4P3/P5PP/1K5R b - - 2 26",
+      "pgn": "1. f4 f5 2. c4 Nh6 3. Na3 d6 4. e3 e5 5. Be2 Nf7 6. d4 c6 7. Nc2 g6 8. b4 a5 9. b5 Bg7 10. dxe5 dxe5 11. Qxd8+ Kxd8 12. Bb2 Be6 13. Nf3 cxb5 14. fxe5 Nc6 15. Ncd4 Nxd4 16. O-O-O Rc8 17. Kb1 Bxc4 18. Bxc4 bxc4 19. Nxd4 Ke7 20. Ba3+ Ke8 21. e6 Ng5 22. Nb5 Bf8 23. Bb2 Rg8 24. Rd7 Nxe6 25. Rxh7 Be7 26. Bf6",
+      "lastMove": "Bf6",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-4-60",
+      "fen": "2r1k1r1/1N5R/4nbp1/p4p2/2p5/4P3/P5PP/1K5R w - - 5 31",
+      "pgn": "1. f4 f5 2. c4 Nh6 3. Na3 d6 4. e3 e5 5. Be2 Nf7 6. d4 c6 7. Nc2 g6 8. b4 a5 9. b5 Bg7 10. dxe5 dxe5 11. Qxd8+ Kxd8 12. Bb2 Be6 13. Nf3 cxb5 14. fxe5 Nc6 15. Ncd4 Nxd4 16. O-O-O Rc8 17. Kb1 Bxc4 18. Bxc4 bxc4 19. Nxd4 Ke7 20. Ba3+ Ke8 21. e6 Ng5 22. Nb5 Bf8 23. Bb2 Rg8 24. Rd7 Nxe6 25. Rxh7 Be7 26. Bf6 Bxf6 27. Nd6+ Kd8 28. Nxb7+ Ke8 29. Nd6+ Kd8 30. Nb7+ Ke8",
+      "lastMove": "Ke8",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-5-9",
+      "fen": "rnbqkb1r/ppp1pppp/3p1n2/8/7P/N2P2P1/PPP1PP2/1RBQKBNR b Kkq - 0 5",
+      "pgn": "1. h4 Nf6 2. Na3 d6 3. Rb1 Nd5 4. g3 Nf6 5. d3",
+      "lastMove": "d3",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-5-14",
+      "fen": "rnbqkb1r/pp3ppp/2p2n2/3pp3/2N1P2P/3P2P1/PPP2P2/1RBQKBNR w Kkq - 0 8",
+      "pgn": "1. h4 Nf6 2. Na3 d6 3. Rb1 Nd5 4. g3 Nf6 5. d3 c6 6. e4 e5 7. Nc4 d5",
+      "lastMove": "d5",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-5-21",
+      "fen": "rn2kb1r/pp3ppp/2p2n2/3q4/2N1p1bP/3P2P1/PPP1NPB1/1RBQK2R b Kkq - 5 11",
+      "pgn": "1. h4 Nf6 2. Na3 d6 3. Rb1 Nd5 4. g3 Nf6 5. d3 c6 6. e4 e5 7. Nc4 d5 8. Nxe5 dxe4 9. Nc4 Qd5 10. Bg2 Bg4 11. Ne2",
+      "lastMove": "Ne2",
+      "ply": 21,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-5-28",
+      "fen": "r3k2r/pp1nbppp/2p2n2/1q6/2N1pNbP/3P2P1/PPP2PB1/1RB1QRK1 w kq - 12 15",
+      "pgn": "1. h4 Nf6 2. Na3 d6 3. Rb1 Nd5 4. g3 Nf6 5. d3 c6 6. e4 e5 7. Nc4 d5 8. Nxe5 dxe4 9. Nc4 Qd5 10. Bg2 Bg4 11. Ne2 Nbd7 12. O-O Bc5 13. Qe1 Be7 14. Nf4 Qb5",
+      "lastMove": "Qb5",
+      "ply": 28,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-5-35",
+      "fen": "r4rk1/pp2bppp/2p2n2/1q6/n3PNbP/NP4P1/2P2PB1/1RB1QRK1 b - - 2 18",
+      "pgn": "1. h4 Nf6 2. Na3 d6 3. Rb1 Nd5 4. g3 Nf6 5. d3 c6 6. e4 e5 7. Nc4 d5 8. Nxe5 dxe4 9. Nc4 Qd5 10. Bg2 Bg4 11. Ne2 Nbd7 12. O-O Bc5 13. Qe1 Be7 14. Nf4 Qb5 15. b3 Nb6 16. a4 Nxa4 17. dxe4 O-O 18. Na3",
+      "lastMove": "Na3",
+      "ply": 35,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-5-42",
+      "fen": "r1b2rk1/pp1n1ppp/2p5/1qn5/4PN1P/BPQ2PP1/2P3B1/1R3RK1 w - - 3 22",
+      "pgn": "1. h4 Nf6 2. Na3 d6 3. Rb1 Nd5 4. g3 Nf6 5. d3 c6 6. e4 e5 7. Nc4 d5 8. Nxe5 dxe4 9. Nc4 Qd5 10. Bg2 Bg4 11. Ne2 Nbd7 12. O-O Bc5 13. Qe1 Be7 14. Nf4 Qb5 15. b3 Nb6 16. a4 Nxa4 17. dxe4 O-O 18. Na3 Bxa3 19. Bxa3 Nc5 20. f3 Bc8 21. Qc3 Nfd7",
+      "lastMove": "Nfd7",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-5-51",
+      "fen": "r1b1r1k1/ppnn1ppp/1qp5/8/4P1PP/1PQN1P2/1BP3BK/1R1R4 b - - 2 26",
+      "pgn": "1. h4 Nf6 2. Na3 d6 3. Rb1 Nd5 4. g3 Nf6 5. d3 c6 6. e4 e5 7. Nc4 d5 8. Nxe5 dxe4 9. Nc4 Qd5 10. Bg2 Bg4 11. Ne2 Nbd7 12. O-O Bc5 13. Qe1 Be7 14. Nf4 Qb5 15. b3 Nb6 16. a4 Nxa4 17. dxe4 O-O 18. Na3 Bxa3 19. Bxa3 Nc5 20. f3 Bc8 21. Qc3 Nfd7 22. Kh2 Re8 23. Rfd1 Na6 24. Nd3 Nc7 25. g4 Qb6 26. Bb2",
+      "lastMove": "Bb2",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-5-60",
+      "fen": "r1b1r1k1/ppq2ppn/2p4p/1n5P/4P1P1/1P1N1P2/1BP2QBK/R2R4 w - - 6 31",
+      "pgn": "1. h4 Nf6 2. Na3 d6 3. Rb1 Nd5 4. g3 Nf6 5. d3 c6 6. e4 e5 7. Nc4 d5 8. Nxe5 dxe4 9. Nc4 Qd5 10. Bg2 Bg4 11. Ne2 Nbd7 12. O-O Bc5 13. Qe1 Be7 14. Nf4 Qb5 15. b3 Nb6 16. a4 Nxa4 17. dxe4 O-O 18. Na3 Bxa3 19. Bxa3 Nc5 20. f3 Bc8 21. Qc3 Nfd7 22. Kh2 Re8 23. Rfd1 Na6 24. Nd3 Nc7 25. g4 Qb6 26. Bb2 Nf6 27. h5 h6 28. Qd2 Nh7 29. Ra1 Nb5 30. Qf2 Qc7+",
+      "lastMove": "Qc7+",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-5-69",
+      "fen": "r1br2k1/1p2qppn/2p4p/1n2PP1P/P5P1/3N2Q1/1BP3BK/R2R4 b - - 0 35",
+      "pgn": "1. h4 Nf6 2. Na3 d6 3. Rb1 Nd5 4. g3 Nf6 5. d3 c6 6. e4 e5 7. Nc4 d5 8. Nxe5 dxe4 9. Nc4 Qd5 10. Bg2 Bg4 11. Ne2 Nbd7 12. O-O Bc5 13. Qe1 Be7 14. Nf4 Qb5 15. b3 Nb6 16. a4 Nxa4 17. dxe4 O-O 18. Na3 Bxa3 19. Bxa3 Nc5 20. f3 Bc8 21. Qc3 Nfd7 22. Kh2 Re8 23. Rfd1 Na6 24. Nd3 Nc7 25. g4 Qb6 26. Bb2 Nf6 27. h5 h6 28. Qd2 Nh7 29. Ra1 Nb5 30. Qf2 Qc7+ 31. e5 Qe7 32. Qg3 a5 33. f4 Rd8 34. f5 a4 35. bxa4",
+      "lastMove": "bxa4",
+      "ply": 69,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-5-84",
+      "fen": "r7/1p3kpn/2p4p/7P/P5P1/3N2Q1/q1n3BK/3R4 w - - 2 43",
+      "pgn": "1. h4 Nf6 2. Na3 d6 3. Rb1 Nd5 4. g3 Nf6 5. d3 c6 6. e4 e5 7. Nc4 d5 8. Nxe5 dxe4 9. Nc4 Qd5 10. Bg2 Bg4 11. Ne2 Nbd7 12. O-O Bc5 13. Qe1 Be7 14. Nf4 Qb5 15. b3 Nb6 16. a4 Nxa4 17. dxe4 O-O 18. Na3 Bxa3 19. Bxa3 Nc5 20. f3 Bc8 21. Qc3 Nfd7 22. Kh2 Re8 23. Rfd1 Na6 24. Nd3 Nc7 25. g4 Qb6 26. Bb2 Nf6 27. h5 h6 28. Qd2 Nh7 29. Ra1 Nb5 30. Qf2 Qc7+ 31. e5 Qe7 32. Qg3 a5 33. f4 Rd8 34. f5 a4 35. bxa4 Nd4 36. Nf2 Nxc2 37. Rxd8+ Qxd8 38. Rd1 Qb6 39. e6 Bxe6 40. fxe6 Qxb2 41. exf7+ Kxf7 42. Nd3 Qa2",
+      "lastMove": "Qa2",
+      "ply": 84,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-6-9",
+      "fen": "rnbqkb1r/1ppppnpp/8/p4p2/3P4/1PP1PP2/P5PP/RNBQKBNR b KQkq - 0 5",
+      "pgn": "1. c3 f5 2. b3 a5 3. f3 Nh6 4. d4 Nf7 5. e3",
+      "lastMove": "e3",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-6-14",
+      "fen": "rnbqkb1r/1pp2npp/3p4/4pp2/P2P1P2/2P1P3/P5PP/RNBQKBNR w KQkq - 0 8",
+      "pgn": "1. c3 f5 2. b3 a5 3. f3 Nh6 4. d4 Nf7 5. e3 a4 6. bxa4 e5 7. f4 d6",
+      "lastMove": "d6",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-6-21",
+      "fen": "r1bqk2r/1pp1bnpp/3p1n2/4pp2/P1BP1P2/N1P1P3/P3N1PP/R1BQ1RK1 b kq - 7 11",
+      "pgn": "1. c3 f5 2. b3 a5 3. f3 Nh6 4. d4 Nf7 5. e3 a4 6. bxa4 e5 7. f4 d6 8. Na3 Be7 9. Bc4 Nd7 10. Ne2 Nf6 11. O-O",
+      "lastMove": "O-O",
+      "ply": 21,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-6-28",
+      "fen": "r1bq1rk1/2p1bnpp/1p3n2/3p1p2/P2P1P2/1B2P3/P3N1PP/RNBQ1RK1 w - - 0 15",
+      "pgn": "1. c3 f5 2. b3 a5 3. f3 Nh6 4. d4 Nf7 5. e3 a4 6. bxa4 e5 7. f4 d6 8. Na3 Be7 9. Bc4 Nd7 10. Ne2 Nf6 11. O-O exd4 12. cxd4 d5 13. Bb3 O-O 14. Nb1 b6",
+      "lastMove": "b6",
+      "ply": 28,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-6-35",
+      "fen": "r2q1rk1/2p1b1pp/bp3n2/3p1p2/P1nP1P2/PB2PNN1/6PP/R1BQ1RK1 b - - 4 18",
+      "pgn": "1. c3 f5 2. b3 a5 3. f3 Nh6 4. d4 Nf7 5. e3 a4 6. bxa4 e5 7. f4 d6 8. Na3 Be7 9. Bc4 Nd7 10. Ne2 Nf6 11. O-O exd4 12. cxd4 d5 13. Bb3 O-O 14. Nb1 b6 15. Nd2 Ba6 16. a3 Nd6 17. Nf3 Nc4 18. Ng3",
+      "lastMove": "Ng3",
+      "ply": 35,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-6-42",
+      "fen": "r2q1rk1/2p3pp/bp6/n2pN3/P2PpP1b/PB2P3/6PP/R1BQR1K1 w - - 2 22",
+      "pgn": "1. c3 f5 2. b3 a5 3. f3 Nh6 4. d4 Nf7 5. e3 a4 6. bxa4 e5 7. f4 d6 8. Na3 Be7 9. Bc4 Nd7 10. Ne2 Nf6 11. O-O exd4 12. cxd4 d5 13. Bb3 O-O 14. Nb1 b6 15. Nd2 Ba6 16. a3 Nd6 17. Nf3 Nc4 18. Ng3 Na5 19. Re1 Ne4 20. Nxe4 fxe4 21. Ne5 Bh4",
+      "lastMove": "Bh4",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-6-51",
+      "fen": "r2q1rk1/6pp/1pp2b2/3p4/P1BPpP2/P3P1P1/2Q4P/R1B1R1K1 b - - 0 26",
+      "pgn": "1. c3 f5 2. b3 a5 3. f3 Nh6 4. d4 Nf7 5. e3 a4 6. bxa4 e5 7. f4 d6 8. Na3 Be7 9. Bc4 Nd7 10. Ne2 Nf6 11. O-O exd4 12. cxd4 d5 13. Bb3 O-O 14. Nb1 b6 15. Nd2 Ba6 16. a3 Nd6 17. Nf3 Nc4 18. Ng3 Na5 19. Re1 Ne4 20. Nxe4 fxe4 21. Ne5 Bh4 22. g3 Bf6 23. Ba2 Bc4 24. Nxc4 Nxc4 25. Qc2 c6 26. Bxc4",
+      "lastMove": "Bxc4",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-6-60",
+      "fen": "r5k1/6pp/1p3b2/3p4/P2PpP2/P3P1P1/3B3P/R1r3K1 w - - 0 31",
+      "pgn": "1. c3 f5 2. b3 a5 3. f3 Nh6 4. d4 Nf7 5. e3 a4 6. bxa4 e5 7. f4 d6 8. Na3 Be7 9. Bc4 Nd7 10. Ne2 Nf6 11. O-O exd4 12. cxd4 d5 13. Bb3 O-O 14. Nb1 b6 15. Nd2 Ba6 16. a3 Nd6 17. Nf3 Nc4 18. Ng3 Na5 19. Re1 Ne4 20. Nxe4 fxe4 21. Ne5 Bh4 22. g3 Bf6 23. Ba2 Bc4 24. Nxc4 Nxc4 25. Qc2 c6 26. Bxc4 dxc4 27. Qxc4+ Qd5 28. Qxd5+ cxd5 29. Bd2 Rfc8 30. Rec1 Rxc1+",
+      "lastMove": "Rxc1+",
+      "ply": 60,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-6-69",
+      "fen": "5k2/3R2pp/1p6/3p4/rP1PpP2/4P1P1/7P/6K1 b - - 1 35",
+      "pgn": "1. c3 f5 2. b3 a5 3. f3 Nh6 4. d4 Nf7 5. e3 a4 6. bxa4 e5 7. f4 d6 8. Na3 Be7 9. Bc4 Nd7 10. Ne2 Nf6 11. O-O exd4 12. cxd4 d5 13. Bb3 O-O 14. Nb1 b6 15. Nd2 Ba6 16. a3 Nd6 17. Nf3 Nc4 18. Ng3 Na5 19. Re1 Ne4 20. Nxe4 fxe4 21. Ne5 Bh4 22. g3 Bf6 23. Ba2 Bc4 24. Nxc4 Nxc4 25. Qc2 c6 26. Bxc4 dxc4 27. Qxc4+ Qd5 28. Qxd5+ cxd5 29. Bd2 Rfc8 30. Rec1 Rxc1+ 31. Rxc1 Be7 32. Rc7 Kf8 33. Bb4 Bxb4 34. axb4 Rxa4 35. Rd7",
+      "lastMove": "Rd7",
+      "ply": 69,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-6-84",
+      "fen": "8/6pp/1p4k1/5R2/3PpP2/1r2P1P1/7P/6K1 w - - 3 43",
+      "pgn": "1. c3 f5 2. b3 a5 3. f3 Nh6 4. d4 Nf7 5. e3 a4 6. bxa4 e5 7. f4 d6 8. Na3 Be7 9. Bc4 Nd7 10. Ne2 Nf6 11. O-O exd4 12. cxd4 d5 13. Bb3 O-O 14. Nb1 b6 15. Nd2 Ba6 16. a3 Nd6 17. Nf3 Nc4 18. Ng3 Na5 19. Re1 Ne4 20. Nxe4 fxe4 21. Ne5 Bh4 22. g3 Bf6 23. Ba2 Bc4 24. Nxc4 Nxc4 25. Qc2 c6 26. Bxc4 dxc4 27. Qxc4+ Qd5 28. Qxd5+ cxd5 29. Bd2 Rfc8 30. Rec1 Rxc1+ 31. Rxc1 Be7 32. Rc7 Kf8 33. Bb4 Bxb4 34. axb4 Rxa4 35. Rd7 Rxb4 36. Rd8+ Kf7 37. Rd7+ Kf8 38. Rd8+ Kf7 39. Rd7+ Kf6 40. Rd6+ Kf7 41. Rxd5 Rb3 42. Rf5+ Kg6",
+      "lastMove": "Kg6",
+      "ply": 84,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-7-9",
+      "fen": "r1bq1bnr/pppppkpp/5p2/1Pn5/2PP2P1/8/P3PP1P/RNBQKBNR b KQ - 0 5",
+      "pgn": "1. b4 f6 2. g4 Kf7 3. c4 Na6 4. b5 Nc5 5. d4",
+      "lastMove": "d4",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-7-14",
+      "fen": "r1b2bnr/pp1ppkpp/4np2/qPp5/2PP2P1/2N1P3/P4P1P/R1BQKBNR w KQ - 1 8",
+      "pgn": "1. b4 f6 2. g4 Kf7 3. c4 Na6 4. b5 Nc5 5. d4 Ne6 6. Nc3 c5 7. e3 Qa5",
+      "lastMove": "Qa5",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-7-21",
+      "fen": "r1b1kbnr/1p1pp1pp/p4p2/qPpP2n1/2P3P1/2N1P3/P3NPBP/1RBQK2R b K - 4 11",
+      "pgn": "1. b4 f6 2. g4 Kf7 3. c4 Na6 4. b5 Nc5 5. d4 Ne6 6. Nc3 c5 7. e3 Qa5 8. Ne2 a6 9. d5 Ng5 10. Bg2 Ke8 11. Rb1",
+      "lastMove": "Rb1",
+      "ply": 21,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-7-28",
+      "fen": "r1bqkbnr/1p2pn1p/p2p1pp1/1PpP4/2P2PP1/2N1P2P/P2BN1B1/1R1QK2R w K - 0 15",
+      "pgn": "1. b4 f6 2. g4 Kf7 3. c4 Na6 4. b5 Nc5 5. d4 Ne6 6. Nc3 c5 7. e3 Qa5 8. Ne2 a6 9. d5 Ng5 10. Bg2 Ke8 11. Rb1 d6 12. f4 Nf7 13. Bd2 Qd8 14. h3 g6",
+      "lastMove": "g6",
+      "ply": 28,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-7-35",
+      "fen": "r1bqkbnr/1p2p3/p2p2p1/1PpP2np/2P2N2/2N1P2P/P2B2B1/1R1Q1RK1 b - - 1 18",
+      "pgn": "1. b4 f6 2. g4 Kf7 3. c4 Na6 4. b5 Nc5 5. d4 Ne6 6. Nc3 c5 7. e3 Qa5 8. Ne2 a6 9. d5 Ng5 10. Bg2 Ke8 11. Rb1 d6 12. f4 Nf7 13. Bd2 Qd8 14. h3 g6 15. O-O h5 16. g5 fxg5 17. fxg5 Nxg5 18. Nf4",
+      "lastMove": "Nf4",
+      "ply": 35,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-7-42",
+      "fen": "r2qk1nr/1p2p1b1/p2p4/1PpP1p1p/2P2N2/4P2P/P2B4/1R1Q1RK1 w - - 0 22",
+      "pgn": "1. b4 f6 2. g4 Kf7 3. c4 Na6 4. b5 Nc5 5. d4 Ne6 6. Nc3 c5 7. e3 Qa5 8. Ne2 a6 9. d5 Ng5 10. Bg2 Ke8 11. Rb1 d6 12. f4 Nf7 13. Bd2 Qd8 14. h3 g6 15. O-O h5 16. g5 fxg5 17. fxg5 Nxg5 18. Nf4 Bg7 19. Ne4 Nxe4 20. Bxe4 Bf5 21. Bxf5 gxf5",
+      "lastMove": "gxf5",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-7-51",
+      "fen": "3N3r/1p1kp3/3p1n2/1ppP1p1p/2P5/4P2P/r2B1R2/1R1Q2K1 b - - 1 26",
+      "pgn": "1. b4 f6 2. g4 Kf7 3. c4 Na6 4. b5 Nc5 5. d4 Ne6 6. Nc3 c5 7. e3 Qa5 8. Ne2 a6 9. d5 Ng5 10. Bg2 Ke8 11. Rb1 d6 12. f4 Nf7 13. Bd2 Qd8 14. h3 g6 15. O-O h5 16. g5 fxg5 17. fxg5 Nxg5 18. Nf4 Bg7 19. Ne4 Nxe4 20. Bxe4 Bf5 21. Bxf5 gxf5 22. Ne6 axb5 23. Nxg7+ Kd7 24. Ne6 Nf6 25. Nxd8 Rxa2 26. Rf2",
+      "lastMove": "Rf2",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-7-60",
+      "fen": "3k2r1/4p3/1p1p4/Q1pP1p1p/2P1n3/4P2P/3r1R2/1R3K2 w - - 0 31",
+      "pgn": "1. b4 f6 2. g4 Kf7 3. c4 Na6 4. b5 Nc5 5. d4 Ne6 6. Nc3 c5 7. e3 Qa5 8. Ne2 a6 9. d5 Ng5 10. Bg2 Ke8 11. Rb1 d6 12. f4 Nf7 13. Bd2 Qd8 14. h3 g6 15. O-O h5 16. g5 fxg5 17. fxg5 Nxg5 18. Nf4 Bg7 19. Ne4 Nxe4 20. Bxe4 Bf5 21. Bxf5 gxf5 22. Ne6 axb5 23. Nxg7+ Kd7 24. Ne6 Nf6 25. Nxd8 Rxa2 26. Rf2 Rg8+ 27. Kf1 Ne4 28. Qb3 Rxd2 29. Qxb5+ Kxd8 30. Qa5+ b6",
+      "lastMove": "b6",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-8-9",
+      "fen": "rnbqkbnr/p2ppp1p/1pp5/8/2P3p1/1Q4P1/PP1PPPBP/RNB1K1NR b KQkq - 0 5",
+      "pgn": "1. g3 g5 2. c3 g4 3. Qb3 b6 4. Bg2 c6 5. c4",
+      "lastMove": "c4",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-8-14",
+      "fen": "rnbqk1nr/p2ppp2/1pp5/7p/2Pb2p1/1Q4PP/PP2PPB1/RNB1K1NR w KQkq - 0 8",
+      "pgn": "1. g3 g5 2. c3 g4 3. Qb3 b6 4. Bg2 c6 5. c4 Bg7 6. h3 h5 7. d4 Bxd4",
+      "lastMove": "Bxd4",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-8-21",
+      "fen": "rnbqk2r/p2pppb1/1pp5/7n/2P3P1/3Q4/PP2PPB1/RNB1K1NR b KQkq - 0 11",
+      "pgn": "1. g3 g5 2. c3 g4 3. Qb3 b6 4. Bg2 c6 5. c4 Bg7 6. h3 h5 7. d4 Bxd4 8. Qd3 Bg7 9. hxg4 Nf6 10. gxh5 Nxh5 11. g4",
+      "lastMove": "g4",
+      "ply": 21,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-8-28",
+      "fen": "rnbqk2b/p3pp1Q/1ppp4/8/2P3P1/8/PP2PPn1/RNB2KN1 w q - 0 15",
+      "pgn": "1. g3 g5 2. c3 g4 3. Qb3 b6 4. Bg2 c6 5. c4 Bg7 6. h3 h5 7. d4 Bxd4 8. Qd3 Bg7 9. hxg4 Nf6 10. gxh5 Nxh5 11. g4 Nf4 12. Rxh8+ Bxh8 13. Qh7 Nxg2+ 14. Kf1 d6",
+      "lastMove": "d6",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-8-35",
+      "fen": "rn1k4/p3pp2/1ppp4/8/2P3b1/8/PP1BPPK1/RN4N1 b - - 1 18",
+      "pgn": "1. g3 g5 2. c3 g4 3. Qb3 b6 4. Bg2 c6 5. c4 Bg7 6. h3 h5 7. d4 Bxd4 8. Qd3 Bg7 9. hxg4 Nf6 10. gxh5 Nxh5 11. g4 Nf4 12. Rxh8+ Bxh8 13. Qh7 Nxg2+ 14. Kf1 d6 15. Qxh8+ Kd7 16. Qxd8+ Kxd8 17. Kxg2 Bxg4 18. Bd2",
+      "lastMove": "Bd2",
+      "ply": 35,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-8-42",
+      "fen": "rn1k4/p3p3/1p2bp2/3p4/8/NP6/P2BPPK1/R5N1 w - - 0 22",
+      "pgn": "1. g3 g5 2. c3 g4 3. Qb3 b6 4. Bg2 c6 5. c4 Bg7 6. h3 h5 7. d4 Bxd4 8. Qd3 Bg7 9. hxg4 Nf6 10. gxh5 Nxh5 11. g4 Nf4 12. Rxh8+ Bxh8 13. Qh7 Nxg2+ 14. Kf1 d6 15. Qxh8+ Kd7 16. Qxd8+ Kxd8 17. Kxg2 Bxg4 18. Bd2 Be6 19. b3 d5 20. cxd5 cxd5 21. Na3 f6",
+      "lastMove": "f6",
+      "ply": 42,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-8-51",
+      "fen": "2rk4/p3p3/1p3p2/2np1b2/5P2/NP2KN2/P2BP3/2R5 b - - 8 26",
+      "pgn": "1. g3 g5 2. c3 g4 3. Qb3 b6 4. Bg2 c6 5. c4 Bg7 6. h3 h5 7. d4 Bxd4 8. Qd3 Bg7 9. hxg4 Nf6 10. gxh5 Nxh5 11. g4 Nf4 12. Rxh8+ Bxh8 13. Qh7 Nxg2+ 14. Kf1 d6 15. Qxh8+ Kd7 16. Qxd8+ Kxd8 17. Kxg2 Bxg4 18. Bd2 Be6 19. b3 d5 20. cxd5 cxd5 21. Na3 f6 22. f4 Na6 23. Kf2 Nc5 24. Nf3 Rc8 25. Ke3 Bf5 26. Rc1",
+      "lastMove": "Rc1",
+      "ply": 51,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-8-60",
+      "fen": "8/p2kp3/1p2np2/5b2/1P1p1P2/N7/P2BPK2/2R5 w - - 2 31",
+      "pgn": "1. g3 g5 2. c3 g4 3. Qb3 b6 4. Bg2 c6 5. c4 Bg7 6. h3 h5 7. d4 Bxd4 8. Qd3 Bg7 9. hxg4 Nf6 10. gxh5 Nxh5 11. g4 Nf4 12. Rxh8+ Bxh8 13. Qh7 Nxg2+ 14. Kf1 d6 15. Qxh8+ Kd7 16. Qxd8+ Kxd8 17. Kxg2 Bxg4 18. Bd2 Be6 19. b3 d5 20. cxd5 cxd5 21. Na3 f6 22. f4 Na6 23. Kf2 Nc5 24. Nf3 Rc8 25. Ke3 Bf5 26. Rc1 Rc6 27. Nd4 Re6+ 28. Nxe6+ Nxe6 29. b4 d4+ 30. Kf2 Kd7",
+      "lastMove": "Kd7",
+      "ply": 60,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-8-69",
+      "fen": "8/p2kp3/1p3p2/5P2/1P1p2K1/N7/P2n4/3R4 b - - 1 35",
+      "pgn": "1. g3 g5 2. c3 g4 3. Qb3 b6 4. Bg2 c6 5. c4 Bg7 6. h3 h5 7. d4 Bxd4 8. Qd3 Bg7 9. hxg4 Nf6 10. gxh5 Nxh5 11. g4 Nf4 12. Rxh8+ Bxh8 13. Qh7 Nxg2+ 14. Kf1 d6 15. Qxh8+ Kd7 16. Qxd8+ Kxd8 17. Kxg2 Bxg4 18. Bd2 Be6 19. b3 d5 20. cxd5 cxd5 21. Na3 f6 22. f4 Na6 23. Kf2 Nc5 24. Nf3 Rc8 25. Ke3 Bf5 26. Rc1 Rc6 27. Nd4 Re6+ 28. Nxe6+ Nxe6 29. b4 d4+ 30. Kf2 Kd7 31. e4 Bg4 32. f5 Ng5 33. Kg3 Nxe4+ 34. Kxg4 Nxd2 35. Rd1",
+      "lastMove": "Rd1",
+      "ply": 69,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-8-84",
+      "fen": "8/4p3/1pk2p2/5P2/pPn2K2/P7/3R4/1N6 w - - 3 43",
+      "pgn": "1. g3 g5 2. c3 g4 3. Qb3 b6 4. Bg2 c6 5. c4 Bg7 6. h3 h5 7. d4 Bxd4 8. Qd3 Bg7 9. hxg4 Nf6 10. gxh5 Nxh5 11. g4 Nf4 12. Rxh8+ Bxh8 13. Qh7 Nxg2+ 14. Kf1 d6 15. Qxh8+ Kd7 16. Qxd8+ Kxd8 17. Kxg2 Bxg4 18. Bd2 Be6 19. b3 d5 20. cxd5 cxd5 21. Na3 f6 22. f4 Na6 23. Kf2 Nc5 24. Nf3 Rc8 25. Ke3 Bf5 26. Rc1 Rc6 27. Nd4 Re6+ 28. Nxe6+ Nxe6 29. b4 d4+ 30. Kf2 Kd7 31. e4 Bg4 32. f5 Ng5 33. Kg3 Nxe4+ 34. Kxg4 Nxd2 35. Rd1 Ne4 36. Kf3 Nd6 37. Rxd4 Kc6 38. Kg4 a5 39. Nb1 a4 40. Kf4 Kb5 41. a3 Kc6 42. Rd2 Nc4",
+      "lastMove": "Nc4",
+      "ply": 84,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-9-9",
+      "fen": "rnbqkbnr/ppp2p2/3p3p/6p1/8/2NP1N2/PPP1PPPP/R1BQKB1R b KQkq - 1 5",
+      "pgn": "1. d3 e5 2. Nf3 h6 3. Nc3 g5 4. Nxe5 d6 5. Nf3",
+      "lastMove": "Nf3",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-9-14",
+      "fen": "r1bqk2r/ppp1npb1/2np3p/6p1/4P3/2NP1NP1/PPP2P1P/R1BQKB1R w KQkq - 1 8",
+      "pgn": "1. d3 e5 2. Nf3 h6 3. Nc3 g5 4. Nxe5 d6 5. Nf3 Bg7 6. e4 Nc6 7. g3 Nge7",
+      "lastMove": "Nge7",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-9-21",
+      "fen": "r2qk2r/ppp1npb1/2n1b2p/3p4/4P1NP/2NP2P1/PPP2PB1/R1BQK2R b KQkq - 0 11",
+      "pgn": "1. d3 e5 2. Nf3 h6 3. Nc3 g5 4. Nxe5 d6 5. Nf3 Bg7 6. e4 Nc6 7. g3 Nge7 8. Bg2 Be6 9. h4 g4 10. Nh2 d5 11. Nxg4",
+      "lastMove": "Nxg4",
+      "ply": 21,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-9-28",
+      "fen": "2kr3r/pppq2b1/2n1b2p/3n1p2/7P/2NP2P1/PPP2PBN/R1BQ1RK1 w - - 0 15",
+      "pgn": "1. d3 e5 2. Nf3 h6 3. Nc3 g5 4. Nxe5 d6 5. Nf3 Bg7 6. e4 Nc6 7. g3 Nge7 8. Bg2 Be6 9. h4 g4 10. Nh2 d5 11. Nxg4 Qd7 12. Nh2 O-O-O 13. O-O f5 14. exd5 Nxd5",
+      "lastMove": "Nxd5",
+      "ply": 28,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-9-35",
+      "fen": "2kr2r1/pppq4/2nbb2p/3n1p2/2PP3P/6P1/PP2NPBN/R1BQ1RK1 b - - 0 18",
+      "pgn": "1. d3 e5 2. Nf3 h6 3. Nc3 g5 4. Nxe5 d6 5. Nf3 Bg7 6. e4 Nc6 7. g3 Nge7 8. Bg2 Be6 9. h4 g4 10. Nh2 d5 11. Nxg4 Qd7 12. Nh2 O-O-O 13. O-O f5 14. exd5 Nxd5 15. Ne2 Rhg8 16. c3 Bf8 17. d4 Bd6 18. c4",
+      "lastMove": "c4",
+      "ply": 35,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-9-42",
+      "fen": "2kr2r1/pppqn3/3bb2B/8/1nPP3P/1Q4P1/PP2N1BN/R4RK1 w - - 1 22",
+      "pgn": "1. d3 e5 2. Nf3 h6 3. Nc3 g5 4. Nxe5 d6 5. Nf3 Bg7 6. e4 Nc6 7. g3 Nge7 8. Bg2 Be6 9. h4 g4 10. Nh2 d5 11. Nxg4 Qd7 12. Nh2 O-O-O 13. O-O f5 14. exd5 Nxd5 15. Ne2 Rhg8 16. c3 Bf8 17. d4 Bd6 18. c4 Nce7 19. Bxh6 f4 20. Qb3 fxg3 21. fxg3 Nb4",
+      "lastMove": "Nb4",
+      "ply": 42,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-9-51",
+      "fen": "2k4r/p1pq4/3bb3/1p3RP1/1nPP4/1Q4P1/PP2N1BN/3R2K1 b - - 0 26",
+      "pgn": "1. d3 e5 2. Nf3 h6 3. Nc3 g5 4. Nxe5 d6 5. Nf3 Bg7 6. e4 Nc6 7. g3 Nge7 8. Bg2 Be6 9. h4 g4 10. Nh2 d5 11. Nxg4 Qd7 12. Nh2 O-O-O 13. O-O f5 14. exd5 Nxd5 15. Ne2 Rhg8 16. c3 Bf8 17. d4 Bd6 18. c4 Nce7 19. Bxh6 f4 20. Qb3 fxg3 21. fxg3 Nb4 22. Rad1 Nf5 23. Bg5 Rxg5 24. hxg5 Rh8 25. Rf3 b5 26. Rxf5",
+      "lastMove": "Rxf5",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-9-60",
+      "fen": "1k5r/p1p5/3b1R2/3b1QP1/1npP4/6P1/PP2NKBq/3R4 w - - 4 31",
+      "pgn": "1. d3 e5 2. Nf3 h6 3. Nc3 g5 4. Nxe5 d6 5. Nf3 Bg7 6. e4 Nc6 7. g3 Nge7 8. Bg2 Be6 9. h4 g4 10. Nh2 d5 11. Nxg4 Qd7 12. Nh2 O-O-O 13. O-O f5 14. exd5 Nxd5 15. Ne2 Rhg8 16. c3 Bf8 17. d4 Bd6 18. c4 Nce7 19. Bxh6 f4 20. Qb3 fxg3 21. fxg3 Nb4 22. Rad1 Nf5 23. Bg5 Rxg5 24. hxg5 Rh8 25. Rf3 b5 26. Rxf5 Qh7 27. Rf6 bxc4 28. Qf3 Qxh2+ 29. Kf2 Bd5 30. Qf5+ Kb8",
+      "lastMove": "Kb8",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-9-69",
+      "fen": "1k2r3/p1p5/3b3R/3B1QP1/2pP4/3n4/PP2N1K1/4q1R1 b - - 2 35",
+      "pgn": "1. d3 e5 2. Nf3 h6 3. Nc3 g5 4. Nxe5 d6 5. Nf3 Bg7 6. e4 Nc6 7. g3 Nge7 8. Bg2 Be6 9. h4 g4 10. Nh2 d5 11. Nxg4 Qd7 12. Nh2 O-O-O 13. O-O f5 14. exd5 Nxd5 15. Ne2 Rhg8 16. c3 Bf8 17. d4 Bd6 18. c4 Nce7 19. Bxh6 f4 20. Qb3 fxg3 21. fxg3 Nb4 22. Rad1 Nf5 23. Bg5 Rxg5 24. hxg5 Rh8 25. Rf3 b5 26. Rxf5 Qh7 27. Rf6 bxc4 28. Qf3 Qxh2+ 29. Kf2 Bd5 30. Qf5+ Kb8 31. Rg1 Re8 32. Rh6 Nd3+ 33. Kf1 Qxg3 34. Bxd5 Qe1+ 35. Kg2",
+      "lastMove": "Kg2",
+      "ply": 69,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-9-84",
+      "fen": "1k2r3/2p3n1/p2b4/3B4/2pP4/1P5Q/P4q2/6RK w - - 0 43",
+      "pgn": "1. d3 e5 2. Nf3 h6 3. Nc3 g5 4. Nxe5 d6 5. Nf3 Bg7 6. e4 Nc6 7. g3 Nge7 8. Bg2 Be6 9. h4 g4 10. Nh2 d5 11. Nxg4 Qd7 12. Nh2 O-O-O 13. O-O f5 14. exd5 Nxd5 15. Ne2 Rhg8 16. c3 Bf8 17. d4 Bd6 18. c4 Nce7 19. Bxh6 f4 20. Qb3 fxg3 21. fxg3 Nb4 22. Rad1 Nf5 23. Bg5 Rxg5 24. hxg5 Rh8 25. Rf3 b5 26. Rxf5 Qh7 27. Rf6 bxc4 28. Qf3 Qxh2+ 29. Kf2 Bd5 30. Qf5+ Kb8 31. Rg1 Re8 32. Rh6 Nd3+ 33. Kf1 Qxg3 34. Bxd5 Qe1+ 35. Kg2 Qxe2+ 36. Kh1 Nf2+ 37. Kg2 Ng4+ 38. Kh1 Nxh6 39. Qh3 Nf5 40. g6 a6 41. b3 Qf2 42. g7 Nxg7",
+      "lastMove": "Nxg7",
+      "ply": 84,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-10-9",
+      "fen": "r1bqkb1r/p1ppppp1/2n2n1p/1N6/8/4P3/PPPP1PPP/R1BQKBNR b KQkq - 0 5",
+      "pgn": "1. Na3 h6 2. Nb1 Nc6 3. Nc3 b5 4. Nxb5 Nf6 5. e3",
+      "lastMove": "e3",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-10-14",
+      "fen": "r2qkb1r/1bp1ppp1/p1n2n1p/3p4/8/NP2P3/P1PP1PPP/R1BQKBNR w KQkq - 0 8",
+      "pgn": "1. Na3 h6 2. Nb1 Nc6 3. Nc3 b5 4. Nxb5 Nf6 5. e3 Bb7 6. b3 a6 7. Na3 d5",
+      "lastMove": "d5",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-10-21",
+      "fen": "r1bqkb1r/2p2pp1/p1n2n1p/3p4/4p2N/NP2P1P1/PBPP1P1P/R2QKB1R b KQkq - 0 11",
+      "pgn": "1. Na3 h6 2. Nb1 Nc6 3. Nc3 b5 4. Nxb5 Nf6 5. e3 Bb7 6. b3 a6 7. Na3 d5 8. Bb2 e5 9. Nf3 e4 10. Nh4 Bc8 11. g3",
+      "lastMove": "g3",
+      "ply": 21,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-10-28",
+      "fen": "r3k2r/2pq1pb1/p1n2n1p/3p2p1/3PpP2/NP2P1Pb/PBP3NP/R2QKB1R w KQkq - 1 15",
+      "pgn": "1. Na3 h6 2. Nb1 Nc6 3. Nc3 b5 4. Nxb5 Nf6 5. e3 Bb7 6. b3 a6 7. Na3 d5 8. Bb2 e5 9. Nf3 e4 10. Nh4 Bc8 11. g3 g5 12. Ng2 Bh3 13. f4 Bg7 14. d4 Qd7",
+      "lastMove": "Qd7",
+      "ply": 28,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-10-35",
+      "fen": "r4rk1/2pq1pb1/p4n1p/3p1np1/N2PpP2/1P2P1Pb/PBPQ2NP/R3KB1R b KQ - 8 18",
+      "pgn": "1. Na3 h6 2. Nb1 Nc6 3. Nc3 b5 4. Nxb5 Nf6 5. e3 Bb7 6. b3 a6 7. Na3 d5 8. Bb2 e5 9. Nf3 e4 10. Nh4 Bc8 11. g3 g5 12. Ng2 Bh3 13. f4 Bg7 14. d4 Qd7 15. Qd2 O-O 16. Nb1 Ne7 17. Nc3 Nf5 18. Na4",
+      "lastMove": "Na4",
+      "ply": 35,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-10-42",
+      "fen": "r4rk1/2pq1pb1/p6p/3p1n2/N2PpPp1/1P2n1P1/PBPQ2BP/2K3RR w - - 0 22",
+      "pgn": "1. Na3 h6 2. Nb1 Nc6 3. Nc3 b5 4. Nxb5 Nf6 5. e3 Bb7 6. b3 a6 7. Na3 d5 8. Bb2 e5 9. Nf3 e4 10. Nh4 Bc8 11. g3 g5 12. Ng2 Bh3 13. f4 Bg7 14. d4 Qd7 15. Qd2 O-O 16. Nb1 Ne7 17. Nc3 Nf5 18. Na4 Ng4 19. O-O-O Bxg2 20. Bxg2 Ngxe3 21. Rdg1 g4",
+      "lastMove": "g4",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-10-51",
+      "fen": "r4rk1/2pN1pb1/p7/3p1n2/3PpPp1/1P4P1/PBPn2B1/2K1R2R b - - 0 26",
+      "pgn": "1. Na3 h6 2. Nb1 Nc6 3. Nc3 b5 4. Nxb5 Nf6 5. e3 Bb7 6. b3 a6 7. Na3 d5 8. Bb2 e5 9. Nf3 e4 10. Nh4 Bc8 11. g3 g5 12. Ng2 Bh3 13. f4 Bg7 14. d4 Qd7 15. Qd2 O-O 16. Nb1 Ne7 17. Nc3 Nf5 18. Na4 Ng4 19. O-O-O Bxg2 20. Bxg2 Ngxe3 21. Rdg1 g4 22. h3 h5 23. hxg4 hxg4 24. Re1 Nc4 25. Nc5 Nxd2 26. Nxd7",
+      "lastMove": "Nxd7",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-10-60",
+      "fen": "5rk1/2p2p2/p6b/3p4/3P1Pp1/1P3pn1/PBPK4/4R1R1 w - - 2 31",
+      "pgn": "1. Na3 h6 2. Nb1 Nc6 3. Nc3 b5 4. Nxb5 Nf6 5. e3 Bb7 6. b3 a6 7. Na3 d5 8. Bb2 e5 9. Nf3 e4 10. Nh4 Bc8 11. g3 g5 12. Ng2 Bh3 13. f4 Bg7 14. d4 Qd7 15. Qd2 O-O 16. Nb1 Ne7 17. Nc3 Nf5 18. Na4 Ng4 19. O-O-O Bxg2 20. Bxg2 Ngxe3 21. Rdg1 g4 22. h3 h5 23. hxg4 hxg4 24. Re1 Nc4 25. Nc5 Nxd2 26. Nxd7 Nf3 27. Bxf3 exf3 28. Nxf8 Rxf8 29. Kd2 Nxg3 30. Rhg1 Bh6",
+      "lastMove": "Bh6",
+      "ply": 60,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-10-69",
+      "fen": "5rk1/2p2pb1/p7/3p4/3PnPR1/1P1K4/P1P5/4B3 b - - 2 35",
+      "pgn": "1. Na3 h6 2. Nb1 Nc6 3. Nc3 b5 4. Nxb5 Nf6 5. e3 Bb7 6. b3 a6 7. Na3 d5 8. Bb2 e5 9. Nf3 e4 10. Nh4 Bc8 11. g3 g5 12. Ng2 Bh3 13. f4 Bg7 14. d4 Qd7 15. Qd2 O-O 16. Nb1 Ne7 17. Nc3 Nf5 18. Na4 Ng4 19. O-O-O Bxg2 20. Bxg2 Ngxe3 21. Rdg1 g4 22. h3 h5 23. hxg4 hxg4 24. Re1 Nc4 25. Nc5 Nxd2 26. Nxd7 Nf3 27. Bxf3 exf3 28. Nxf8 Rxf8 29. Kd2 Nxg3 30. Rhg1 Bh6 31. Kd3 f2 32. Bc3 fxg1=Q 33. Rxg1 Ne4 34. Rxg4+ Bg7 35. Be1",
+      "lastMove": "Be1",
+      "ply": 69,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-10-84",
+      "fen": "3b4/2pk4/p4n2/B1Pp1p2/PP1P1P2/3K4/8/8 w - - 1 43",
+      "pgn": "1. Na3 h6 2. Nb1 Nc6 3. Nc3 b5 4. Nxb5 Nf6 5. e3 Bb7 6. b3 a6 7. Na3 d5 8. Bb2 e5 9. Nf3 e4 10. Nh4 Bc8 11. g3 g5 12. Ng2 Bh3 13. f4 Bg7 14. d4 Qd7 15. Qd2 O-O 16. Nb1 Ne7 17. Nc3 Nf5 18. Na4 Ng4 19. O-O-O Bxg2 20. Bxg2 Ngxe3 21. Rdg1 g4 22. h3 h5 23. hxg4 hxg4 24. Re1 Nc4 25. Nc5 Nxd2 26. Nxd7 Nf3 27. Bxf3 exf3 28. Nxf8 Rxf8 29. Kd2 Nxg3 30. Rhg1 Bh6 31. Kd3 f2 32. Bc3 fxg1=Q 33. Rxg1 Ne4 34. Rxg4+ Bg7 35. Be1 f5 36. Rg6 Rf6 37. Rxf6 Bxf6 38. Ba5 Bd8 39. c4 Nf6 40. c5 Kf7 41. a4 Ke6 42. b4 Kd7",
+      "lastMove": "Kd7",
+      "ply": 84,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-11-9",
+      "fen": "rn1qkbnr/pbp2ppp/1p1p4/4p3/4P3/2N2N2/PPPP1PPP/R1BQKB1R b KQkq - 0 5",
+      "pgn": "1. Nc3 d6 2. Nf3 e5 3. Ne4 b6 4. Nc3 Bb7 5. e4",
+      "lastMove": "e4",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-11-14",
+      "fen": "rn1qkb1r/p1p2ppp/1p1p4/4p3/3Pb3/5N2/PPP2PPP/R1BQKB1R w KQkq - 0 8",
+      "pgn": "1. Nc3 d6 2. Nf3 e5 3. Ne4 b6 4. Nc3 Bb7 5. e4 Nf6 6. d4 Nxe4 7. Nxe4 Bxe4",
+      "lastMove": "Bxe4",
+      "ply": 14,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-11-21",
+      "fen": "rn1q1rk1/p1p1bppp/1p6/3pP3/4bB2/5N2/PPP1QPPP/2KR1B1R b - - 1 11",
+      "pgn": "1. Nc3 d6 2. Nf3 e5 3. Ne4 b6 4. Nc3 Bb7 5. e4 Nf6 6. d4 Nxe4 7. Nxe4 Bxe4 8. dxe5 Be7 9. Bf4 O-O 10. Qe2 d5 11. O-O-O",
+      "lastMove": "O-O-O",
+      "ply": 21,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-11-28",
+      "fen": "rn3rk1/p3bppp/1p2P1b1/2pp4/q2N1B2/5P2/PPP1Q1PP/2KR1B1R w - - 1 15",
+      "pgn": "1. Nc3 d6 2. Nf3 e5 3. Ne4 b6 4. Nc3 Bb7 5. e4 Nf6 6. d4 Nxe4 7. Nxe4 Bxe4 8. dxe5 Be7 9. Bf4 O-O 10. Qe2 d5 11. O-O-O Qd7 12. Nd4 c5 13. f3 Bg6 14. e6 Qa4",
+      "lastMove": "Qa4",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-11-35",
+      "fen": "rn4k1/p3b1pp/1p2Nrb1/1Qpp4/5B2/5P2/qPP3PP/2K1RB1R b - - 3 18",
+      "pgn": "1. Nc3 d6 2. Nf3 e5 3. Ne4 b6 4. Nc3 Bb7 5. e4 Nf6 6. d4 Nxe4 7. Nxe4 Bxe4 8. dxe5 Be7 9. Bf4 O-O 10. Qe2 d5 11. O-O-O Qd7 12. Nd4 c5 13. f3 Bg6 14. e6 Qa4 15. exf7+ Rxf7 16. Qb5 Qxa2 17. Ne6 Rf6 18. Re1",
+      "lastMove": "Re1",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-11-42",
+      "fen": "rn4k1/4b1p1/pQ2Nr1p/2pp4/5B2/3P1P2/1P4PP/q1K1R2R w - - 1 22",
+      "pgn": "1. Nc3 d6 2. Nf3 e5 3. Ne4 b6 4. Nc3 Bb7 5. e4 Nf6 6. d4 Nxe4 7. Nxe4 Bxe4 8. dxe5 Be7 9. Bf4 O-O 10. Qe2 d5 11. O-O-O Qd7 12. Nd4 c5 13. f3 Bg6 14. e6 Qa4 15. exf7+ Rxf7 16. Qb5 Qxa2 17. Ne6 Rf6 18. Re1 h6 19. Bd3 a6 20. Qxb6 Bxd3 21. cxd3 Qa1+",
+      "lastMove": "Qa1+",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-11-51",
+      "fen": "4r1k1/1QNnb1p1/p4r1p/2pp4/q4B2/3P1P2/1P4PP/1K2R2R b - - 10 26",
+      "pgn": "1. Nc3 d6 2. Nf3 e5 3. Ne4 b6 4. Nc3 Bb7 5. e4 Nf6 6. d4 Nxe4 7. Nxe4 Bxe4 8. dxe5 Be7 9. Bf4 O-O 10. Qe2 d5 11. O-O-O Qd7 12. Nd4 c5 13. f3 Bg6 14. e6 Qa4 15. exf7+ Rxf7 16. Qb5 Qxa2 17. Ne6 Rf6 18. Re1 h6 19. Bd3 a6 20. Qxb6 Bxd3 21. cxd3 Qa1+ 22. Kd2 Nd7 23. Qb7 Qa5+ 24. Kc2 Qa4+ 25. Kb1 Re8 26. Nc7",
+      "lastMove": "Nc7",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-11-60",
+      "fen": "7k/2NQR1p1/p6p/q1p5/5r2/3P1P2/1K4PP/7R w - - 1 31",
+      "pgn": "1. Nc3 d6 2. Nf3 e5 3. Ne4 b6 4. Nc3 Bb7 5. e4 Nf6 6. d4 Nxe4 7. Nxe4 Bxe4 8. dxe5 Be7 9. Bf4 O-O 10. Qe2 d5 11. O-O-O Qd7 12. Nd4 c5 13. f3 Bg6 14. e6 Qa4 15. exf7+ Rxf7 16. Qb5 Qxa2 17. Ne6 Rf6 18. Re1 h6 19. Bd3 a6 20. Qxb6 Bxd3 21. cxd3 Qa1+ 22. Kd2 Nd7 23. Qb7 Qa5+ 24. Kc2 Qa4+ 25. Kb1 Re8 26. Nc7 Rb8 27. Qxd5+ Kh8 28. Rxe7 Rxf4 29. Qxd7 Rxb2+ 30. Kxb2 Qa5",
+      "lastMove": "Qa5",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-11-69",
+      "fen": "3Q4/6k1/p3N2p/q1p5/5r2/3P1P2/1K4PP/7R b - - 5 35",
+      "pgn": "1. Nc3 d6 2. Nf3 e5 3. Ne4 b6 4. Nc3 Bb7 5. e4 Nf6 6. d4 Nxe4 7. Nxe4 Bxe4 8. dxe5 Be7 9. Bf4 O-O 10. Qe2 d5 11. O-O-O Qd7 12. Nd4 c5 13. f3 Bg6 14. e6 Qa4 15. exf7+ Rxf7 16. Qb5 Qxa2 17. Ne6 Rf6 18. Re1 h6 19. Bd3 a6 20. Qxb6 Bxd3 21. cxd3 Qa1+ 22. Kd2 Nd7 23. Qb7 Qa5+ 24. Kc2 Qa4+ 25. Kb1 Re8 26. Nc7 Rb8 27. Qxd5+ Kh8 28. Rxe7 Rxf4 29. Qxd7 Rxb2+ 30. Kxb2 Qa5 31. Qd8+ Kh7 32. Rxg7+ Kxg7 33. Ne6+ Kf7 34. Ng5+ Kg7 35. Ne6+",
+      "lastMove": "Ne6+",
+      "ply": 69,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-12-9",
+      "fen": "rnbqkbr1/1pp1pppp/p6B/3p4/3P4/2P2N2/PP2PPPP/RN1QKBR1 b Qq - 0 5",
+      "pgn": "1. Nf3 Nh6 2. Rg1 a6 3. c3 Rg8 4. d4 d5 5. Bxh6",
+      "lastMove": "Bxh6",
+      "ply": 9,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-12-14",
+      "fen": "rnbqkbr1/1p3p1p/p3p2p/2pp4/3P4/2PBPN2/PP3PPP/RN1QK1R1 w Qq - 0 8",
+      "pgn": "1. Nf3 Nh6 2. Rg1 a6 3. c3 Rg8 4. d4 d5 5. Bxh6 gxh6 6. e3 e6 7. Bd3 c5",
+      "lastMove": "c5",
+      "ply": 14,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-12-21",
+      "fen": "r1bqk1r1/bp3p1p/p1n1p2p/3p4/3N4/2PBPN2/PP3PPP/R2QK1R1 b Qq - 5 11",
+      "pgn": "1. Nf3 Nh6 2. Rg1 a6 3. c3 Rg8 4. d4 d5 5. Bxh6 gxh6 6. e3 e6 7. Bd3 c5 8. dxc5 Bxc5 9. Nbd2 Nc6 10. Nb3 Ba7 11. Nbd4",
+      "lastMove": "Nbd4",
+      "ply": 21,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-12-28",
+      "fen": "r3k3/bpq2pr1/p1b1p2p/3p4/8/2PBPN2/PP3PPP/R2QK1R1 w Qq - 0 15",
+      "pgn": "1. Nf3 Nh6 2. Rg1 a6 3. c3 Rg8 4. d4 d5 5. Bxh6 gxh6 6. e3 e6 7. Bd3 c5 8. dxc5 Bxc5 9. Nbd2 Nc6 10. Nb3 Ba7 11. Nbd4 Bd7 12. Bxh7 Rg7 13. Bd3 Qc7 14. Nxc6 Bxc6",
+      "lastMove": "Bxc6",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-12-35",
+      "fen": "1k1r4/bpq2pr1/p1b4p/3ppN2/8/2PBP3/PP1Q1PPP/2KR2R1 b - - 3 18",
+      "pgn": "1. Nf3 Nh6 2. Rg1 a6 3. c3 Rg8 4. d4 d5 5. Bxh6 gxh6 6. e3 e6 7. Bd3 c5 8. dxc5 Bxc5 9. Nbd2 Nc6 10. Nb3 Ba7 11. Nbd4 Bd7 12. Bxh7 Rg7 13. Bd3 Qc7 14. Nxc6 Bxc6 15. Qd2 O-O-O 16. O-O-O e5 17. Nh4 Kb8 18. Nf5",
+      "lastMove": "Nf5",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-12-42",
+      "fen": "1k1r4/1pq2p2/p5r1/1bbppN1Q/8/2P1P3/PPB2PPP/2KR2R1 w - - 1 22",
+      "pgn": "1. Nf3 Nh6 2. Rg1 a6 3. c3 Rg8 4. d4 d5 5. Bxh6 gxh6 6. e3 e6 7. Bd3 c5 8. dxc5 Bxc5 9. Nbd2 Nc6 10. Nb3 Ba7 11. Nbd4 Bd7 12. Bxh7 Rg7 13. Bd3 Qc7 14. Nxc6 Bxc6 15. Qd2 O-O-O 16. O-O-O e5 17. Nh4 Kb8 18. Nf5 Rg6 19. Bc2 h5 20. Qe2 Bb5 21. Qxh5 Bc5",
+      "lastMove": "Bc5",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-13-9",
+      "fen": "r2qkbnr/pbp1pppp/1pnp4/8/1P1P4/4PQ2/P1P2PPP/RNB1KBNR b KQkq - 0 5",
+      "pgn": "1. e3 b6 2. Qg4 d6 3. b4 Nc6 4. Qf3 Bb7 5. d4",
+      "lastMove": "d4",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-13-14",
+      "fen": "r3kbnr/pqp2ppp/1pnp4/4p3/1P1P4/4PQ2/P1P2PPP/RNB1K1NR w KQkq - 0 8",
+      "pgn": "1. e3 b6 2. Qg4 d6 3. b4 Nc6 4. Qf3 Bb7 5. d4 e5 6. Ba6 Qc8 7. Bxb7 Qxb7",
+      "lastMove": "Qxb7",
+      "ply": 14,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-13-21",
+      "fen": "r3k1nr/pqp2ppp/1pn5/3p4/1bPp4/4PQ2/PB2NPPP/RN3RK1 b kq c3 0 11",
+      "pgn": "1. e3 b6 2. Qg4 d6 3. b4 Nc6 4. Qf3 Bb7 5. d4 e5 6. Ba6 Qc8 7. Bxb7 Qxb7 8. Bb2 exd4 9. Ne2 d5 10. O-O Bxb4 11. c4",
+      "lastMove": "c4",
+      "ply": 21,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-13-28",
+      "fen": "r4rk1/pqp1nppp/1pnb4/8/2pB4/P3PQ2/4NPPP/RNR3K1 w - - 1 15",
+      "pgn": "1. e3 b6 2. Qg4 d6 3. b4 Nc6 4. Qf3 Bb7 5. d4 e5 6. Ba6 Qc8 7. Bxb7 Qxb7 8. Bb2 exd4 9. Ne2 d5 10. O-O Bxb4 11. c4 dxc4 12. Bxd4 Nge7 13. Rc1 O-O 14. a3 Bd6",
+      "lastMove": "Bd6",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-13-35",
+      "fen": "r4rk1/pnp1n1pp/1p1b1p2/8/3B4/P3P3/2R1NPPP/RN3K2 b - - 1 18",
+      "pgn": "1. e3 b6 2. Qg4 d6 3. b4 Nc6 4. Qf3 Bb7 5. d4 e5 6. Ba6 Qc8 7. Bxb7 Qxb7 8. Bb2 exd4 9. Ne2 d5 10. O-O Bxb4 11. c4 dxc4 12. Bxd4 Nge7 13. Rc1 O-O 14. a3 Bd6 15. Rxc4 Na5 16. Qxb7 Nxb7 17. Rc2 f6 18. Kf1",
+      "lastMove": "Kf1",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-13-42",
+      "fen": "r2r2k1/pn4pp/1pn2p2/2p1b3/8/P1N1P3/1BRN1PPP/R4K2 w - - 6 22",
+      "pgn": "1. e3 b6 2. Qg4 d6 3. b4 Nc6 4. Qf3 Bb7 5. d4 e5 6. Ba6 Qc8 7. Bxb7 Qxb7 8. Bb2 exd4 9. Ne2 d5 10. O-O Bxb4 11. c4 dxc4 12. Bxd4 Nge7 13. Rc1 O-O 14. a3 Bd6 15. Rxc4 Na5 16. Qxb7 Nxb7 17. Rc2 f6 18. Kf1 c5 19. Bb2 Rfd8 20. Nd2 Nc6 21. Nc3 Be5",
+      "lastMove": "Be5",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-13-51",
+      "fen": "4r3/pn3kpp/1pn2p2/2pr4/6P1/P1B1P2P/2RNKP2/3R4 b - - 0 26",
+      "pgn": "1. e3 b6 2. Qg4 d6 3. b4 Nc6 4. Qf3 Bb7 5. d4 e5 6. Ba6 Qc8 7. Bxb7 Qxb7 8. Bb2 exd4 9. Ne2 d5 10. O-O Bxb4 11. c4 dxc4 12. Bxd4 Nge7 13. Rc1 O-O 14. a3 Bd6 15. Rxc4 Na5 16. Qxb7 Nxb7 17. Rc2 f6 18. Kf1 c5 19. Bb2 Rfd8 20. Nd2 Nc6 21. Nc3 Be5 22. g4 Bxc3 23. Bxc3 Kf7 24. Ke2 Rd5 25. Rd1 Re8 26. h3",
+      "lastMove": "h3",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-13-60",
+      "fen": "4r3/p4k1p/1p1n1pp1/2p5/6P1/P3PP1P/4K3/1NRr4 w - - 0 31",
+      "pgn": "1. e3 b6 2. Qg4 d6 3. b4 Nc6 4. Qf3 Bb7 5. d4 e5 6. Ba6 Qc8 7. Bxb7 Qxb7 8. Bb2 exd4 9. Ne2 d5 10. O-O Bxb4 11. c4 dxc4 12. Bxd4 Nge7 13. Rc1 O-O 14. a3 Bd6 15. Rxc4 Na5 16. Qxb7 Nxb7 17. Rc2 f6 18. Kf1 c5 19. Bb2 Rfd8 20. Nd2 Nc6 21. Nc3 Be5 22. g4 Bxc3 23. Bxc3 Kf7 24. Ke2 Rd5 25. Rd1 Re8 26. h3 Nd4+ 27. Bxd4 Rxd4 28. f3 g6 29. Rcc1 Nd6 30. Nb1 Rxd1",
+      "lastMove": "Rxd1",
+      "ply": 60,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-13-69",
+      "fen": "4r3/p7/1p2kp2/2p2P1p/2n1P3/P6P/4K3/1N1R4 b - - 0 35",
+      "pgn": "1. e3 b6 2. Qg4 d6 3. b4 Nc6 4. Qf3 Bb7 5. d4 e5 6. Ba6 Qc8 7. Bxb7 Qxb7 8. Bb2 exd4 9. Ne2 d5 10. O-O Bxb4 11. c4 dxc4 12. Bxd4 Nge7 13. Rc1 O-O 14. a3 Bd6 15. Rxc4 Na5 16. Qxb7 Nxb7 17. Rc2 f6 18. Kf1 c5 19. Bb2 Rfd8 20. Nd2 Nc6 21. Nc3 Be5 22. g4 Bxc3 23. Bxc3 Kf7 24. Ke2 Rd5 25. Rd1 Re8 26. h3 Nd4+ 27. Bxd4 Rxd4 28. f3 g6 29. Rcc1 Nd6 30. Nb1 Rxd1 31. Rxd1 Nc4 32. e4 Ke6 33. f4 h5 34. gxh5 gxh5 35. f5+",
+      "lastMove": "f5+",
+      "ply": 69,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-13-84",
+      "fen": "1r6/R7/1p1k1p2/2p1nP1p/4PK2/2N4P/8/8 w - - 9 43",
+      "pgn": "1. e3 b6 2. Qg4 d6 3. b4 Nc6 4. Qf3 Bb7 5. d4 e5 6. Ba6 Qc8 7. Bxb7 Qxb7 8. Bb2 exd4 9. Ne2 d5 10. O-O Bxb4 11. c4 dxc4 12. Bxd4 Nge7 13. Rc1 O-O 14. a3 Bd6 15. Rxc4 Na5 16. Qxb7 Nxb7 17. Rc2 f6 18. Kf1 c5 19. Bb2 Rfd8 20. Nd2 Nc6 21. Nc3 Be5 22. g4 Bxc3 23. Bxc3 Kf7 24. Ke2 Rd5 25. Rd1 Re8 26. h3 Nd4+ 27. Bxd4 Rxd4 28. f3 g6 29. Rcc1 Nd6 30. Nb1 Rxd1 31. Rxd1 Nc4 32. e4 Ke6 33. f4 h5 34. gxh5 gxh5 35. f5+ Ke7 36. Nc3 Nxa3 37. Ra1 Nc4 38. Rxa7+ Kd6 39. Ra4 Nb2 40. Ra7 Nc4 41. Kf3 Ne5+ 42. Kf4 Rb8",
+      "lastMove": "Rb8",
+      "ply": 84,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-14-9",
+      "fen": "rnbqk2r/ppppppbp/5n2/6p1/1P1P4/N1P2P2/P3P1PP/R1BQKBNR b KQkq - 0 5",
+      "pgn": "1. Na3 g5 2. c3 Bh6 3. b4 Bg7 4. d4 Nf6 5. f3",
+      "lastMove": "f3",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-14-14",
+      "fen": "rnb1k2r/1pp1ppbp/3q1n2/pP1p2B1/3P4/N1P2P2/P3P1PP/R2QKBNR w KQkq - 1 8",
+      "pgn": "1. Na3 g5 2. c3 Bh6 3. b4 Bg7 4. d4 Nf6 5. f3 a5 6. b5 d5 7. Bxg5 Qd6",
+      "lastMove": "Qd6",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-14-21",
+      "fen": "r3k2r/1ppnppbp/3q1n2/pP1p2B1/3P4/2PQPP2/P1N3PP/R3K1NR b KQkq - 0 11",
+      "pgn": "1. Na3 g5 2. c3 Bh6 3. b4 Bg7 4. d4 Nf6 5. f3 a5 6. b5 d5 7. Bxg5 Qd6 8. Nc2 Bf5 9. e3 Nbd7 10. Bd3 Bxd3 11. Qxd3",
+      "lastMove": "Qxd3",
+      "ply": 21,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-14-28",
+      "fen": "2k3rr/1ppn1pbp/3q1n2/pP1p2B1/3Pp3/2P1PPN1/P1NQ2PP/R3K2R w KQ - 4 15",
+      "pgn": "1. Na3 g5 2. c3 Bh6 3. b4 Bg7 4. d4 Nf6 5. f3 a5 6. b5 d5 7. Bxg5 Qd6 8. Nc2 Bf5 9. e3 Nbd7 10. Bd3 Bxd3 11. Qxd3 e5 12. Ne2 e4 13. Qd2 O-O-O 14. Ng3 Rdg8",
+      "lastMove": "Rdg8",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-14-35",
+      "fen": "2k3rr/1pp2pb1/1n1q1n2/QP4Bp/2pPP3/4P1N1/P1N3PP/R4RK1 b - - 0 18",
+      "pgn": "1. Na3 g5 2. c3 Bh6 3. b4 Bg7 4. d4 Nf6 5. f3 a5 6. b5 d5 7. Bxg5 Qd6 8. Nc2 Bf5 9. e3 Nbd7 10. Bd3 Bxd3 11. Qxd3 e5 12. Ne2 e4 13. Qd2 O-O-O 14. Ng3 Rdg8 15. c4 dxc4 16. Qxa5 Nb6 17. O-O h5 18. fxe4",
+      "lastMove": "fxe4",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-14-42",
+      "fen": "2k3rr/1pp2pb1/1n1P1n2/QP3RBp/2p1P3/4P1N1/P1q3PP/R5K1 w - - 0 22",
+      "pgn": "1. Na3 g5 2. c3 Bh6 3. b4 Bg7 4. d4 Nf6 5. f3 a5 6. b5 d5 7. Bxg5 Qd6 8. Nc2 Bf5 9. e3 Nbd7 10. Bd3 Bxd3 11. Qxd3 e5 12. Ne2 e4 13. Qd2 O-O-O 14. Ng3 Rdg8 15. c4 dxc4 16. Qxa5 Nb6 17. O-O h5 18. fxe4 Qe6 19. d5 Qe5 20. Rf5 Qb2 21. d6 Qxc2",
+      "lastMove": "Qxc2",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-14-60",
+      "fen": "k5rr/5pb1/1Q1P1B2/1P6/2p1P3/4P1P1/P2q2P1/R5K1 w - - 3 31",
+      "pgn": "1. Na3 g5 2. c3 Bh6 3. b4 Bg7 4. d4 Nf6 5. f3 a5 6. b5 d5 7. Bxg5 Qd6 8. Nc2 Bf5 9. e3 Nbd7 10. Bd3 Bxd3 11. Qxd3 e5 12. Ne2 e4 13. Qd2 O-O-O 14. Ng3 Rdg8 15. c4 dxc4 16. Qxa5 Nb6 17. O-O h5 18. fxe4 Qe6 19. d5 Qe5 20. Rf5 Qb2 21. d6 Qxc2 22. Bxf6 h4 23. Rc5 hxg3 24. Rxc7+ Kb8 25. Rxb7+ Kxb7 26. Qa6+ Kb8 27. Qxb6+ Ka8 28. Qc6+ Kb8 29. hxg3 Qd2 30. Qb6+ Ka8",
+      "lastMove": "Ka8",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-15-9",
+      "fen": "rn1qkb1r/pp1bpppp/2P4n/8/7P/3P4/PP2PPP1/RNBQKBNR b KQkq - 0 5",
+      "pgn": "1. c4 Nh6 2. h4 d5 3. d3 Bd7 4. cxd5 c6 5. dxc6",
+      "lastMove": "dxc6",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-15-14",
+      "fen": "r2qkb1r/pp1b1ppp/2n5/4p3/6nP/2NPP3/PP3PP1/R1BQKBNR w KQkq - 0 8",
+      "pgn": "1. c4 Nh6 2. h4 d5 3. d3 Bd7 4. cxd5 c6 5. dxc6 Nxc6 6. Nc3 Ng4 7. e3 e5",
+      "lastMove": "e5",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-15-21",
+      "fen": "r2qk2r/pp2bpp1/2n5/4pb1p/4N1nP/3PPN2/PP1BBPP1/R2QK2R b KQkq - 5 11",
+      "pgn": "1. c4 Nh6 2. h4 d5 3. d3 Bd7 4. cxd5 c6 5. dxc6 Nxc6 6. Nc3 Ng4 7. e3 e5 8. Be2 h5 9. Nf3 Be7 10. Bd2 Bf5 11. Ne4",
+      "lastMove": "Ne4",
+      "ply": 21,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-15-28",
+      "fen": "r4rk1/pp2b1pb/2n2p2/3qp2p/4N1nP/P2PPN2/1P1BBPP1/R2QK2R w KQ - 2 15",
+      "pgn": "1. c4 Nh6 2. h4 d5 3. d3 Bd7 4. cxd5 c6 5. dxc6 Nxc6 6. Nc3 Ng4 7. e3 e5 8. Be2 h5 9. Nf3 Be7 10. Bd2 Bf5 11. Ne4 O-O 12. a3 Qd5 13. Nfg5 f6 14. Nf3 Bh7",
+      "lastMove": "Bh7",
+      "ply": 28,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-15-35",
+      "fen": "3r1r1k/1p2b1pb/2n2p2/p2qp2p/4N1nP/P1BPPN2/1PQ1BPP1/2R2RK1 b - - 1 18",
+      "pgn": "1. c4 Nh6 2. h4 d5 3. d3 Bd7 4. cxd5 c6 5. dxc6 Nxc6 6. Nc3 Ng4 7. e3 e5 8. Be2 h5 9. Nf3 Be7 10. Bd2 Bf5 11. Ne4 O-O 12. a3 Qd5 13. Nfg5 f6 14. Nf3 Bh7 15. Bc3 Kh8 16. O-O Rad8 17. Qc2 a5 18. Rac1",
+      "lastMove": "Rac1",
+      "ply": 35,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-15-42",
+      "fen": "2rq1r1k/4b1pb/5p2/pN2p2p/3n2nP/P2PPN2/1PQBBPP1/2R2RK1 w - - 1 22",
+      "pgn": "1. c4 Nh6 2. h4 d5 3. d3 Bd7 4. cxd5 c6 5. dxc6 Nxc6 6. Nc3 Ng4 7. e3 e5 8. Be2 h5 9. Nf3 Be7 10. Bd2 Bf5 11. Ne4 O-O 12. a3 Qd5 13. Nfg5 f6 14. Nf3 Bh7 15. Bc3 Kh8 16. O-O Rad8 17. Qc2 a5 18. Rac1 b5 19. Bd2 Rc8 20. Nc3 Qd8 21. Nxb5 Nd4",
+      "lastMove": "Nd4",
+      "ply": 42,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-15-51",
+      "fen": "2r4k/4b1p1/5p2/4p2p/6nP/P1BqPN2/1PN2PP1/2R2RK1 b - - 2 26",
+      "pgn": "1. c4 Nh6 2. h4 d5 3. d3 Bd7 4. cxd5 c6 5. dxc6 Nxc6 6. Nc3 Ng4 7. e3 e5 8. Be2 h5 9. Nf3 Be7 10. Bd2 Bf5 11. Ne4 O-O 12. a3 Qd5 13. Nfg5 f6 14. Nf3 Bh7 15. Bc3 Kh8 16. O-O Rad8 17. Qc2 a5 18. Rac1 b5 19. Bd2 Rc8 20. Nc3 Qd8 21. Nxb5 Nd4 22. Nbxd4 Rxc2 23. Nxc2 Bxd3 24. Bxd3 Qxd3 25. Bxa5 Rc8 26. Bc3",
+      "lastMove": "Bc3",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-15-60",
+      "fen": "7k/6p1/1b3p2/P3pq1p/6nP/2B1PN2/1PNr1PP1/2R3K1 w - - 0 31",
+      "pgn": "1. c4 Nh6 2. h4 d5 3. d3 Bd7 4. cxd5 c6 5. dxc6 Nxc6 6. Nc3 Ng4 7. e3 e5 8. Be2 h5 9. Nf3 Be7 10. Bd2 Bf5 11. Ne4 O-O 12. a3 Qd5 13. Nfg5 f6 14. Nf3 Bh7 15. Bc3 Kh8 16. O-O Rad8 17. Qc2 a5 18. Rac1 b5 19. Bd2 Rc8 20. Nc3 Qd8 21. Nxb5 Nd4 22. Nbxd4 Rxc2 23. Nxc2 Bxd3 24. Bxd3 Qxd3 25. Bxa5 Rc8 26. Bc3 Bc5 27. Rfd1 Qf5 28. Rd2 Bb6 29. a4 Rd8 30. a5 Rxd2",
+      "lastMove": "Rxd2",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-15-69",
+      "fen": "8/b2q2pk/8/P3pp1p/6nP/4PP2/1PN3P1/2R1BNK1 b - - 0 35",
+      "pgn": "1. c4 Nh6 2. h4 d5 3. d3 Bd7 4. cxd5 c6 5. dxc6 Nxc6 6. Nc3 Ng4 7. e3 e5 8. Be2 h5 9. Nf3 Be7 10. Bd2 Bf5 11. Ne4 O-O 12. a3 Qd5 13. Nfg5 f6 14. Nf3 Bh7 15. Bc3 Kh8 16. O-O Rad8 17. Qc2 a5 18. Rac1 b5 19. Bd2 Rc8 20. Nc3 Qd8 21. Nxb5 Nd4 22. Nbxd4 Rxc2 23. Nxc2 Bxd3 24. Bxd3 Qxd3 25. Bxa5 Rc8 26. Bc3 Bc5 27. Rfd1 Qf5 28. Rd2 Bb6 29. a4 Rd8 30. a5 Rxd2 31. Bxd2 Ba7 32. Be1 Kh7 33. Nd2 Qd7 34. Nf1 f5 35. f3",
+      "lastMove": "f3",
+      "ply": 69,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-15-84",
+      "fen": "8/6pk/8/P3ppBp/2n4P/2N2P2/1q4P1/2R3K1 w - - 0 43",
+      "pgn": "1. c4 Nh6 2. h4 d5 3. d3 Bd7 4. cxd5 c6 5. dxc6 Nxc6 6. Nc3 Ng4 7. e3 e5 8. Be2 h5 9. Nf3 Be7 10. Bd2 Bf5 11. Ne4 O-O 12. a3 Qd5 13. Nfg5 f6 14. Nf3 Bh7 15. Bc3 Kh8 16. O-O Rad8 17. Qc2 a5 18. Rac1 b5 19. Bd2 Rc8 20. Nc3 Qd8 21. Nxb5 Nd4 22. Nbxd4 Rxc2 23. Nxc2 Bxd3 24. Bxd3 Qxd3 25. Bxa5 Rc8 26. Bc3 Bc5 27. Rfd1 Qf5 28. Rd2 Bb6 29. a4 Rd8 30. a5 Rxd2 31. Bxd2 Ba7 32. Be1 Kh7 33. Nd2 Qd7 34. Nf1 f5 35. f3 Nf6 36. Bc3 Qe6 37. Na3 Nd5 38. Nb5 Bxe3+ 39. Nxe3 Nxe3 40. Bd2 Qb3 41. Nc3 Nc4 42. Bg5 Qxb2",
+      "lastMove": "Qxb2",
+      "ply": 84,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-16-9",
+      "fen": "r1bqk1nr/p1pppp1p/np4pb/8/3P3P/BP2P3/P1P2PP1/RN1QKBNR b KQkq - 0 5",
+      "pgn": "1. b3 Na6 2. d4 g6 3. Ba3 Bh6 4. e3 b6 5. h4",
+      "lastMove": "h4",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-16-14",
+      "fen": "r2qk2r/pb1ppp1p/np3npb/2p4P/3P4/BP2PN2/P1P2PP1/RN1QKB1R w KQkq - 0 8",
+      "pgn": "1. b3 Na6 2. d4 g6 3. Ba3 Bh6 4. e3 b6 5. h4 Bb7 6. h5 Nf6 7. Nf3 c5",
+      "lastMove": "c5",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-16-21",
+      "fen": "r2qk1r1/pb1p1p1p/np3p1b/2pP2pP/8/1P1QPN2/P1P2PP1/RN2KB1R b KQq - 1 11",
+      "pgn": "1. b3 Na6 2. d4 g6 3. Ba3 Bh6 4. e3 b6 5. h4 Bb7 6. h5 Nf6 7. Nf3 c5 8. Bb2 g5 9. d5 Rg8 10. Bxf6 exf6 11. Qd3",
+      "lastMove": "Qd3",
+      "ply": 21,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-16-28",
+      "fen": "r5Q1/pb1pkp2/1p3q1b/2pP2pP/1n6/1P2PN2/P1P2PP1/RN2KB1R w KQ - 1 15",
+      "pgn": "1. b3 Na6 2. d4 g6 3. Ba3 Bh6 4. e3 b6 5. h4 Bb7 6. h5 Nf6 7. Nf3 c5 8. Bb2 g5 9. d5 Rg8 10. Bxf6 exf6 11. Qd3 f5 12. Qxf5 Nb4 13. Qxh7 Qf6 14. Qxg8+ Ke7",
+      "lastMove": "Ke7",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-16-35",
+      "fen": "7q/pb1p1p2/1p1k3b/2p3pP/1n6/1PP1PN2/P4PP1/RN2KB1R b KQ - 0 18",
+      "pgn": "1. b3 Na6 2. d4 g6 3. Ba3 Bh6 4. e3 b6 5. h4 Bb7 6. h5 Nf6 7. Nf3 c5 8. Bb2 g5 9. d5 Rg8 10. Bxf6 exf6 11. Qd3 f5 12. Qxf5 Nb4 13. Qxh7 Qf6 14. Qxg8+ Ke7 15. d6+ Kxd6 16. Qh7 Rh8 17. Qxh8 Qxh8 18. c3",
+      "lastMove": "c3",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-16-42",
+      "fen": "8/p2p1p2/1p1k1q1b/2p4P/1n2b2N/1PP1Pp2/P2K2P1/RN3B1R w - - 0 22",
+      "pgn": "1. b3 Na6 2. d4 g6 3. Ba3 Bh6 4. e3 b6 5. h4 Bb7 6. h5 Nf6 7. Nf3 c5 8. Bb2 g5 9. d5 Rg8 10. Bxf6 exf6 11. Qd3 f5 12. Qxf5 Nb4 13. Qxh7 Qf6 14. Qxg8+ Ke7 15. d6+ Kxd6 16. Qh7 Rh8 17. Qxh8 Qxh8 18. c3 g4 19. Nh4 Be4 20. Kd2 Qf6 21. f4 gxf3",
+      "lastMove": "gxf3",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-16-51",
+      "fen": "8/p2p1p2/1p1k3b/2p4P/1P2q3/1P6/PK6/RN3B1R b - - 3 26",
+      "pgn": "1. b3 Na6 2. d4 g6 3. Ba3 Bh6 4. e3 b6 5. h4 Bb7 6. h5 Nf6 7. Nf3 c5 8. Bb2 g5 9. d5 Rg8 10. Bxf6 exf6 11. Qd3 f5 12. Qxf5 Nb4 13. Qxh7 Qf6 14. Qxg8+ Ke7 15. d6+ Kxd6 16. Qh7 Rh8 17. Qxh8 Qxh8 18. c3 g4 19. Nh4 Be4 20. Kd2 Qf6 21. f4 gxf3 22. gxf3 Bxf3 23. Nxf3 Qxf3 24. cxb4 Qxe3+ 25. Kc2 Qe4+ 26. Kb2",
+      "lastMove": "Kb2",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-16-60",
+      "fen": "8/p2p2b1/3k4/2p2p1q/8/1PN1R3/PK6/5B2 w - - 0 31",
+      "pgn": "1. b3 Na6 2. d4 g6 3. Ba3 Bh6 4. e3 b6 5. h4 Bb7 6. h5 Nf6 7. Nf3 c5 8. Bb2 g5 9. d5 Rg8 10. Bxf6 exf6 11. Qd3 f5 12. Qxf5 Nb4 13. Qxh7 Qf6 14. Qxg8+ Ke7 15. d6+ Kxd6 16. Qh7 Rh8 17. Qxh8 Qxh8 18. c3 g4 19. Nh4 Be4 20. Kd2 Qf6 21. f4 gxf3 22. gxf3 Bxf3 23. Nxf3 Qxf3 24. cxb4 Qxe3+ 25. Kc2 Qe4+ 26. Kb2 Qxh1 27. bxc5+ bxc5 28. Nc3 Bg7 29. Re1 Qxh5 30. Re3 f5",
+      "lastMove": "f5",
+      "ply": 60,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-16-69",
+      "fen": "8/p2p4/3k4/K1p5/2B3q1/1PR2p2/P7/8 b - - 1 35",
+      "pgn": "1. b3 Na6 2. d4 g6 3. Ba3 Bh6 4. e3 b6 5. h4 Bb7 6. h5 Nf6 7. Nf3 c5 8. Bb2 g5 9. d5 Rg8 10. Bxf6 exf6 11. Qd3 f5 12. Qxf5 Nb4 13. Qxh7 Qf6 14. Qxg8+ Ke7 15. d6+ Kxd6 16. Qh7 Rh8 17. Qxh8 Qxh8 18. c3 g4 19. Nh4 Be4 20. Kd2 Qf6 21. f4 gxf3 22. gxf3 Bxf3 23. Nxf3 Qxf3 24. cxb4 Qxe3+ 25. Kc2 Qe4+ 26. Kb2 Qxh1 27. bxc5+ bxc5 28. Nc3 Bg7 29. Re1 Qxh5 30. Re3 f5 31. Ka3 Bxc3 32. Rxc3 Qg4 33. Bc4 f4 34. Ka4 f3 35. Ka5",
+      "lastMove": "Ka5",
+      "ply": 69,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-16-84",
+      "fen": "8/p1kp4/8/K7/Bp6/P3q3/8/8 w - - 0 43",
+      "pgn": "1. b3 Na6 2. d4 g6 3. Ba3 Bh6 4. e3 b6 5. h4 Bb7 6. h5 Nf6 7. Nf3 c5 8. Bb2 g5 9. d5 Rg8 10. Bxf6 exf6 11. Qd3 f5 12. Qxf5 Nb4 13. Qxh7 Qf6 14. Qxg8+ Ke7 15. d6+ Kxd6 16. Qh7 Rh8 17. Qxh8 Qxh8 18. c3 g4 19. Nh4 Be4 20. Kd2 Qf6 21. f4 gxf3 22. gxf3 Bxf3 23. Nxf3 Qxf3 24. cxb4 Qxe3+ 25. Kc2 Qe4+ 26. Kb2 Qxh1 27. bxc5+ bxc5 28. Nc3 Bg7 29. Re1 Qxh5 30. Re3 f5 31. Ka3 Bxc3 32. Rxc3 Qg4 33. Bc4 f4 34. Ka4 f3 35. Ka5 Kc7 36. Rd3 Qg2 37. a3 f2 38. Rd5 Qxd5 39. Bxd5 f1=Q 40. b4 Qd3 41. Bb3 Qe3 42. Ba4 cxb4",
+      "lastMove": "cxb4",
+      "ply": 84,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-17-9",
+      "fen": "rnbqkbnr/ppp3pp/3p4/4p3/1PP2p2/2N2PP1/P2PP2P/R1BQKBNR b KQkq - 1 5",
+      "pgn": "1. f3 d6 2. b4 f5 3. c4 f4 4. g3 e5 5. Nc3",
+      "lastMove": "Nc3",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-17-14",
+      "fen": "rnbq1rk1/ppp1b1pp/3p1n2/4p3/1PP2P2/2N2PP1/P2P3P/R1BQKBNR w KQ - 1 8",
+      "pgn": "1. f3 d6 2. b4 f5 3. c4 f4 4. g3 e5 5. Nc3 Be7 6. e3 Nf6 7. exf4 O-O",
+      "lastMove": "O-O",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-17-21",
+      "fen": "r2q1rk1/ppp1b1pp/2np1n2/3Pp3/1Pb2P2/P1N2PP1/4N2P/R1BQKB1R b KQ - 0 11",
+      "pgn": "1. f3 d6 2. b4 f5 3. c4 f4 4. g3 e5 5. Nc3 Be7 6. e3 Nf6 7. exf4 O-O 8. Nge2 Nc6 9. a3 Be6 10. d4 Bxc4 11. d5",
+      "lastMove": "d5",
+      "ply": 21,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-17-28",
+      "fen": "rn1q1rk1/pp1nb1pp/2pp4/3bp1P1/1P3P2/P1N2PN1/7P/R1BQKB1R w KQ - 1 15",
+      "pgn": "1. f3 d6 2. b4 f5 3. c4 f4 4. g3 e5 5. Nc3 Be7 6. e3 Nf6 7. exf4 O-O 8. Nge2 Nc6 9. a3 Be6 10. d4 Bxc4 11. d5 Nb8 12. g4 c6 13. Ng3 Bxd5 14. g5 Nfd7",
+      "lastMove": "Nfd7",
+      "ply": 28,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-17-35",
+      "fen": "Qn1q1r1k/p2nb1pp/3p4/6P1/1P3p2/P4PN1/7P/R1B1KB1R b KQ - 0 18",
+      "pgn": "1. f3 d6 2. b4 f5 3. c4 f4 4. g3 e5 5. Nc3 Be7 6. e3 Nf6 7. exf4 O-O 8. Nge2 Nc6 9. a3 Be6 10. d4 Bxc4 11. d5 Nb8 12. g4 c6 13. Ng3 Bxd5 14. g5 Nfd7 15. Nxd5 cxd5 16. Qxd5+ Kh8 17. Qxb7 exf4 18. Qxa8",
+      "lastMove": "Qxa8",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-17-42",
+      "fen": "1n2r2k/p1qn2pp/3p1b2/3Q4/1P2Np2/P4P2/7P/1RB1KB1R w K - 6 22",
+      "pgn": "1. f3 d6 2. b4 f5 3. c4 f4 4. g3 e5 5. Nc3 Be7 6. e3 Nf6 7. exf4 O-O 8. Nge2 Nc6 9. a3 Be6 10. d4 Bxc4 11. d5 Nb8 12. g4 c6 13. Ng3 Bxd5 14. g5 Nfd7 15. Nxd5 cxd5 16. Qxd5+ Kh8 17. Qxb7 exf4 18. Qxa8 Bxg5 19. Ne4 Bf6 20. Rb1 Qc7 21. Qd5 Re8",
+      "lastMove": "Re8",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-17-51",
+      "fen": "7k/p1qn2pp/3p1b2/4r3/nP2N1Q1/P4P2/3B3P/1R1K1B1R b - - 4 26",
+      "pgn": "1. f3 d6 2. b4 f5 3. c4 f4 4. g3 e5 5. Nc3 Be7 6. e3 Nf6 7. exf4 O-O 8. Nge2 Nc6 9. a3 Be6 10. d4 Bxc4 11. d5 Nb8 12. g4 c6 13. Ng3 Bxd5 14. g5 Nfd7 15. Nxd5 cxd5 16. Qxd5+ Kh8 17. Qxb7 exf4 18. Qxa8 Bxg5 19. Ne4 Bf6 20. Rb1 Qc7 21. Qd5 Re8 22. Kd1 Nb6 23. Qf5 N8d7 24. Bxf4 Na4 25. Bd2 Re5 26. Qg4",
+      "lastMove": "Qg4",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-17-60",
+      "fen": "4r2k/p1qn2pp/5b2/2Pp4/1Q6/P4P2/3B3P/1R1K1B1R w - - 5 31",
+      "pgn": "1. f3 d6 2. b4 f5 3. c4 f4 4. g3 e5 5. Nc3 Be7 6. e3 Nf6 7. exf4 O-O 8. Nge2 Nc6 9. a3 Be6 10. d4 Bxc4 11. d5 Nb8 12. g4 c6 13. Ng3 Bxd5 14. g5 Nfd7 15. Nxd5 cxd5 16. Qxd5+ Kh8 17. Qxb7 exf4 18. Qxa8 Bxg5 19. Ne4 Bf6 20. Rb1 Qc7 21. Qd5 Re8 22. Kd1 Nb6 23. Qf5 N8d7 24. Bxf4 Na4 25. Bd2 Re5 26. Qg4 d5 27. Nc5 Naxc5 28. bxc5 Re7 29. Qf4 Re5 30. Qb4 Re8",
+      "lastMove": "Re8",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-17-69",
+      "fen": "4r2k/p5pp/1nP2b2/3p4/6P1/P2B4/3B3P/2RK3R b - - 0 35",
+      "pgn": "1. f3 d6 2. b4 f5 3. c4 f4 4. g3 e5 5. Nc3 Be7 6. e3 Nf6 7. exf4 O-O 8. Nge2 Nc6 9. a3 Be6 10. d4 Bxc4 11. d5 Nb8 12. g4 c6 13. Ng3 Bxd5 14. g5 Nfd7 15. Nxd5 cxd5 16. Qxd5+ Kh8 17. Qxb7 exf4 18. Qxa8 Bxg5 19. Ne4 Bf6 20. Rb1 Qc7 21. Qd5 Re8 22. Kd1 Nb6 23. Qf5 N8d7 24. Bxf4 Na4 25. Bd2 Re5 26. Qg4 d5 27. Nc5 Naxc5 28. bxc5 Re7 29. Qf4 Re5 30. Qb4 Re8 31. Rc1 Qe5 32. c6 Nb6 33. Bd3 Qh5 34. Qg4 Qxg4 35. fxg4",
+      "lastMove": "fxg4",
+      "ply": 69,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-17-84",
+      "fen": "1r4k1/p1bB2pp/8/3p2P1/P7/4B3/1n2K2P/2R4R w - - 4 43",
+      "pgn": "1. f3 d6 2. b4 f5 3. c4 f4 4. g3 e5 5. Nc3 Be7 6. e3 Nf6 7. exf4 O-O 8. Nge2 Nc6 9. a3 Be6 10. d4 Bxc4 11. d5 Nb8 12. g4 c6 13. Ng3 Bxd5 14. g5 Nfd7 15. Nxd5 cxd5 16. Qxd5+ Kh8 17. Qxb7 exf4 18. Qxa8 Bxg5 19. Ne4 Bf6 20. Rb1 Qc7 21. Qd5 Re8 22. Kd1 Nb6 23. Qf5 N8d7 24. Bxf4 Na4 25. Bd2 Re5 26. Qg4 d5 27. Nc5 Naxc5 28. bxc5 Re7 29. Qf4 Re5 30. Qb4 Re8 31. Rc1 Qe5 32. c6 Nb6 33. Bd3 Qh5 34. Qg4 Qxg4 35. fxg4 Na4 36. c7 Rc8 37. Ke2 Nb2 38. Bb5 Bd4 39. a4 Bb6 40. g5 Bxc7 41. Be3 Kg8 42. Bd7 Rb8",
+      "lastMove": "Rb8",
+      "ply": 84,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-18-9",
+      "fen": "rnbqkb1r/pppp1p1p/4p2n/8/4PNp1/8/PPPP1PPP/RNBQKB1R b KQkq - 1 5",
+      "pgn": "1. Nh3 g5 2. Nf4 Nh6 3. Nd5 g4 4. e4 e6 5. Nf4",
+      "lastMove": "Nf4",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-18-14",
+      "fen": "rnbqk2r/pp1p1pbp/2p4n/3Np3/4P1p1/7P/PPPP1PP1/RNBQKB1R w KQkq - 0 8",
+      "pgn": "1. Nh3 g5 2. Nf4 Nh6 3. Nd5 g4 4. e4 e6 5. Nf4 e5 6. Nd5 Bg7 7. h3 c6",
+      "lastMove": "c6",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-18-21",
+      "fen": "rnbq1rk1/pp1p2bp/2p4n/4pP1Q/8/4N1PP/PPPP2P1/RNB1KB1R b KQ - 0 11",
+      "pgn": "1. Nh3 g5 2. Nf4 Nh6 3. Nd5 g4 4. e4 e6 5. Nf4 e5 6. Nd5 Bg7 7. h3 c6 8. Ne3 g3 9. fxg3 O-O 10. Qh5 f5 11. exf5",
+      "lastMove": "exf5",
+      "ply": 21,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-18-28",
+      "fen": "rn1qbrk1/pp3nbp/2p5/3ppP1Q/6P1/4N1PP/PPPP2B1/RNB1K2R w KQ - 3 15",
+      "pgn": "1. Nh3 g5 2. Nf4 Nh6 3. Nd5 g4 4. e4 e6 5. Nf4 e5 6. Nd5 Bg7 7. h3 c6 8. Ne3 g3 9. fxg3 O-O 10. Qh5 f5 11. exf5 d5 12. g4 Bd7 13. g3 Nf7 14. Bg2 Be8",
+      "lastMove": "Be8",
+      "ply": 28,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-18-35",
+      "fen": "rn1qbrk1/pp5p/2p2b2/4pPn1/3p2PQ/3P2PP/PPP3B1/RNBN1RK1 b - - 0 18",
+      "pgn": "1. Nh3 g5 2. Nf4 Nh6 3. Nd5 g4 4. e4 e6 5. Nf4 e5 6. Nd5 Bg7 7. h3 c6 8. Ne3 g3 9. fxg3 O-O 10. Qh5 f5 11. exf5 d5 12. g4 Bd7 13. g3 Nf7 14. Bg2 Be8 15. O-O Ng5 16. Qh4 d4 17. Nd1 Bf6 18. d3",
+      "lastMove": "d3",
+      "ply": 35,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-18-42",
+      "fen": "r3brk1/pp1n3p/1qp5/4pPB1/3p2PP/3P1R1P/PPP3B1/RN1N2K1 w - - 3 22",
+      "pgn": "1. Nh3 g5 2. Nf4 Nh6 3. Nd5 g4 4. e4 e6 5. Nf4 e5 6. Nd5 Bg7 7. h3 c6 8. Ne3 g3 9. fxg3 O-O 10. Qh5 f5 11. exf5 d5 12. g4 Bd7 13. g3 Nf7 14. Bg2 Be8 15. O-O Ng5 16. Qh4 d4 17. Nd1 Bf6 18. d3 Nf3+ 19. Rxf3 Bxh4 20. gxh4 Nd7 21. Bg5 Qb6",
+      "lastMove": "Qb6",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-18-51",
+      "fen": "r4rk1/1p1n3p/1qp5/p3pPBP/3pB1P1/3P3P/PPP5/R2N1RK1 b - - 0 26",
+      "pgn": "1. Nh3 g5 2. Nf4 Nh6 3. Nd5 g4 4. e4 e6 5. Nf4 e5 6. Nd5 Bg7 7. h3 c6 8. Ne3 g3 9. fxg3 O-O 10. Qh5 f5 11. exf5 d5 12. g4 Bd7 13. g3 Nf7 14. Bg2 Be8 15. O-O Ng5 16. Qh4 d4 17. Nd1 Bf6 18. d3 Nf3+ 19. Rxf3 Bxh4 20. gxh4 Nd7 21. Bg5 Qb6 22. Nd2 Bf7 23. h5 Bd5 24. Rf1 a5 25. Ne4 Bxe4 26. Bxe4",
+      "lastMove": "Bxe4",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-18-60",
+      "fen": "r4rk1/1p5p/2pq1n1P/4pPB1/3pB1P1/pP1P3P/P1P2N2/2R2RK1 w - - 1 31",
+      "pgn": "1. Nh3 g5 2. Nf4 Nh6 3. Nd5 g4 4. e4 e6 5. Nf4 e5 6. Nd5 Bg7 7. h3 c6 8. Ne3 g3 9. fxg3 O-O 10. Qh5 f5 11. exf5 d5 12. g4 Bd7 13. g3 Nf7 14. Bg2 Be8 15. O-O Ng5 16. Qh4 d4 17. Nd1 Bf6 18. d3 Nf3+ 19. Rxf3 Bxh4 20. gxh4 Nd7 21. Bg5 Qb6 22. Nd2 Bf7 23. h5 Bd5 24. Rf1 a5 25. Ne4 Bxe4 26. Bxe4 Qc5 27. Rc1 Qd6 28. Nf2 a4 29. h6 a3 30. b3 Nf6",
+      "lastMove": "Nf6",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-18-69",
+      "fen": "6rk/1p5p/2pq1r1P/4pPB1/3pB1PP/pP1P4/P1P4K/2R2R2 b - - 2 35",
+      "pgn": "1. Nh3 g5 2. Nf4 Nh6 3. Nd5 g4 4. e4 e6 5. Nf4 e5 6. Nd5 Bg7 7. h3 c6 8. Ne3 g3 9. fxg3 O-O 10. Qh5 f5 11. exf5 d5 12. g4 Bd7 13. g3 Nf7 14. Bg2 Be8 15. O-O Ng5 16. Qh4 d4 17. Nd1 Bf6 18. d3 Nf3+ 19. Rxf3 Bxh4 20. gxh4 Nd7 21. Bg5 Qb6 22. Nd2 Bf7 23. h5 Bd5 24. Rf1 a5 25. Ne4 Bxe4 26. Bxe4 Qc5 27. Rc1 Qd6 28. Nf2 a4 29. h6 a3 30. b3 Nf6 31. Bg2 Kh8 32. Ne4 Nxe4 33. Bxe4 Rf6 34. h4 Rg8 35. Kh2",
+      "lastMove": "Kh2",
+      "ply": 69,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-18-84",
+      "fen": "6rk/1p6/2pq1P1p/4p1r1/3pB2P/pP1P1R1K/P1P5/5R2 w - - 0 43",
+      "pgn": "1. Nh3 g5 2. Nf4 Nh6 3. Nd5 g4 4. e4 e6 5. Nf4 e5 6. Nd5 Bg7 7. h3 c6 8. Ne3 g3 9. fxg3 O-O 10. Qh5 f5 11. exf5 d5 12. g4 Bd7 13. g3 Nf7 14. Bg2 Be8 15. O-O Ng5 16. Qh4 d4 17. Nd1 Bf6 18. d3 Nf3+ 19. Rxf3 Bxh4 20. gxh4 Nd7 21. Bg5 Qb6 22. Nd2 Bf7 23. h5 Bd5 24. Rf1 a5 25. Ne4 Bxe4 26. Bxe4 Qc5 27. Rc1 Qd6 28. Nf2 a4 29. h6 a3 30. b3 Nf6 31. Bg2 Kh8 32. Ne4 Nxe4 33. Bxe4 Rf6 34. h4 Rg8 35. Kh2 Rxh6 36. Kg3 Rf6 37. Rf3 Rf7 38. Rcf1 h6 39. Bd2 Rfg7 40. Kh3 Rxg4 41. f6 Rg2 42. Bg5 R2xg5",
+      "lastMove": "R2xg5",
+      "ply": 84,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-19-9",
+      "fen": "r1bqkbnr/ppp1p1pp/5p2/1Q1p4/8/3P4/PPP1PPPP/RNB1KBNR b KQkq - 1 5",
+      "pgn": "1. d3 f6 2. Qd2 Na6 3. Qc3 Nc5 4. Qxc5 d5 5. Qb5+",
+      "lastMove": "Qb5+",
+      "ply": 9,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-19-14",
+      "fen": "r1bqkbnr/pp4pp/2p5/3ppp2/8/1QPP4/PP2PPPP/RNB1KBNR w KQkq - 0 8",
+      "pgn": "1. d3 f6 2. Qd2 Na6 3. Qc3 Nc5 4. Qxc5 d5 5. Qb5+ c6 6. Qb3 e5 7. c3 f5",
+      "lastMove": "f5",
+      "ply": 14,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-19-21",
+      "fen": "r1bqkb1r/pp4p1/2p2n1p/3p1p2/3PpB1P/1QP3P1/PP2PP2/RN2KBNR b KQkq - 0 11",
+      "pgn": "1. d3 f6 2. Qd2 Na6 3. Qc3 Nc5 4. Qxc5 d5 5. Qb5+ c6 6. Qb3 e5 7. c3 f5 8. d4 Nf6 9. g3 e4 10. Bf4 h6 11. h4",
+      "lastMove": "h4",
+      "ply": 21,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-19-28",
+      "fen": "r1bqkb1r/pp6/2p4p/3p4/3PpBnP/1QP5/PP2PP2/RN2KBNR w KQkq - 1 15",
+      "pgn": "1. d3 f6 2. Qd2 Na6 3. Qc3 Nc5 4. Qxc5 d5 5. Qb5+ c6 6. Qb3 e5 7. c3 f5 8. d4 Nf6 9. g3 e4 10. Bf4 h6 11. h4 g5 12. Be5 f4 13. gxf4 gxf4 14. Bxf4 Ng4",
+      "lastMove": "Ng4",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-19-35",
+      "fen": "r1bqkb1r/pp6/2p4p/3p4/3P1B1P/NQP5/PP2PK2/R4B1R b kq - 0 18",
+      "pgn": "1. d3 f6 2. Qd2 Na6 3. Qc3 Nc5 4. Qxc5 d5 5. Qb5+ c6 6. Qb3 e5 7. c3 f5 8. d4 Nf6 9. g3 e4 10. Bf4 h6 11. h4 g5 12. Be5 f4 13. gxf4 gxf4 14. Bxf4 Ng4 15. Nh3 e3 16. Na3 exf2+ 17. Nxf2 Nxf2 18. Kxf2",
+      "lastMove": "Kxf2",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-19-42",
+      "fen": "r1b1k2r/pp6/2p4p/3p4/3P1q1P/NQP5/PP6/R3KB1R w kq - 0 22",
+      "pgn": "1. d3 f6 2. Qd2 Na6 3. Qc3 Nc5 4. Qxc5 d5 5. Qb5+ c6 6. Qb3 e5 7. c3 f5 8. d4 Nf6 9. g3 e4 10. Bf4 h6 11. h4 g5 12. Be5 f4 13. gxf4 gxf4 14. Bxf4 Ng4 15. Nh3 e3 16. Na3 exf2+ 17. Nxf2 Nxf2 18. Kxf2 Bd6 19. e3 Qf6 20. Ke1 Bxf4 21. exf4 Qxf4",
+      "lastMove": "Qxf4",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-19-51",
+      "fen": "r4rk1/pp4q1/2p4p/3p4/2PP2bP/N1Q5/PP2B3/R2K2R1 b - - 4 26",
+      "pgn": "1. d3 f6 2. Qd2 Na6 3. Qc3 Nc5 4. Qxc5 d5 5. Qb5+ c6 6. Qb3 e5 7. c3 f5 8. d4 Nf6 9. g3 e4 10. Bf4 h6 11. h4 g5 12. Be5 f4 13. gxf4 gxf4 14. Bxf4 Ng4 15. Nh3 e3 16. Na3 exf2+ 17. Nxf2 Nxf2 18. Kxf2 Bd6 19. e3 Qf6 20. Ke1 Bxf4 21. exf4 Qxf4 22. Be2 O-O 23. Kd1 Qg3 24. c4 Qg7 25. Qc3 Bg4 26. Rg1",
+      "lastMove": "Rg1",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-19-60",
+      "fen": "r6k/pp6/2p4p/3p4/2PP3P/N5Q1/PPK1B3/q7 w - - 2 31",
+      "pgn": "1. d3 f6 2. Qd2 Na6 3. Qc3 Nc5 4. Qxc5 d5 5. Qb5+ c6 6. Qb3 e5 7. c3 f5 8. d4 Nf6 9. g3 e4 10. Bf4 h6 11. h4 g5 12. Be5 f4 13. gxf4 gxf4 14. Bxf4 Ng4 15. Nh3 e3 16. Na3 exf2+ 17. Nxf2 Nxf2 18. Kxf2 Bd6 19. e3 Qf6 20. Ke1 Bxf4 21. exf4 Qxf4 22. Be2 O-O 23. Kd1 Qg3 24. c4 Qg7 25. Qc3 Bg4 26. Rg1 Rf3 27. Rxg4 Qxg4 28. Qxf3 Qg1+ 29. Kc2 Qxa1 30. Qg3+ Kh8",
+      "lastMove": "Kh8",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-19-69",
+      "fen": "r5k1/p7/2p3qp/4Q3/3P3P/N2B4/PP1K4/8 b - - 1 35",
+      "pgn": "1. d3 f6 2. Qd2 Na6 3. Qc3 Nc5 4. Qxc5 d5 5. Qb5+ c6 6. Qb3 e5 7. c3 f5 8. d4 Nf6 9. g3 e4 10. Bf4 h6 11. h4 g5 12. Be5 f4 13. gxf4 gxf4 14. Bxf4 Ng4 15. Nh3 e3 16. Na3 exf2+ 17. Nxf2 Nxf2 18. Kxf2 Bd6 19. e3 Qf6 20. Ke1 Bxf4 21. exf4 Qxf4 22. Be2 O-O 23. Kd1 Qg3 24. c4 Qg7 25. Qc3 Bg4 26. Rg1 Rf3 27. Rxg4 Qxg4 28. Qxf3 Qg1+ 29. Kc2 Qxa1 30. Qg3+ Kh8 31. Qe5+ Kg8 32. cxd5 Qg1 33. dxc6 Qg6+ 34. Kd2 bxc6 35. Bd3",
+      "lastMove": "Bd3",
+      "ply": 69,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-19-84",
+      "fen": "r7/p2q3k/7p/4Q2P/2BP4/N7/PP1K4/8 w - - 1 43",
+      "pgn": "1. d3 f6 2. Qd2 Na6 3. Qc3 Nc5 4. Qxc5 d5 5. Qb5+ c6 6. Qb3 e5 7. c3 f5 8. d4 Nf6 9. g3 e4 10. Bf4 h6 11. h4 g5 12. Be5 f4 13. gxf4 gxf4 14. Bxf4 Ng4 15. Nh3 e3 16. Na3 exf2+ 17. Nxf2 Nxf2 18. Kxf2 Bd6 19. e3 Qf6 20. Ke1 Bxf4 21. exf4 Qxf4 22. Be2 O-O 23. Kd1 Qg3 24. c4 Qg7 25. Qc3 Bg4 26. Rg1 Rf3 27. Rxg4 Qxg4 28. Qxf3 Qg1+ 29. Kc2 Qxa1 30. Qg3+ Kh8 31. Qe5+ Kg8 32. cxd5 Qg1 33. dxc6 Qg6+ 34. Kd2 bxc6 35. Bd3 Qg4 36. Bc4+ Kf8 37. Qf6+ Ke8 38. Qxc6+ Ke7 39. Qb7+ Qd7 40. Qe4+ Kf6 41. Qe5+ Kg6 42. h5+ Kh7",
+      "lastMove": "Kh7",
+      "ply": 84,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-20-9",
+      "fen": "r1bqkb1r/ppp1p1pp/n2p1n2/5p2/PP1P3P/B7/2P1PPP1/RN1QKBNR b KQkq - 0 5",
+      "pgn": "1. h4 f5 2. b4 Na6 3. a4 d6 4. Ba3 Nf6 5. d4",
+      "lastMove": "d4",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-20-14",
+      "fen": "rnbqkb1r/1pp3pp/p2p1n2/1P2pp2/P2P3P/B3P3/2P2PP1/RN1QKBNR w KQkq - 0 8",
+      "pgn": "1. h4 f5 2. b4 Na6 3. a4 d6 4. Ba3 Nf6 5. d4 e5 6. b5 Nb8 7. e3 a6",
+      "lastMove": "a6",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-20-21",
+      "fen": "r1bqkb1r/1ppn2pp/5n2/1P1pPp2/7P/BB2P3/2P2PP1/RN1QK1NR b KQkq - 0 11",
+      "pgn": "1. h4 f5 2. b4 Na6 3. a4 d6 4. Ba3 Nf6 5. d4 e5 6. b5 Nb8 7. e3 a6 8. Bc4 axb5 9. axb5 Nbd7 10. Bb3 d5 11. dxe5",
+      "lastMove": "dxe5",
+      "ply": 21,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-20-28",
+      "fen": "2bBk2r/1pp3pp/5n2/1P1pnp2/7P/1Bb1P3/5PP1/rN1QK1NR w Kk - 0 15",
+      "pgn": "1. h4 f5 2. b4 Na6 3. a4 d6 4. Ba3 Nf6 5. d4 e5 6. b5 Nb8 7. e3 a6 8. Bc4 axb5 9. axb5 Nbd7 10. Bb3 d5 11. dxe5 Nxe5 12. Be7 Rxa1 13. Bxd8 Bb4+ 14. c3 Bxc3+",
+      "lastMove": "Bxc3+",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-20-35",
+      "fen": "4k2r/1p1b2pp/5n2/1P1pBp2/7P/1BN1P3/4KPP1/2r3NR b k - 0 18",
+      "pgn": "1. h4 f5 2. b4 Na6 3. a4 d6 4. Ba3 Nf6 5. d4 e5 6. b5 Nb8 7. e3 a6 8. Bc4 axb5 9. axb5 Nbd7 10. Bb3 d5 11. dxe5 Nxe5 12. Be7 Rxa1 13. Bxd8 Bb4+ 14. c3 Bxc3+ 15. Ke2 Bd7 16. Nxc3 Rxd1 17. Bxc7 Rc1 18. Bxe5",
+      "lastMove": "Bxe5",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-20-42",
+      "fen": "4k2r/1p1b2pp/8/1P1pB3/4p2P/4P3/B2K1PP1/5rNR w k - 4 22",
+      "pgn": "1. h4 f5 2. b4 Na6 3. a4 d6 4. Ba3 Nf6 5. d4 e5 6. b5 Nb8 7. e3 a6 8. Bc4 axb5 9. axb5 Nbd7 10. Bb3 d5 11. dxe5 Nxe5 12. Be7 Rxa1 13. Bxd8 Bb4+ 14. c3 Bxc3+ 15. Ke2 Bd7 16. Nxc3 Rxd1 17. Bxc7 Rc1 18. Bxe5 Ne4 19. Nxe4 fxe4 20. Kd2 Rb1 21. Ba2 Rf1",
+      "lastMove": "Rf1",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-20-51",
+      "fen": "5k2/1p5p/8/1b6/4B2P/2K1P3/5rP1/6NR b - - 1 26",
+      "pgn": "1. h4 f5 2. b4 Na6 3. a4 d6 4. Ba3 Nf6 5. d4 e5 6. b5 Nb8 7. e3 a6 8. Bc4 axb5 9. axb5 Nbd7 10. Bb3 d5 11. dxe5 Nxe5 12. Be7 Rxa1 13. Bxd8 Bb4+ 14. c3 Bxc3+ 15. Ke2 Bd7 16. Nxc3 Rxd1 17. Bxc7 Rc1 18. Bxe5 Ne4 19. Nxe4 fxe4 20. Kd2 Rb1 21. Ba2 Rf1 22. Bxd5 Bxb5 23. Bxg7 Rf8 24. Bxf8 Kxf8 25. Bxe4 Rxf2+ 26. Kc3",
+      "lastMove": "Kc3",
+      "ply": 51,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-20-60",
+      "fen": "5k2/1p6/8/5b2/3KP2P/8/6P1/2r3NR w - - 0 31",
+      "pgn": "1. h4 f5 2. b4 Na6 3. a4 d6 4. Ba3 Nf6 5. d4 e5 6. b5 Nb8 7. e3 a6 8. Bc4 axb5 9. axb5 Nbd7 10. Bb3 d5 11. dxe5 Nxe5 12. Be7 Rxa1 13. Bxd8 Bb4+ 14. c3 Bxc3+ 15. Ke2 Bd7 16. Nxc3 Rxd1 17. Bxc7 Rc1 18. Bxe5 Ne4 19. Nxe4 fxe4 20. Kd2 Rb1 21. Ba2 Rf1 22. Bxd5 Bxb5 23. Bxg7 Rf8 24. Bxf8 Kxf8 25. Bxe4 Rxf2+ 26. Kc3 Rf1 27. Bxh7 Bc6 28. e4 Rc1+ 29. Kd4 Bd7 30. Bf5 Bxf5",
+      "lastMove": "Bxf5",
+      "ply": 60,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-20-69",
+      "fen": "8/6k1/8/5PP1/1p1K3P/3R4/8/6r1 b - - 2 35",
+      "pgn": "1. h4 f5 2. b4 Na6 3. a4 d6 4. Ba3 Nf6 5. d4 e5 6. b5 Nb8 7. e3 a6 8. Bc4 axb5 9. axb5 Nbd7 10. Bb3 d5 11. dxe5 Nxe5 12. Be7 Rxa1 13. Bxd8 Bb4+ 14. c3 Bxc3+ 15. Ke2 Bd7 16. Nxc3 Rxd1 17. Bxc7 Rc1 18. Bxe5 Ne4 19. Nxe4 fxe4 20. Kd2 Rb1 21. Ba2 Rf1 22. Bxd5 Bxb5 23. Bxg7 Rf8 24. Bxf8 Kxf8 25. Bxe4 Rxf2+ 26. Kc3 Rf1 27. Bxh7 Bc6 28. e4 Rc1+ 29. Kd4 Bd7 30. Bf5 Bxf5 31. exf5 b5 32. g4 b4 33. Rh3 Rxg1 34. g5 Kg7 35. Rd3",
+      "lastMove": "Rd3",
+      "ply": 69,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-20-84",
+      "fen": "8/5k2/7K/r5P1/1R5P/8/8/8 w - - 2 43",
+      "pgn": "1. h4 f5 2. b4 Na6 3. a4 d6 4. Ba3 Nf6 5. d4 e5 6. b5 Nb8 7. e3 a6 8. Bc4 axb5 9. axb5 Nbd7 10. Bb3 d5 11. dxe5 Nxe5 12. Be7 Rxa1 13. Bxd8 Bb4+ 14. c3 Bxc3+ 15. Ke2 Bd7 16. Nxc3 Rxd1 17. Bxc7 Rc1 18. Bxe5 Ne4 19. Nxe4 fxe4 20. Kd2 Rb1 21. Ba2 Rf1 22. Bxd5 Bxb5 23. Bxg7 Rf8 24. Bxf8 Kxf8 25. Bxe4 Rxf2+ 26. Kc3 Rf1 27. Bxh7 Bc6 28. e4 Rc1+ 29. Kd4 Bd7 30. Bf5 Bxf5 31. exf5 b5 32. g4 b4 33. Rh3 Rxg1 34. g5 Kg7 35. Rd3 Rh1 36. Ke5 Re1+ 37. Kf4 Rf1+ 38. Kg4 Kf7 39. Rb3 Rg1+ 40. Kh5 Rf1 41. Rxb4 Rxf5 42. Kh6 Ra5",
+      "lastMove": "Ra5",
+      "ply": 84,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-21-9",
+      "fen": "rnbqkbnr/2pp1pp1/1p2p2p/p7/3P4/2N2P2/PPP1P1PP/R1BQKBNR b kq - 1 5",
+      "pgn": "1. f3 a5 2. Nc3 b6 3. Kf2 h6 4. d4 e6 5. Ke1",
+      "lastMove": "Ke1",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-21-14",
+      "fen": "rnbqk1nr/2p2pp1/1p2p2p/p7/1b1Pp3/2N1BP2/PPP3PP/R2QKBNR w kq - 0 8",
+      "pgn": "1. f3 a5 2. Nc3 b6 3. Kf2 h6 4. d4 e6 5. Ke1 Bb4 6. e4 d5 7. Be3 dxe4",
+      "lastMove": "dxe4",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-21-21",
+      "fen": "rnbqk2r/2p2pp1/1p2p2p/p7/1b1P4/P1n1BQ1N/1PP3PP/R3KB1R b kq - 0 11",
+      "pgn": "1. f3 a5 2. Nc3 b6 3. Kf2 h6 4. d4 e6 5. Ke1 Bb4 6. e4 d5 7. Be3 dxe4 8. Nh3 Nf6 9. fxe4 Nxe4 10. Qf3 Nxc3 11. a3",
+      "lastMove": "a3",
+      "ply": 21,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-21-28",
+      "fen": "1n1qk2r/1bp2pp1/1p2p2p/r7/3P4/4Q2N/1PP3PP/R3KB1R w k - 0 15",
+      "pgn": "1. f3 a5 2. Nc3 b6 3. Kf2 h6 4. d4 e6 5. Ke1 Bb4 6. e4 d5 7. Be3 dxe4 8. Nh3 Nf6 9. fxe4 Nxe4 10. Qf3 Nxc3 11. a3 Nd5+ 12. axb4 Nxe3 13. Qxe3 Bb7 14. bxa5 Rxa5",
+      "lastMove": "Rxa5",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-21-35",
+      "fen": "3q1rk1/1bpn1pp1/4p2p/p7/3P1N2/2P3Q1/1P4PP/4KB1R b - - 4 18",
+      "pgn": "1. f3 a5 2. Nc3 b6 3. Kf2 h6 4. d4 e6 5. Ke1 Bb4 6. e4 d5 7. Be3 dxe4 8. Nh3 Nf6 9. fxe4 Nxe4 10. Qf3 Nxc3 11. a3 Nd5+ 12. axb4 Nxe3 13. Qxe3 Bb7 14. bxa5 Rxa5 15. Rxa5 bxa5 16. c3 Nd7 17. Qg3 O-O 18. Nf4",
+      "lastMove": "Nf4",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-21-42",
+      "fen": "5rk1/1bp2pp1/4p2p/4N3/p2Pn2q/2P1Q3/1P4PP/4KB1R w - - 2 22",
+      "pgn": "1. f3 a5 2. Nc3 b6 3. Kf2 h6 4. d4 e6 5. Ke1 Bb4 6. e4 d5 7. Be3 dxe4 8. Nh3 Nf6 9. fxe4 Nxe4 10. Qf3 Nxc3 11. a3 Nd5+ 12. axb4 Nxe3 13. Qxe3 Bb7 14. bxa5 Rxa5 15. Rxa5 bxa5 16. c3 Nd7 17. Qg3 O-O 18. Nf4 Nf6 19. Nd3 Ne4 20. Qe3 a4 21. Ne5 Qh4+",
+      "lastMove": "Qh4+",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-21-51",
+      "fen": "5rk1/1b3pp1/4p2p/4N2q/p2P4/2P1Q1P1/7P/4KB1R b - - 0 26",
+      "pgn": "1. f3 a5 2. Nc3 b6 3. Kf2 h6 4. d4 e6 5. Ke1 Bb4 6. e4 d5 7. Be3 dxe4 8. Nh3 Nf6 9. fxe4 Nxe4 10. Qf3 Nxc3 11. a3 Nd5+ 12. axb4 Nxe3 13. Qxe3 Bb7 14. bxa5 Rxa5 15. Rxa5 bxa5 16. c3 Nd7 17. Qg3 O-O 18. Nf4 Nf6 19. Nd3 Ne4 20. Qe3 a4 21. Ne5 Qh4+ 22. Ke2 c5 23. g3 Qh5+ 24. Ke1 cxd4 25. cxd4 Nc3 26. bxc3",
+      "lastMove": "bxc3",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-21-60",
+      "fen": "b4rk1/5pp1/4p2p/4N2q/2PP4/p2BQ1P1/7P/4K3 w - - 0 31",
+      "pgn": "1. f3 a5 2. Nc3 b6 3. Kf2 h6 4. d4 e6 5. Ke1 Bb4 6. e4 d5 7. Be3 dxe4 8. Nh3 Nf6 9. fxe4 Nxe4 10. Qf3 Nxc3 11. a3 Nd5+ 12. axb4 Nxe3 13. Qxe3 Bb7 14. bxa5 Rxa5 15. Rxa5 bxa5 16. c3 Nd7 17. Qg3 O-O 18. Nf4 Nf6 19. Nd3 Ne4 20. Qe3 a4 21. Ne5 Qh4+ 22. Ke2 c5 23. g3 Qh5+ 24. Ke1 cxd4 25. cxd4 Nc3 26. bxc3 Bxh1 27. Qg1 Bd5 28. c4 Be4 29. Qe3 Ba8 30. Bd3 a3",
+      "lastMove": "a3",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-21-69",
+      "fen": "b5k1/5pp1/4p2p/4N3/2PP4/Q1K3P1/p1B4q/1r6 b - - 1 35",
+      "pgn": "1. f3 a5 2. Nc3 b6 3. Kf2 h6 4. d4 e6 5. Ke1 Bb4 6. e4 d5 7. Be3 dxe4 8. Nh3 Nf6 9. fxe4 Nxe4 10. Qf3 Nxc3 11. a3 Nd5+ 12. axb4 Nxe3 13. Qxe3 Bb7 14. bxa5 Rxa5 15. Rxa5 bxa5 16. c3 Nd7 17. Qg3 O-O 18. Nf4 Nf6 19. Nd3 Ne4 20. Qe3 a4 21. Ne5 Qh4+ 22. Ke2 c5 23. g3 Qh5+ 24. Ke1 cxd4 25. cxd4 Nc3 26. bxc3 Bxh1 27. Qg1 Bd5 28. c4 Be4 29. Qe3 Ba8 30. Bd3 a3 31. Bb1 Rb8 32. Bc2 a2 33. Qa3 Rb1+ 34. Kd2 Qxh2+ 35. Kc3",
+      "lastMove": "Kc3",
+      "ply": 69,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-21-84",
+      "fen": "1r2k3/5pp1/4p2p/2P1P3/8/8/2K5/8 w - - 1 43",
+      "pgn": "1. f3 a5 2. Nc3 b6 3. Kf2 h6 4. d4 e6 5. Ke1 Bb4 6. e4 d5 7. Be3 dxe4 8. Nh3 Nf6 9. fxe4 Nxe4 10. Qf3 Nxc3 11. a3 Nd5+ 12. axb4 Nxe3 13. Qxe3 Bb7 14. bxa5 Rxa5 15. Rxa5 bxa5 16. c3 Nd7 17. Qg3 O-O 18. Nf4 Nf6 19. Nd3 Ne4 20. Qe3 a4 21. Ne5 Qh4+ 22. Ke2 c5 23. g3 Qh5+ 24. Ke1 cxd4 25. cxd4 Nc3 26. bxc3 Bxh1 27. Qg1 Bd5 28. c4 Be4 29. Qe3 Ba8 30. Bd3 a3 31. Bb1 Rb8 32. Bc2 a2 33. Qa3 Rb1+ 34. Kd2 Qxh2+ 35. Kc3 Qxg3+ 36. Nd3 Rb8 37. Qxa2 Be4 38. Qa5 Bxd3 39. Qe5 Qxe5 40. dxe5 Bxc2 41. Kxc2 Kf8 42. c5 Ke8",
+      "lastMove": "Ke8",
+      "ply": 84,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-22-9",
+      "fen": "rnb1kb1r/pppp1ppp/8/4pn2/1P5P/P2P4/2P1PP1P/RNBQKBNR b KQkq - 0 5",
+      "pgn": "1. g3 e5 2. b4 Nh6 3. d3 Qh4 4. gxh4 Nf5 5. a3",
+      "lastMove": "a3",
+      "ply": 9,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-22-14",
+      "fen": "rnb1kb1r/1pp2ppp/8/pP1pp3/7n/P2P4/2PKPP1P/RNBQ1BNR w kq - 0 8",
+      "pgn": "1. g3 e5 2. b4 Nh6 3. d3 Qh4 4. gxh4 Nf5 5. a3 Nxh4 6. Kd2 a5 7. b5 d5",
+      "lastMove": "d5",
+      "ply": 14,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-22-21",
+      "fen": "rnb2rk1/1pp2ppp/8/pPb1p3/4P2n/P1N5/2PK1P1P/R1B1QBNR b - - 2 11",
+      "pgn": "1. g3 e5 2. b4 Nh6 3. d3 Qh4 4. gxh4 Nf5 5. a3 Nxh4 6. Kd2 a5 7. b5 d5 8. Qe1 Bc5 9. e4 dxe4 10. dxe4 O-O 11. Nc3",
+      "lastMove": "Nc3",
+      "ply": 21,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-22-28",
+      "fen": "r4rk1/1ppn1ppp/8/pPbNp3/4P2n/P7/1BP2P1P/R1K1QBNb w - - 2 15",
+      "pgn": "1. g3 e5 2. b4 Nh6 3. d3 Qh4 4. gxh4 Nf5 5. a3 Nxh4 6. Kd2 a5 7. b5 d5 8. Qe1 Bc5 9. e4 dxe4 10. dxe4 O-O 11. Nc3 Bg4 12. Nd5 Bf3 13. Bb2 Bxh1 14. Kc1 Nd7",
+      "lastMove": "Nd7",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-22-35",
+      "fen": "r4rk1/1p1n1ppp/2p5/pP2p3/P2bP2n/2N2b2/2P2P1P/RKB1QBN1 b - - 0 18",
+      "pgn": "1. g3 e5 2. b4 Nh6 3. d3 Qh4 4. gxh4 Nf5 5. a3 Nxh4 6. Kd2 a5 7. b5 d5 8. Qe1 Bc5 9. e4 dxe4 10. dxe4 O-O 11. Nc3 Bg4 12. Nd5 Bf3 13. Bb2 Bxh1 14. Kc1 Nd7 15. Kb1 c6 16. Nc3 Bf3 17. Bc1 Bd4 18. a4",
+      "lastMove": "a4",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-22-42",
+      "fen": "r2r2k1/1p3ppp/2p3b1/pPn1p3/P2bP2n/R1N4P/2P1BP2/1KB1Q1N1 w - - 3 22",
+      "pgn": "1. g3 e5 2. b4 Nh6 3. d3 Qh4 4. gxh4 Nf5 5. a3 Nxh4 6. Kd2 a5 7. b5 d5 8. Qe1 Bc5 9. e4 dxe4 10. dxe4 O-O 11. Nc3 Bg4 12. Nd5 Bf3 13. Bb2 Bxh1 14. Kc1 Nd7 15. Kb1 c6 16. Nc3 Bf3 17. Bc1 Bd4 18. a4 Rfd8 19. Ra3 Nc5 20. h3 Bh5 21. Be2 Bg6",
+      "lastMove": "Bg6",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-22-51",
+      "fen": "3rr1k1/1p3pp1/2p3bp/pPn1p3/P2NP3/R4B1P/2P2P2/1KB2Q2 b - - 0 26",
+      "pgn": "1. g3 e5 2. b4 Nh6 3. d3 Qh4 4. gxh4 Nf5 5. a3 Nxh4 6. Kd2 a5 7. b5 d5 8. Qe1 Bc5 9. e4 dxe4 10. dxe4 O-O 11. Nc3 Bg4 12. Nd5 Bf3 13. Bb2 Bxh1 14. Kc1 Nd7 15. Kb1 c6 16. Nc3 Bf3 17. Bc1 Bd4 18. a4 Rfd8 19. Ra3 Nc5 20. h3 Bh5 21. Be2 Bg6 22. Qf1 h6 23. Nf3 Nxf3 24. Bxf3 Re8 25. Ne2 Rad8 26. Nxd4",
+      "lastMove": "Nxd4",
+      "ply": 51,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-22-60",
+      "fen": "2rr2k1/1p3pp1/6b1/pPn4p/3pP2P/R4B2/2P2P2/K1BQ4 w - - 4 31",
+      "pgn": "1. g3 e5 2. b4 Nh6 3. d3 Qh4 4. gxh4 Nf5 5. a3 Nxh4 6. Kd2 a5 7. b5 d5 8. Qe1 Bc5 9. e4 dxe4 10. dxe4 O-O 11. Nc3 Bg4 12. Nd5 Bf3 13. Bb2 Bxh1 14. Kc1 Nd7 15. Kb1 c6 16. Nc3 Bf3 17. Bc1 Bd4 18. a4 Rfd8 19. Ra3 Nc5 20. h3 Bh5 21. Be2 Bg6 22. Qf1 h6 23. Nf3 Nxf3 24. Bxf3 Re8 25. Ne2 Rad8 26. Nxd4 exd4 27. h4 cxb5 28. axb5 h5 29. Ka1 Rc8 30. Qd1 Red8",
+      "lastMove": "Red8",
+      "ply": 60,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-22-69",
+      "fen": "2rr2k1/6p1/1p3pb1/1P5p/pB1pP2P/3P1B2/3Q1P2/K7 b - - 1 35",
+      "pgn": "1. g3 e5 2. b4 Nh6 3. d3 Qh4 4. gxh4 Nf5 5. a3 Nxh4 6. Kd2 a5 7. b5 d5 8. Qe1 Bc5 9. e4 dxe4 10. dxe4 O-O 11. Nc3 Bg4 12. Nd5 Bf3 13. Bb2 Bxh1 14. Kc1 Nd7 15. Kb1 c6 16. Nc3 Bf3 17. Bc1 Bd4 18. a4 Rfd8 19. Ra3 Nc5 20. h3 Bh5 21. Be2 Bg6 22. Qf1 h6 23. Nf3 Nxf3 24. Bxf3 Re8 25. Ne2 Rad8 26. Nxd4 exd4 27. h4 cxb5 28. axb5 h5 29. Ka1 Rc8 30. Qd1 Red8 31. Qd2 b6 32. Rd3 Nxd3 33. cxd3 a4 34. Ba3 f6 35. Bb4",
+      "lastMove": "Bb4",
+      "ply": 69,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-22-84",
+      "fen": "6k1/6p1/1p3r2/7p/pB1pQP1P/3P4/2r5/K7 w - - 4 43",
+      "pgn": "1. g3 e5 2. b4 Nh6 3. d3 Qh4 4. gxh4 Nf5 5. a3 Nxh4 6. Kd2 a5 7. b5 d5 8. Qe1 Bc5 9. e4 dxe4 10. dxe4 O-O 11. Nc3 Bg4 12. Nd5 Bf3 13. Bb2 Bxh1 14. Kc1 Nd7 15. Kb1 c6 16. Nc3 Bf3 17. Bc1 Bd4 18. a4 Rfd8 19. Ra3 Nc5 20. h3 Bh5 21. Be2 Bg6 22. Qf1 h6 23. Nf3 Nxf3 24. Bxf3 Re8 25. Ne2 Rad8 26. Nxd4 exd4 27. h4 cxb5 28. axb5 h5 29. Ka1 Rc8 30. Qd1 Red8 31. Qd2 b6 32. Rd3 Nxd3 33. cxd3 a4 34. Ba3 f6 35. Bb4 Re8 36. Bg2 Re5 37. f4 Rxb5 38. Bh3 f5 39. exf5 Bxf5 40. Bxf5 Rxf5 41. Qe1 Rf6 42. Qe4 Rc2",
+      "lastMove": "Rc2",
+      "ply": 84,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-23-9",
+      "fen": "rnbqkbn1/pppppppr/7p/1P6/2P5/7N/PB1PPPPP/RN1QKB1R b KQq - 2 5",
+      "pgn": "1. c4 h6 2. Nh3 Rh7 3. b4 Na6 4. b5 Nb8 5. Bb2",
+      "lastMove": "Bb2",
+      "ply": 9,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-23-14",
+      "fen": "rnbqkbnr/1pppppp1/7p/1p6/P1P5/6PN/1B1PPP1P/RN1QKB1R w KQq - 0 8",
+      "pgn": "1. c4 h6 2. Nh3 Rh7 3. b4 Na6 4. b5 Nb8 5. Bb2 Rh8 6. g3 a6 7. a4 axb5",
+      "lastMove": "axb5",
+      "ply": 14,
+      "phase": "opening"
+    },
+    {
+      "id": "gen-1-23-21",
+      "fen": "1nbqkbnr/1pp1pp2/3p3p/1P4p1/2PP1P2/6PN/4P2P/BN1QKB1R b K - 0 11",
+      "pgn": "1. c4 h6 2. Nh3 Rh7 3. b4 Na6 4. b5 Nb8 5. Bb2 Rh8 6. g3 a6 7. a4 axb5 8. axb5 Rxa1 9. Bxa1 d6 10. d4 g5 11. f4",
+      "lastMove": "f4",
+      "ply": 21,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-23-28",
+      "fen": "1n1qk1nr/1p2ppb1/3p3p/1P4p1/3P1P2/6Pb/4P1BP/BN1Q1RK1 w - - 0 15",
+      "pgn": "1. c4 h6 2. Nh3 Rh7 3. b4 Na6 4. b5 Nb8 5. Bb2 Rh8 6. g3 a6 7. a4 axb5 8. axb5 Rxa1 9. Bxa1 d6 10. d4 g5 11. f4 Bg7 12. Bg2 c6 13. O-O cxb5 14. cxb5 Bxh3",
+      "lastMove": "Bxh3",
+      "ply": 28,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-23-35",
+      "fen": "1n1qk2r/1p2ppb1/5n1p/1P1p4/3P1P2/1QN4B/4P2P/B4RK1 b - - 0 18",
+      "pgn": "1. c4 h6 2. Nh3 Rh7 3. b4 Na6 4. b5 Nb8 5. Bb2 Rh8 6. g3 a6 7. a4 axb5 8. axb5 Rxa1 9. Bxa1 d6 10. d4 g5 11. f4 Bg7 12. Bg2 c6 13. O-O cxb5 14. cxb5 Bxh3 15. Bxh3 d5 16. Qb3 Nf6 17. Nc3 gxf4 18. gxf4",
+      "lastMove": "gxf4",
+      "ply": 35,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-23-42",
+      "fen": "4k2r/1pqnppb1/7p/1P1n4/3P1P2/BQ5B/4P2P/5RK1 w - - 0 22",
+      "pgn": "1. c4 h6 2. Nh3 Rh7 3. b4 Na6 4. b5 Nb8 5. Bb2 Rh8 6. g3 a6 7. a4 axb5 8. axb5 Rxa1 9. Bxa1 d6 10. d4 g5 11. f4 Bg7 12. Bg2 c6 13. O-O cxb5 14. cxb5 Bxh3 15. Bxh3 d5 16. Qb3 Nf6 17. Nc3 gxf4 18. gxf4 Qd6 19. Bb2 Nbd7 20. Ba3 Qc7 21. Nxd5 Nxd5",
+      "lastMove": "Nxd5",
+      "ply": 42,
+      "phase": "middlegame"
+    },
+    {
+      "id": "gen-1-23-51",
+      "fen": "4k2r/1p2ppb1/7p/1PB1P3/3P1P2/2n4B/7P/5RK1 b - - 0 26",
+      "pgn": "1. c4 h6 2. Nh3 Rh7 3. b4 Na6 4. b5 Nb8 5. Bb2 Rh8 6. g3 a6 7. a4 axb5 8. axb5 Rxa1 9. Bxa1 d6 10. d4 g5 11. f4 Bg7 12. Bg2 c6 13. O-O cxb5 14. cxb5 Bxh3 15. Bxh3 d5 16. Qb3 Nf6 17. Nc3 gxf4 18. gxf4 Qd6 19. Bb2 Nbd7 20. Ba3 Qc7 21. Nxd5 Nxd5 22. Qxd5 Nb6 23. Qc5 Qxc5 24. Bxc5 Nd5 25. e4 Nc3 26. e5",
+      "lastMove": "e5",
+      "ply": 51,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-23-60",
+      "fen": "4k2r/1p2b3/4pp1p/BP2PP2/n2P4/5R1B/7P/6K1 w - - 0 31",
+      "pgn": "1. c4 h6 2. Nh3 Rh7 3. b4 Na6 4. b5 Nb8 5. Bb2 Rh8 6. g3 a6 7. a4 axb5 8. axb5 Rxa1 9. Bxa1 d6 10. d4 g5 11. f4 Bg7 12. Bg2 c6 13. O-O cxb5 14. cxb5 Bxh3 15. Bxh3 d5 16. Qb3 Nf6 17. Nc3 gxf4 18. gxf4 Qd6 19. Bb2 Nbd7 20. Ba3 Qc7 21. Nxd5 Nxd5 22. Qxd5 Nb6 23. Qc5 Qxc5 24. Bxc5 Nd5 25. e4 Nc3 26. e5 e6 27. Rf3 Na4 28. Bb4 Bf8 29. Ba5 Be7 30. f5 f6",
+      "lastMove": "f6",
+      "ply": 60,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-23-69",
+      "fen": "4k3/1pB1b3/4P2p/1P2P1r1/8/2R4B/1n5P/5K2 b - - 6 35",
+      "pgn": "1. c4 h6 2. Nh3 Rh7 3. b4 Na6 4. b5 Nb8 5. Bb2 Rh8 6. g3 a6 7. a4 axb5 8. axb5 Rxa1 9. Bxa1 d6 10. d4 g5 11. f4 Bg7 12. Bg2 c6 13. O-O cxb5 14. cxb5 Bxh3 15. Bxh3 d5 16. Qb3 Nf6 17. Nc3 gxf4 18. gxf4 Qd6 19. Bb2 Nbd7 20. Ba3 Qc7 21. Nxd5 Nxd5 22. Qxd5 Nb6 23. Qc5 Qxc5 24. Bxc5 Nd5 25. e4 Nc3 26. e5 e6 27. Rf3 Na4 28. Bb4 Bf8 29. Ba5 Be7 30. f5 f6 31. fxe6 fxe5 32. dxe5 Rg8+ 33. Kf1 Rg5 34. Bc7 Nb2 35. Rc3",
+      "lastMove": "Rc3",
+      "ply": 69,
+      "phase": "endgame"
+    },
+    {
+      "id": "gen-1-23-84",
+      "fen": "8/1p6/4P2p/1Pk1r3/8/7B/3R3P/5K2 w - - 6 43",
+      "pgn": "1. c4 h6 2. Nh3 Rh7 3. b4 Na6 4. b5 Nb8 5. Bb2 Rh8 6. g3 a6 7. a4 axb5 8. axb5 Rxa1 9. Bxa1 d6 10. d4 g5 11. f4 Bg7 12. Bg2 c6 13. O-O cxb5 14. cxb5 Bxh3 15. Bxh3 d5 16. Qb3 Nf6 17. Nc3 gxf4 18. gxf4 Qd6 19. Bb2 Nbd7 20. Ba3 Qc7 21. Nxd5 Nxd5 22. Qxd5 Nb6 23. Qc5 Qxc5 24. Bxc5 Nd5 25. e4 Nc3 26. e5 e6 27. Rf3 Na4 28. Bb4 Bf8 29. Ba5 Be7 30. f5 f6 31. fxe6 fxe5 32. dxe5 Rg8+ 33. Kf1 Rg5 34. Bc7 Nb2 35. Rc3 Bb4 36. Rb3 Rg7 37. Rxb4 Rxc7 38. Rxb2 Rc5 39. Kg1 Rxe5 40. Rc2 Ke7 41. Kf1 Kd6 42. Rd2+ Kc5",
+      "lastMove": "Kc5",
+      "ply": 84,
+      "phase": "endgame"
+    }
+  ]
+}
