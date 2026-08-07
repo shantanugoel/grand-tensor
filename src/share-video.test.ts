@@ -2,21 +2,18 @@ import { describe, expect, test } from 'bun:test'
 import { extensionFor, fadeAlpha, pickMimeType } from './share-video'
 
 describe('pickMimeType', () => {
-  test('prefers VP9, then VP8, then bare WebM', () => {
-    expect(pickMimeType(() => true)).toBe('video/webm;codecs=vp9')
-    expect(pickMimeType((t) => !t.includes('vp9'))).toBe('video/webm;codecs=vp8')
-    expect(pickMimeType((t) => t === 'video/webm')).toBe('video/webm')
-  })
-
-  test('takes the MP4 Safari offers rather than recording nothing', () => {
-    // Safari's MediaRecorder speaks no WebM at all. Its own MP4 is free; what
-    // we won't do is convert one into the other.
-    expect(pickMimeType((t) => t.startsWith('video/mp4'))).toBe('video/mp4;codecs=avc1')
+  test('prefers MP4 where a browser records both', () => {
+    // X takes an MP4 and refuses a WebM, and MediaRecorder's live-muxed WebM
+    // carries no duration in its header.
+    expect(pickMimeType(() => true)).toBe('video/mp4;codecs=avc1')
     expect(pickMimeType((t) => t === 'video/mp4')).toBe('video/mp4')
   })
 
-  test('prefers WebM over MP4 where a browser records both', () => {
-    expect(pickMimeType(() => true)?.startsWith('video/webm')).toBe(true)
+  test('falls back through the WebM codecs where there is no MP4 recorder', () => {
+    const noMp4 = (t: string) => !t.startsWith('video/mp4')
+    expect(pickMimeType(noMp4)).toBe('video/webm;codecs=vp9')
+    expect(pickMimeType((t) => noMp4(t) && !t.includes('vp9'))).toBe('video/webm;codecs=vp8')
+    expect(pickMimeType((t) => t === 'video/webm')).toBe('video/webm')
   })
 
   test('gives up when nothing is on offer', () => {

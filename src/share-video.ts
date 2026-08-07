@@ -15,10 +15,10 @@
  *  captures that second canvas, so the file is the same size whatever the window
  *  happens to be, and the DOM overlay never leaks into the frame.
  *
- *  The container is whichever one the browser's recorder offers — WebM nearly
- *  everywhere, MP4 on Safari, which is the one X will actually take an upload
- *  of. Nothing is transcoded or remuxed here; the extension just follows what
- *  came out. */
+ *  The container is whichever one the browser's recorder offers, MP4 for
+ *  preference since that is what X will take an upload of, WebM where there is
+ *  no MP4 recorder. Nothing is transcoded or remuxed here; the extension just
+ *  follows what came out. */
 
 import { Chess } from 'chess.js'
 import {
@@ -44,16 +44,23 @@ const BITRATE = 3_000_000
 /** Cards fade rather than cut; a hard cut reads as a dropped frame. */
 const FADE_MS = 220
 
-/** Whatever container the browser's own recorder will hand over, best first:
- *  VP9 for the size, then VP8, then bare WebM. MP4 is last but perfectly
- *  welcome — Safari's MediaRecorder only speaks MP4, and taking what it offers
- *  costs nothing. What we never do is convert: no muxer ships with this. */
+/** Whatever container the browser's own recorder will hand over, best first.
+ *
+ *  MP4 leads for two reasons. X takes an MP4 upload and refuses a WebM, which
+ *  makes it the postable one; and MediaRecorder muxes WebM live, so it never
+ *  goes back to write a Duration into the Segment header — players are left to
+ *  work the length out by scanning, and some just believe the missing header
+ *  and report a second. MP4's header carries the real duration.
+ *
+ *  VP9 still compresses better per megabyte, so WebM stays as the fallback for
+ *  browsers with no MP4 recorder (Firefox). What we never do is convert between
+ *  them: no muxer ships with this. */
 const MIME_CANDIDATES = [
+  'video/mp4;codecs=avc1',
+  'video/mp4',
   'video/webm;codecs=vp9',
   'video/webm;codecs=vp8',
   'video/webm',
-  'video/mp4;codecs=avc1',
-  'video/mp4',
 ]
 
 const typeSupported = (type: string) =>
