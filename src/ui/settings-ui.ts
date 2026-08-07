@@ -13,6 +13,11 @@ const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySe
 
 let known = new Map<string, ModelInfo>()
 
+// Keep the form constraint and the save-time clamp tied to the ranked protocol.
+// A stale literal here previously displayed 128,000 correctly, then interpreted
+// it as 32,000 for both live eligibility and saving.
+const MAX_TOKENS = Math.max(...CIRCUITS.map((circuit) => circuit.maxTokens))
+
 const text = (name: string, label: string, value: string, type = 'text', extra = '', help = '') =>
   `<label class="field">${label}<input name="${name}" type="${type}" value="${escapeAttr(value)}" ${extra}/>${help ? `<span class="field-help">${help}</span>` : ''}</label>`
 
@@ -55,7 +60,7 @@ export function renderSettings(s: Settings) {
         ${num('maxPlies', 'Ply limit', s.maxPlies, 20, 600, 10, 'A game this long is adjudicated on material: five points ahead takes the point, closer is a draw.')}
         ${num('retries', 'Retries before forfeit', s.retries, 0, 10, 1, 'Spent on illegal moves and token-capped replies alike.')}
         ${num('networkRetries', 'Connection retry cap', s.networkRetries, 0, 100, 1, 'Connection failures ridden out before the series parks and waits for you. <code>0</code> keeps retrying, backing off to once a minute — nothing is lost either way.')}
-        ${num('maxTokens', 'Max tokens / move', s.maxTokens, 32, 128000, 32, `Both models are told the number. A ceiling, not a target — you are billed for what a model uses, and reasoning effort is what decides that. ${CIRCUITS.map((c) => `${c.maxTokens.toLocaleString('en-US')} = ${c.name}`).join('; ')}.`)}
+        ${num('maxTokens', 'Max tokens / move', s.maxTokens, 32, MAX_TOKENS, 32, `Both models are told the number. A ceiling, not a target — you are billed for what a model uses, and reasoning effort is what decides that. ${CIRCUITS.map((c) => `${c.maxTokens.toLocaleString('en-US')} = ${c.name}`).join('; ')}.`)}
         <label class="field check">
           <input name="commentary" type="checkbox" ${s.commentary ? 'checked' : ''}/>
           <span>Ask for trash talk with each move</span>
@@ -206,7 +211,7 @@ export function readSettings(current: Settings): Settings {
     maxPlies: clamp(int('maxPlies', current.maxPlies), 20, 600),
     retries: clamp(int('retries', current.retries), 0, 10),
     networkRetries: clamp(int('networkRetries', current.networkRetries), 0, 100),
-    maxTokens: clamp(int('maxTokens', current.maxTokens), 32, 32000),
+    maxTokens: clamp(int('maxTokens', current.maxTokens), 32, MAX_TOKENS),
     commentary: get('commentary')?.checked ?? true,
     promptTemplate: raw('promptTemplate', DEFAULTS.promptTemplate),
     includePreviousGames: get('includePreviousGames')?.checked ?? true,
