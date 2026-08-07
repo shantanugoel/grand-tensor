@@ -129,8 +129,13 @@ export const DEFAULTS: Settings = {
 /** Versioned, so a schema change discards stale settings instead of needing an
  *  upgrade path for each field. Three of those paths used to live here and could
  *  not tell a saved stock value from a deliberately chosen identical one — a
- *  returning player who genuinely wanted 3 retries got moved anyway. */
-const KEY = 'grand-tensor:settings:2'
+ *  returning player who genuinely wanted 3 retries got moved anyway.
+ *
+ *  Bumped to :3 because `promptTemplate` and `maxTokens` are both persisted. A
+ *  returning player would otherwise have kept the pre-scaffolding prompt — worth
+ *  46.7 cp per move — and a 16,000 cap that no longer belongs to any circuit, so
+ *  every match they ran would have been quietly unrankable. */
+const KEY = 'grand-tensor:settings:3'
 
 export function loadSettings(): Settings {
   try {

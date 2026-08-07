@@ -8,7 +8,12 @@ export const LEADERBOARD_API =
     ? 'http://localhost:8787/api'
     : `${runtimeOrigin || 'https://grandtensor.shantanugoel.com'}/api`
 
-export const LEADERBOARD_APP_VERSION = '1.0.0'
+/** 2.0.0: the ranked protocol changed incompatibly. The prompt gained the
+ *  tactical brief and the annotated move list (so `promptHash` moved), and the
+ *  circuits collapsed to one at 128,000 tokens. A 1.x client submits neither, and
+ *  since the worker reads this as a floor, it is turned away here rather than
+ *  failing two checks deeper with a less obvious reason. */
+export const LEADERBOARD_APP_VERSION = '2.0.0'
 
 /** How far back the standings look. Shared because it is also the only deadline
  *  left on a result: a match older than the window can never appear in a table,
