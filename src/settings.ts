@@ -116,11 +116,14 @@ export const DEFAULTS: Settings = {
   commentary: true,
   promptTemplate: DEFAULT_PROMPT_TEMPLATE,
   includePreviousGames: true,
-  // On OpenRouter the reasoning budget is a fraction of this — 80% at high
-  // effort, 95% at max — so the cap sets how long a model gets to think, not
-  // just how long it may answer. Reasoning models average well over 8k tokens
-  // on a chess position, which the old default truncated mid-thought.
-  maxTokens: 16000,
+  // A ceiling, not a target: billing is per token used, so a model that wants
+  // 2,300 costs the same here as it did at 16,000. What changes is that nothing
+  // gets cut off mid-thought — at 16,000, deepseek-v4-flash returned no move at
+  // all on 80% of positions, and gpt-5.6-luna on 30% of them at high effort.
+  //
+  // The exposure this creates is real but chosen: it is reasoning effort, not
+  // this number, that decides how much a model actually spends.
+  maxTokens: 128000,
 }
 
 /** Versioned, so a schema change discards stale settings instead of needing an

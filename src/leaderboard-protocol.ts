@@ -16,11 +16,26 @@ export const LEADERBOARD_APP_VERSION = '1.0.0'
 export const LEADERBOARD_WINDOW_DAYS = 30
 
 /** A ranked bucket. Everything about a match is pinned except the models, so
- *  standings compare players rather than settings. The completion budget is the
- *  one axis allowed to differ, and it differs by circuit rather than freely:
- *  on OpenRouter the reasoning budget is a fixed fraction of `max_tokens`, so a
- *  bigger cap buys more thinking and measurably better play. Mixing caps in one
- *  table would rank budgets, not models. */
+ *  standings compare players rather than settings.
+ *
+ *  There is one circuit, and the cap is set high enough never to bind. Two
+ *  circuits existed because a bigger cap was thought to buy more thinking, and
+ *  it does — but measurement showed the cap was not acting as a time control at
+ *  all. It was acting as a wall. At 16,000, gpt-5.6-luna at high effort produced
+ *  no move on 30% of positions and deepseek-v4-flash on 80% of them, at *every*
+ *  effort that model honours. That does not rank chess; it ranks whose reasoning
+ *  happens to fit, and it spends the entrant's money to do it — 81% of DeepSeek's
+ *  bill bought replies containing nothing.
+ *
+ *  So the budget stops being an axis. A cap is a ceiling rather than a target:
+ *  a model that wants 2,300 tokens is billed for 2,300 whatever the cap says, so
+ *  raising it costs nothing to the models that never approach it and stops
+ *  truncating the ones that do. What still separates entrants is reasoning
+ *  effort, which is already part of the entrant key.
+ *
+ *  The real constraint this leaves unguarded is the clock: at max effort a single
+ *  move was measured at 37 minutes. That wants a wall-clock rule, not a token
+ *  one — a budget can only enforce time by cutting a model off mid-sentence. */
 export type Circuit = {
   /** Stored per submission and used to partition standings. */
   id: string
@@ -33,14 +48,8 @@ export const CIRCUITS: readonly Circuit[] = [
   {
     id: 'standard',
     name: 'Standard Circuit',
-    maxTokens: 16000,
-    blurb: '16,000 tokens per move — enough for high reasoning effort to finish its thought.',
-  },
-  {
-    id: 'extended',
-    name: 'Extended Circuit',
-    maxTokens: 32000,
-    blurb: '32,000 tokens per move — room for the deepest reasoning, at the highest cost.',
+    maxTokens: 128000,
+    blurb: '128,000 tokens per move — a ceiling high enough that no model is cut off mid-thought.',
   },
 ]
 

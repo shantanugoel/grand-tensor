@@ -194,11 +194,13 @@ describe('leaderboard submission validation', () => {
   })
 
   test('routes a submission to the circuit its completion cap belongs to', async () => {
-    const extended = CIRCUITS.find((circuit) => circuit.id !== DEFAULT_CIRCUIT.id)!
+    // One circuit today, but the cap is still what selects it — the routing is
+    // what keeps a second one addable without touching stored rows.
     const value = await submission()
-    value.config.maxTokens = extended.maxTokens
-    value.protocol = extended.id
-    expect((await validateSubmission(value)).circuit.id).toBe(extended.id)
+    value.config.maxTokens = DEFAULT_CIRCUIT.maxTokens
+    value.protocol = DEFAULT_CIRCUIT.id
+    expect((await validateSubmission(value)).circuit.id).toBe(DEFAULT_CIRCUIT.id)
+    expect(CIRCUITS).toHaveLength(1)
   })
 
   test('rejects a cap that belongs to no circuit', async () => {
@@ -208,9 +210,11 @@ describe('leaderboard submission validation', () => {
   })
 
   test('refuses a submission that claims a circuit its settings contradict', async () => {
-    const extended = CIRCUITS.find((circuit) => circuit.id !== DEFAULT_CIRCUIT.id)!
+    // "extended" was a real circuit before the collapse, so a stale client may
+    // still name it. The cap decides, and a claim that disagrees is refused
+    // rather than quietly filed under whatever the cap implies.
     const value = await submission()
-    value.protocol = extended.id
+    value.protocol = 'extended'
     await expect(validateSubmission(value)).rejects.toThrow('does not match its settings')
   })
 
