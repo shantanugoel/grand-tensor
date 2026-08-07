@@ -104,7 +104,8 @@ describe('routing and CORS', () => {
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe(ORIGIN)
     const body = (await response.json()) as any
     expect(body.siteKey).toBe('site-key')
-    expect(body.circuits.map((c: any) => c.id)).toEqual(['standard', 'extended'])
+    expect(body.circuits.map((c: any) => c.id)).toEqual(['standard'])
+    expect(body.circuits[0].maxTokens).toBe(128000)
   })
 
   test('refuses a write from an origin that is not allowed', async () => {
@@ -143,9 +144,13 @@ describe('run tickets', () => {
     const { protocol, ticket } = await ticketFor(h, await config())
     expect(protocol).toBe('standard')
     expect(ticket.split('.')).toHaveLength(2)
+  })
 
-    const extended = await ticketFor(h, await config({ maxTokens: 32000 }))
-    expect(extended.protocol).toBe('extended')
+  test('refuses a ticket for a cap that belongs to no circuit', async () => {
+    // 32,000 was the Extended cap before the collapse, so this is the shape a
+    // client running the previous release actually sends.
+    const h = start()
+    await expect(ticketFor(h, await config({ maxTokens: 32000 }))).rejects.toThrow()
   })
 
   test('refuses a config that is not ranked', async () => {
@@ -541,14 +546,18 @@ describe('standings and entrant records', () => {
     expect(body.standings[0].ratingMargin).toBeGreaterThan(0)
   })
 
-  test('keeps circuits in separate tables', async () => {
+  test('reads standings for the circuit named, not everything stored', async () => {
+    // With one circuit the partition cannot be shown by contrast any more, so
+    // this only holds the scoping in place: results come back for the circuit
+    // asked for, and "extended" — a real id until the collapse — is refused
+    // rather than silently answered with the standard table.
     const h = start()
     await submit(h)
-    const extended = await worker.fetch(request('/api/v1/standings?circuit=extended'), h.env as any, {} as any)
-    expect(((await extended.json()) as any).standings).toEqual([])
-
     const standard = await worker.fetch(request('/api/v1/standings?circuit=standard'), h.env as any, {} as any)
     expect(((await standard.json()) as any).standings.length).toBe(2)
+
+    const retired = await worker.fetch(request('/api/v1/standings?circuit=extended'), h.env as any, {} as any)
+    expect(retired.status).toBe(400)
   })
 
   test('refuses an unknown circuit', async () => {

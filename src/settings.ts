@@ -9,6 +9,15 @@ export type Effort = string
 /** Send no effort parameter and let the provider pick. */
 export const NO_EFFORT = 'default'
 
+/** Turn reasoning off outright, for models whose metadata says it is optional.
+ *
+ *  Not the same as a low effort, and on some models it is the only thing that
+ *  works: deepseek-v4-flash ignores `low`, ignores a reasoning token budget, and
+ *  ignores the flat `reasoning_effort` field — all three land within 2.5% of the
+ *  same ~12,700 reasoning tokens and then return an empty reply. Off is the one
+ *  setting it honours, and it answers in three seconds instead of twelve minutes. */
+export const REASONING_OFF = 'off'
+
 export type PlayerConfig = {
   /** Display name shown in the HUD. */
   label: string
@@ -37,7 +46,10 @@ export const DEFAULT_PROMPT_TEMPLATE = [
   `Previous games in this series:`,
   `{{previousGames}}`,
   ``,
-  `LEGAL MOVES ({{legalMoveCount}}): {{legalMoves}}`,
+  `{{threats}}`,
+  ``,
+  `LEGAL MOVES ({{legalMoveCount}}), with origin square and what attacks the square you land on:`,
+  `{{annotatedMoves}}`,
   ``,
   `Choose your move.`,
 ].join('\n')
@@ -104,18 +116,26 @@ export const DEFAULTS: Settings = {
   commentary: true,
   promptTemplate: DEFAULT_PROMPT_TEMPLATE,
   includePreviousGames: true,
-  // On OpenRouter the reasoning budget is a fraction of this — 80% at high
-  // effort, 95% at max — so the cap sets how long a model gets to think, not
-  // just how long it may answer. Reasoning models average well over 8k tokens
-  // on a chess position, which the old default truncated mid-thought.
-  maxTokens: 16000,
+  // A ceiling, not a target: billing is per token used, so a model that wants
+  // 2,300 costs the same here as it did at 16,000. What changes is that nothing
+  // gets cut off mid-thought — at 16,000, deepseek-v4-flash returned no move at
+  // all on 80% of positions, and gpt-5.6-luna on 30% of them at high effort.
+  //
+  // The exposure this creates is real but chosen: it is reasoning effort, not
+  // this number, that decides how much a model actually spends.
+  maxTokens: 128000,
 }
 
 /** Versioned, so a schema change discards stale settings instead of needing an
  *  upgrade path for each field. Three of those paths used to live here and could
  *  not tell a saved stock value from a deliberately chosen identical one — a
- *  returning player who genuinely wanted 3 retries got moved anyway. */
-const KEY = 'grand-tensor:settings:2'
+ *  returning player who genuinely wanted 3 retries got moved anyway.
+ *
+ *  Bumped to :3 because `promptTemplate` and `maxTokens` are both persisted. A
+ *  returning player would otherwise have kept the pre-scaffolding prompt — worth
+ *  46.7 cp per move — and a 16,000 cap that no longer belongs to any circuit, so
+ *  every match they ran would have been quietly unrankable. */
+const KEY = 'grand-tensor:settings:3'
 
 export function loadSettings(): Settings {
   try {

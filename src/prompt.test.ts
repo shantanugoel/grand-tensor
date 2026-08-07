@@ -43,6 +43,45 @@ describe('movePrompt', () => {
     expect(text).toContain('internal reasoning counts against it')
   })
 
+  test('puts the thinking fields before the move, and trash talk after it', () => {
+    // Key order is generation order. "move" first meant answering before
+    // thinking; "say" before it would delay the move behind the commentary.
+    const text = systemPrompt('white', true, 16000)
+    expect(text.indexOf('"threats"')).toBeLessThan(text.indexOf('"move"'))
+    expect(text.indexOf('"candidates"')).toBeLessThan(text.indexOf('"move"'))
+    expect(text.indexOf('"move"')).toBeLessThan(text.indexOf('"say"'))
+  })
+
+  test('omits the commentary field when commentary is off', () => {
+    const text = systemPrompt('white', false, 16000)
+    expect(text).not.toContain('"say"')
+    expect(text).toContain('"threats"')
+    expect(text).toContain('"move"')
+  })
+
+  test('renders the tactical brief and the annotated move list from the FEN', () => {
+    const chess = new Chess()
+    for (const move of ['e4', 'e5', 'Nf3', 'Nc6']) chess.move(move)
+    const rendered = movePrompt('{{threats}}||{{annotatedMoves}}', { ...args, fen: chess.fen() })
+    const [threats, moves] = rendered.split('||')
+    expect(threats).toContain('YOUR PIECES UNDER ATTACK:')
+    expect(threats).toContain('Pe5')
+    expect(moves).toContain('Nxe5 [f3-e5 takes P(1)]')
+    // e5 is defended by c6, so taking there is contested rather than free.
+    expect(moves).toContain('contested')
+  })
+
+  test('a FEN this module cannot parse costs one section, not the whole turn', () => {
+    const rendered = movePrompt('{{player}} {{threats}} {{legalMoves}}', { ...args, fen: 'not-a-fen' })
+    expect(rendered).toBe('Alpha (unavailable for this position) Nf3 Bc4')
+  })
+
+  test('the derived sections are not built unless the template asks for them', () => {
+    // A custom template that never mentions them must not pay to compute them,
+    // which also means a bad FEN goes unnoticed rather than throwing.
+    expect(movePrompt('{{player}}', { ...args, fen: 'not-a-fen' })).toBe('Alpha')
+  })
+
   test('renders supported variables and preserves unknown ones', () => {
     expect(movePrompt('{{player}} {{legalMoveCount}} {{legalMoves}} {{unknown}}', args)).toBe(
       'Alpha 2 Nf3 Bc4 {{unknown}}',

@@ -1,5 +1,7 @@
 /** Prompt construction and (deliberately forgiving) move parsing. */
 
+import { Chess } from 'chess.js'
+
 export type LegalMove = { san: string; lan: string }
 export type MoveRejection = 'invalid_response' | 'invalid_notation' | 'illegal_move'
 
@@ -37,14 +39,24 @@ export type MovePromptArgs = {
 const fmtCap = (n: number) => n.toLocaleString('en-US')
 
 export function systemPrompt(color: 'white' | 'black', commentary: boolean, maxTokens: number): string {
+  // Key order is load-bearing. JSON is generated left to right, so "move" first
+  // meant committing to an answer before a single token of thought — and for a
+  // model with no separate reasoning channel, that was the whole of its thinking.
+  // "threats" and "candidates" are scratch space bought for the price of a field.
+  // "say" stays last: trash talk must not delay the move it comments on.
+  const shape = ['"threats": "<what your opponent threatens right now>"', '"candidates": "<2-3 moves you are considering, and what is wrong with each>"', '"move": "<SAN>"']
+  if (commentary) shape.push('"say": "<one short sentence of trash talk, max 12 words>"')
+
   return [
     `You are playing a game of chess as ${color}.`,
     `Act as a world-class chess engine and play to win.`,
     ``,
-    `Respond with a single JSON object and nothing else:`,
-    commentary
-      ? `{"move": "<SAN>", "say": "<one short sentence of trash talk or reasoning, max 12 words>"}`
-      : `{"move": "<SAN>"}`,
+    `Respond with a single JSON object and nothing else, with the keys in this order:`,
+    `{${shape.join(', ')}}`,
+    ``,
+    `Think inside "threats" and "candidates" BEFORE committing to "move".`,
+    `After your move, is the piece you moved defended? Does it leave anything hanging?`,
+    `A check or a capture is not automatically good — weigh what you win against what the moved piece is worth on the square it lands on.`,
     ``,
     `"move" MUST be copied verbatim from the LEGAL MOVES list you are given.`,
     `No markdown, no code fences, no explanation outside the JSON.`,
@@ -71,8 +83,85 @@ export const PROMPT_VARIABLES = [
   'moves',
   'legalMoveCount',
   'legalMoves',
+  'annotatedMoves',
+  'threats',
   'previousGames',
 ] as const
+
+const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
+
+/** Attacked and defended pieces for both sides, from the mover's point of view.
+ *
+ *  Every fact here is already implied by the FEN. The point is that deriving it
+ *  is bookkeeping the model otherwise pays for out of the same budget it needs
+ *  for chess — and measurably gets wrong. Kings are skipped: they cannot be
+ *  captured, so listing them is noise. */
+export function tacticalBrief(fen: string): string {
+  const chess = new Chess(fen)
+  const me = chess.turn()
+  const mine: string[] = []
+  const theirs: string[] = []
+
+  for (const row of chess.board()) {
+    for (const square of row) {
+      if (!square || square.type === 'k') continue
+      const attackers = chess.attackers(square.square, square.color === 'w' ? 'b' : 'w')
+      if (!attackers.length) continue
+      const defenders = chess.attackers(square.square, square.color)
+      const line =
+        `  ${square.type.toUpperCase()}${square.square} (worth ${PIECE_VALUE[square.type]}) ` +
+        `attacked by ${attackers.join(',')} | defended by ${defenders.join(',') || 'nothing'}` +
+        (defenders.length ? '' : '  <-- UNDEFENDED')
+      ;(square.color === me ? mine : theirs).push(line)
+    }
+  }
+
+  return [
+    'YOUR PIECES UNDER ATTACK:',
+    mine.length ? mine.join('\n') : '  (none)',
+    'THEIR PIECES UNDER ATTACK:',
+    theirs.length ? theirs.join('\n') : '  (none)',
+  ].join('\n')
+}
+
+/** Each legal move with its origin square and what awaits it on arrival.
+ *
+ *  The origin square stops the model working out which knight "Nc5" means. The
+ *  landing-square status addresses the failure that actually costs games:
+ *  recapturing with the wrong piece is not a missed capture, it is an unchecked
+ *  destination. Only contested squares are annotated, so the extra tokens fall
+ *  on the moves where they change the answer.
+ *
+ *  Deliberately descriptive rather than advisory — a contested square is very
+ *  often where the best move goes, and calling every one of them unsafe would
+ *  trade blunders for timidity. */
+export function annotatedMoves(fen: string): string {
+  const chess = new Chess(fen)
+  return chess
+    .moves({ verbose: true })
+    .map((move) => {
+      const captured = move.captured
+        ? ` takes ${move.captured.toUpperCase()}(${PIECE_VALUE[move.captured]})`
+        : ''
+
+      // Read from the position *after* the move: "can they take it back?" has no
+      // answer in the position before it.
+      const after = new Chess(fen)
+      after.move(move.san)
+      const attackers = after.attackers(move.to, move.color === 'w' ? 'b' : 'w')
+      let landing = ''
+      if (attackers.length) {
+        const defenders = after.attackers(move.to, move.color)
+        const piece = `${move.piece.toUpperCase()}(${PIECE_VALUE[move.piece]})`
+        landing = defenders.length
+          ? ` — ${move.to} contested: your ${piece} attacked by ${attackers.join(',')}, defended by ${defenders.join(',')}`
+          : ` — HANGS: your ${piece} on ${move.to} attacked by ${attackers.join(',')}, defended by nothing`
+      }
+
+      return `${move.san} [${move.from}-${move.to}${captured}]${landing}`
+    })
+    .join('\n')
+}
 
 /** Movetext only: no header tags, and no trailing result token.
  *
@@ -103,7 +192,7 @@ export function previousGamesPrompt(games: PromptGame[], labels: [string, string
 /** Replaces known {{variables}}. Unknown placeholders are left visible so a
  *  misspelling is apparent in the actual prompt rather than silently erased. */
 export function movePrompt(template: string, args: MovePromptArgs): string {
-  const values: Record<(typeof PROMPT_VARIABLES)[number], string> = {
+  const values: Record<Exclude<(typeof PROMPT_VARIABLES)[number], 'annotatedMoves' | 'threats'>, string> = {
     player: args.player,
     opponent: args.opponent,
     color: args.color,
@@ -120,9 +209,27 @@ export function movePrompt(template: string, args: MovePromptArgs): string {
     previousGames: args.includePreviousGames ? previousGamesPrompt(args.previousGames, args.playerLabels) : '(not included)',
   }
 
-  return template.replace(/\{\{([A-Za-z][A-Za-z0-9]*)\}\}/g, (match, name: string) =>
-    name in values ? values[name as keyof typeof values] : match,
-  )
+  /** Derived from the FEN the caller already supplies, so these needed no new
+   *  plumbing through the series — but they are the only variables that parse a
+   *  board rather than format a string, so they are resolved on demand. A custom
+   *  template that never mentions them should not pay to build them, and a FEN
+   *  this module cannot read must not take a whole turn down: the prompt loses
+   *  one section, and the model still gets a position and a legal move list. */
+  const derived: Record<string, () => string> = {
+    annotatedMoves: () => annotatedMoves(args.fen),
+    threats: () => tacticalBrief(args.fen),
+  }
+
+  return template.replace(/\{\{([A-Za-z][A-Za-z0-9]*)\}\}/g, (match, name: string) => {
+    if (name in values) return values[name as keyof typeof values]
+    const build = derived[name]
+    if (!build) return match
+    try {
+      return build()
+    } catch {
+      return '(unavailable for this position)'
+    }
+  })
 }
 
 export function retryPrompt(

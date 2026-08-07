@@ -7,7 +7,7 @@
 import { fetchModels, FALLBACK_EFFORTS, type ModelInfo } from '../llm'
 import { PROMPT_VARIABLES, systemPrompt } from '../prompt'
 import { CIRCUITS, inspectEligibility } from '../leaderboard-protocol'
-import { DEFAULTS, NO_EFFORT, type Settings } from '../settings'
+import { DEFAULTS, NO_EFFORT, REASONING_OFF, type Settings } from '../settings'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
 
@@ -55,7 +55,7 @@ export function renderSettings(s: Settings) {
         ${num('maxPlies', 'Ply limit', s.maxPlies, 20, 600, 10, 'A game this long is adjudicated on material: five points ahead takes the point, closer is a draw.')}
         ${num('retries', 'Retries before forfeit', s.retries, 0, 10, 1, 'Spent on illegal moves and token-capped replies alike.')}
         ${num('networkRetries', 'Connection retry cap', s.networkRetries, 0, 100, 1, 'Connection failures ridden out before the series parks and waits for you. <code>0</code> keeps retrying, backing off to once a minute — nothing is lost either way.')}
-        ${num('maxTokens', 'Max tokens / move', s.maxTokens, 32, 32000, 32, `Both models are told the number. ${CIRCUITS.map((c) => `${c.maxTokens.toLocaleString('en-US')} = ${c.name}`).join('; ')}.`)}
+        ${num('maxTokens', 'Max tokens / move', s.maxTokens, 32, 128000, 32, `Both models are told the number. A ceiling, not a target — you are billed for what a model uses, and reasoning effort is what decides that. ${CIRCUITS.map((c) => `${c.maxTokens.toLocaleString('en-US')} = ${c.name}`).join('; ')}.`)}
         <label class="field check">
           <input name="commentary" type="checkbox" ${s.commentary ? 'checked' : ''}/>
           <span>Ask for trash talk with each move</span>
@@ -146,15 +146,25 @@ function renderEfforts(i: number, preferred?: string) {
   // or no catalog at all: a superset, so a custom endpoint or an unlisted
   // variant isn't locked out of choosing one.
   const options = info ? (info.efforts ?? []) : FALLBACK_EFFORTS
+
+  // Off is a different thing from a low effort, and on some models it is the
+  // only request they honour: deepseek-v4-flash ignores `low`, a reasoning token
+  // budget, and the flat effort field alike — all three spend ~12,700 tokens and
+  // return nothing — while off answers in three seconds. Offered whenever the
+  // catalog says reasoning is optional, and for unknown models, which are the
+  // ones a custom endpoint is most likely to need it for.
+  const canDisable = info ? info.canDisable === true : true
   const none = info?.defaultEffort ? `default (${info.defaultEffort})` : 'default'
 
   select.innerHTML = [
     `<option value="${NO_EFFORT}">${none}</option>`,
     ...options.map((e) => `<option value="${escapeAttr(e)}">${escapeAttr(e)}</option>`),
+    ...(canDisable ? [`<option value="${REASONING_OFF}">off (no reasoning)</option>`] : []),
   ].join('')
 
-  select.value = options.includes(current) ? current : NO_EFFORT
-  const noneOffered = info != null && options.length === 0
+  const selectable = canDisable ? [...options, REASONING_OFF] : options
+  select.value = selectable.includes(current) ? current : NO_EFFORT
+  const noneOffered = info != null && selectable.length === 0
   select.disabled = noneOffered
   select.title = noneOffered ? `${model} does not expose reasoning effort levels` : ''
 }

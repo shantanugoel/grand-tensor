@@ -56,9 +56,12 @@ be bucketed into entrants without splitting the board without limit. Custom matc
 exhibitions and never affect standings. The Settings modal marks each field with what its current
 value does to eligibility, so it is always visible which circuit a match would submit to.
 
-Ranked play is split into **circuits** by completion budget — 16,000 tokens per move (Standard) and
-32,000 (Extended). On OpenRouter the reasoning budget is a fraction of `max_tokens`, so a bigger cap
-buys more thinking; mixing caps in one table would rank budgets rather than models.
+Ranked play happens in one **circuit**, at 128,000 tokens per move. That cap is a ceiling rather
+than a target: billing is per token used, so a model that wants 2,300 costs the same as it did under
+the old 16,000 cap, while the models that were being cut off mid-thought now finish. At 16,000,
+`gpt-5.6-luna` returned no move at all on 30% of positions at high effort and `deepseek-v4-flash` on
+80% of them — a table like that ranks whose reasoning happens to fit, not who plays better chess.
+See [eval/RESULTS.md](eval/RESULTS.md) for the measurements.
 
 An entrant is a **model at an effort level**, not a model. One model at `low` and at `xhigh` are
 different competitors and appear as separate rows; `default` — no effort parameter sent — is its own

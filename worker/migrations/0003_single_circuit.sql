@@ -1,0 +1,18 @@
+-- Every stored result is discarded here, deliberately.
+--
+-- Two things that define a ranked match both changed at once. The circuits
+-- collapsed to one and its cap moved from 16,000 tokens to 128,000, and the
+-- prompt gained the tactical brief and the annotated move list — which moves
+-- `promptHash`, the value a submission is validated against.
+--
+-- Neither is a settings tweak. A 16,000-token match was one where gpt-5.6-luna
+-- produced no move on 30% of its turns at high effort and deepseek-v4-flash on
+-- 80% of them, so a large share of every stored result is forfeits to a budget
+-- rather than losses at chess. And the old prompt lost 46.7 cp per move more
+-- than the new one. Results from before are not a slightly different sample of
+-- the same thing; they measure a different contest.
+--
+-- Keeping them under the one remaining circuit id would silently merge the two,
+-- and there is no honest way to convert between them: no rescaling recovers the
+-- move a model never got to make. So the standings start empty.
+DELETE FROM submissions;
