@@ -49,14 +49,20 @@ type Attempt = {
 
 /** Runs `jobs` with at most `limit` in flight. API calls dominate wall time and
  *  are almost entirely waiting, so this is where the run gets its speed. */
-async function pooled<T>(jobs: (() => Promise<T>)[], limit: number): Promise<T[]> {
+async function pooled<T>(
+  jobs: (() => Promise<T>)[],
+  limit: number,
+  onProgress?: (done: number, total: number) => void,
+): Promise<T[]> {
   const results = new Array<T>(jobs.length)
   let cursor = 0
+  let done = 0
   const workers = Array.from({ length: Math.min(limit, jobs.length) }, async () => {
     for (;;) {
       const i = cursor++
       if (i >= jobs.length) return
       results[i] = await jobs[i]()
+      onProgress?.(++done, jobs.length)
     }
   })
   await Promise.all(workers)
@@ -226,7 +232,21 @@ async function main() {
 
   console.log(`Running ${jobs.length} graded moves (${models.length} models x ${variants.length} variants x ${positions.length} positions)...`)
   const runStart = performance.now()
-  const attempts = await pooled(jobs, concurrency)
+  // Reasoning models take a minute or more per move, so a run of any size is
+  // otherwise silent for a long time and indistinguishable from a hang. Progress
+  // goes to stderr to keep stdout clean for anything parsing the report.
+  let lastReport = 0
+  const attempts = await pooled(jobs, concurrency, (completed, total) => {
+    const now = performance.now()
+    if (completed !== total && now - lastReport < 15_000) return
+    lastReport = now
+    const elapsed = (now - runStart) / 1000
+    const eta = (elapsed / completed) * (total - completed)
+    console.error(
+      `  ${completed}/${total} moves  ${elapsed.toFixed(0)}s elapsed` +
+        (completed === total ? '' : `  ~${eta.toFixed(0)}s left`),
+    )
+  })
   console.log(`Done in ${((performance.now() - runStart) / 1000).toFixed(1)}s\n`)
 
   console.log('=== RESULTS ===')
