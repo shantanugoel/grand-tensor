@@ -5,9 +5,11 @@
  *  the same `systemPrompt`/`movePrompt` the series uses rather than a copy. */
 
 import { Chess } from 'chess.js'
-import { movePrompt, systemPrompt, type LegalMove } from '../prompt'
+import { annotatedMoves, movePrompt, systemPrompt, tacticalBrief, type LegalMove } from '../prompt'
 import { DEFAULT_PROMPT_TEMPLATE } from '../settings'
 import type { Position } from './positions'
+
+export { annotatedMoves, tacticalBrief }
 
 export type Message = { role: 'system' | 'user' | 'assistant'; content: string }
 
@@ -70,80 +72,58 @@ export const noCommentary: Variant = {
   ],
 }
 
-const PIECE_VALUE: Record<string, number> = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 }
-
-/** Attacked/defended tables for both sides.
+/** The prompt as it stood before the scaffolding shipped: bare SAN, and a JSON
+ *  shape that put "move" first so the answer preceded any thinking.
  *
- *  Every fact here is already inside the FEN — the point is that deriving it is
- *  an expensive operation the model pays for out of the same budget it needs for
- *  chess, and small models mostly get it wrong. */
-export function tacticalBrief(fen: string): string {
-  const chess = new Chess(fen)
-  const me = chess.turn()
-  const mine: string[] = []
-  const theirs: string[] = []
+ *  Kept verbatim rather than deleted. Once `baseline` follows production, there
+ *  is nothing left to detect a regression against — this is the fixed point the
+ *  46.7 cp improvement was measured from, and re-running it is how that number
+ *  stays checkable rather than becoming folklore. */
+export const legacy: Variant = {
+  name: 'legacy',
+  description: 'Pre-scaffolding production prompt (move-first JSON, bare SAN list)',
+  build: (ctx) => {
+    const system = [
+      `You are playing a game of chess as ${ctx.color}.`,
+      `Act as a world-class chess engine and play to win.`,
+      ``,
+      `Respond with a single JSON object and nothing else:`,
+      `{"move": "<SAN>", "say": "<one short sentence of trash talk or reasoning, max 12 words>"}`,
+      ``,
+      `"move" MUST be copied verbatim from the LEGAL MOVES list you are given.`,
+      `No markdown, no code fences, no explanation outside the JSON.`,
+      ``,
+      `Your completion budget for each reply is ${ctx.maxTokens.toLocaleString('en-US')} tokens, and internal reasoning counts against it.`,
+      `Reserve enough of that budget to finish the JSON object — a reply that stops mid-thought scores nothing.`,
+    ].join('\n')
 
-  for (const row of chess.board()) {
-    for (const sq of row) {
-      if (!sq || sq.type === 'k') continue
-      const attackers = chess.attackers(sq.square, sq.color === 'w' ? 'b' : 'w')
-      if (!attackers.length) continue
-      const defenders = chess.attackers(sq.square, sq.color)
-      const loose = defenders.length === 0 ? '  <-- UNDEFENDED' : ''
-      const line =
-        `  ${sq.type.toUpperCase()}${sq.square} (worth ${PIECE_VALUE[sq.type]}) ` +
-        `attacked by ${attackers.join(',')} | defended by ${defenders.join(',') || 'nothing'}${loose}`
-      ;(sq.color === me ? mine : theirs).push(line)
-    }
-  }
+    const template = [
+      `You are {{player}}, playing a game of chess as {{color}} against {{opponent}}.`,
+      `This is game {{gameNumber}} of {{totalGames}}.`,
+      ``,
+      `FEN: {{fen}}`,
+      ``,
+      `{{board}}`,
+      ``,
+      `Move number: {{moveNumber}}`,
+      `Last move: {{lastMove}}`,
+      `Check status: {{inCheck}}`,
+      ``,
+      `Moves so far: {{moves}}`,
+      ``,
+      `Previous games in this series:`,
+      `{{previousGames}}`,
+      ``,
+      `LEGAL MOVES ({{legalMoveCount}}): {{legalMoves}}`,
+      ``,
+      `Choose your move.`,
+    ].join('\n')
 
-  return [
-    'YOUR PIECES UNDER ATTACK:',
-    mine.length ? mine.join('\n') : '  (none)',
-    'THEIR PIECES UNDER ATTACK:',
-    theirs.length ? theirs.join('\n') : '  (none)',
-  ].join('\n')
-}
-
-/** Annotates each legal move with its origin square and what happens to the piece
- *  once it lands there.
- *
- *  The origin square stops the model reverse-engineering which knight "Nc5" means.
- *  The landing-square status targets the blunder this benchmark actually measures:
- *  recapturing with the wrong piece (`Qxa6` where `Bxa6` was right) is not a
- *  failure to see the capture, it is a failure to check whether the square is
- *  still defended afterwards.
- *
- *  Squares are only annotated when the opponent attacks them, so the extra tokens
- *  land on the moves where they change the answer. The wording stays descriptive
- *  rather than advisory — a contested square is often exactly where a good move
- *  goes, and labelling every one of them "unsafe" would just trade blunders for
- *  timidity. */
-export function annotatedMoves(fen: string): string {
-  const chess = new Chess(fen)
-  return chess
-    .moves({ verbose: true })
-    .map((m) => {
-      const captured = m.captured ? ` takes ${m.captured.toUpperCase()}(${PIECE_VALUE[m.captured]})` : ''
-
-      // Attackers are read from the position *after* the move, which is the only
-      // position in which the question "can they take it back?" has an answer.
-      const after = new Chess(fen)
-      after.move(m.san)
-      const them = m.color === 'w' ? 'b' : 'w'
-      const attackers = after.attackers(m.to, them)
-      let landing = ''
-      if (attackers.length) {
-        const defenders = after.attackers(m.to, m.color)
-        const piece = `${m.piece.toUpperCase()}(${PIECE_VALUE[m.piece]})`
-        landing = defenders.length
-          ? ` — ${m.to} contested: your ${piece} attacked by ${attackers.join(',')}, defended by ${defenders.join(',')}`
-          : ` — HANGS: your ${piece} on ${m.to} attacked by ${attackers.join(',')}, defended by nothing`
-      }
-
-      return `${m.san} [${m.from}-${m.to}${captured}]${landing}`
-    })
-    .join('\n')
+    return [
+      { role: 'system', content: system },
+      { role: 'user', content: movePrompt(template, baseArgs(ctx)) },
+    ]
+  },
 }
 
 const IMPROVED_TEMPLATE = [
@@ -202,7 +182,7 @@ export const scaffolded: Variant = {
   },
 }
 
-export const VARIANTS: Variant[] = [baseline, noCommentary, scaffolded]
+export const VARIANTS: Variant[] = [baseline, legacy, noCommentary, scaffolded]
 
 export const byName = (name: string): Variant => {
   const hit = VARIANTS.find((v) => v.name === name)

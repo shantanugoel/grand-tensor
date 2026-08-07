@@ -9,6 +9,15 @@ export type Effort = string
 /** Send no effort parameter and let the provider pick. */
 export const NO_EFFORT = 'default'
 
+/** Turn reasoning off outright, for models whose metadata says it is optional.
+ *
+ *  Not the same as a low effort, and on some models it is the only thing that
+ *  works: deepseek-v4-flash ignores `low`, ignores a reasoning token budget, and
+ *  ignores the flat `reasoning_effort` field — all three land within 2.5% of the
+ *  same ~12,700 reasoning tokens and then return an empty reply. Off is the one
+ *  setting it honours, and it answers in three seconds instead of twelve minutes. */
+export const REASONING_OFF = 'off'
+
 export type PlayerConfig = {
   /** Display name shown in the HUD. */
   label: string
@@ -37,7 +46,10 @@ export const DEFAULT_PROMPT_TEMPLATE = [
   `Previous games in this series:`,
   `{{previousGames}}`,
   ``,
-  `LEGAL MOVES ({{legalMoveCount}}): {{legalMoves}}`,
+  `{{threats}}`,
+  ``,
+  `LEGAL MOVES ({{legalMoveCount}}), with origin square and what attacks the square you land on:`,
+  `{{annotatedMoves}}`,
   ``,
   `Choose your move.`,
 ].join('\n')

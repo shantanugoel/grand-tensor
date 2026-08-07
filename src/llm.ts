@@ -1,7 +1,7 @@
 /** Minimal OpenAI-compatible chat client. Works with OpenRouter, OpenAI, or any
  *  server exposing /chat/completions. No SDK — one fetch, one parse. */
 
-import { NO_EFFORT } from './settings'
+import { NO_EFFORT, REASONING_OFF } from './settings'
 
 export type Usage = {
   prompt: number
@@ -25,6 +25,10 @@ export type ModelInfo = {
   efforts?: string[]
   /** What the provider uses when no effort is sent. */
   defaultEffort?: string
+  /** Whether reasoning can be switched off. Offered only when the provider says
+   *  so, because asking a mandatory-reasoning model to stop is a rejected
+   *  request rather than a quiet no-op. */
+  canDisable?: boolean
 }
 
 /** Offered when the endpoint says nothing about a model, so a custom server
@@ -96,7 +100,13 @@ export async function chat(req: ChatRequest): Promise<ChatResult> {
     max_tokens: req.maxTokens,
   }
 
-  if (req.effort !== NO_EFFORT) {
+  if (req.effort === REASONING_OFF) {
+    // Switching reasoning off is its own request shape, not an effort level —
+    // OpenRouter takes an `enabled` flag, while a plain OpenAI-compatible server
+    // has no such field and expects the effort itself to say "none".
+    if (isOpenRouter(req.baseUrl)) body.reasoning = { enabled: false }
+    else body.reasoning_effort = 'none'
+  } else if (req.effort !== NO_EFFORT) {
     // OpenRouter normalises effort under `reasoning`; plain OpenAI uses a flat field.
     if (isOpenRouter(req.baseUrl)) body.reasoning = { effort: req.effort }
     else body.reasoning_effort = req.effort
@@ -196,6 +206,7 @@ export async function fetchModels(baseUrl: string, apiKey: string): Promise<Map<
         pricing: priced ? { prompt, completion } : undefined,
         efforts,
         defaultEffort: typeof m.reasoning?.default_effort === 'string' ? m.reasoning.default_effort : undefined,
+        canDisable: m.reasoning ? m.reasoning.mandatory === false : undefined,
       })
     }
   } catch {
