@@ -59,6 +59,13 @@ export class ChatError extends Error {
  *  their own. 4xx otherwise means the request itself is wrong. */
 const RETRYABLE_STATUS = new Set([408, 409, 425, 429, 500, 502, 503, 504])
 
+/** A success status is written before the body is sent, so a 2xx that still
+ *  fails to parse — or that carries an `error` — is a body that went wrong in
+ *  transit or upstream, never a request that was wrong to begin with. Gateways
+ *  do this often: OpenRouter answers 200 and then relays a provider failure, or
+ *  drops the connection and leaves an empty body behind. Both pass. */
+const retryableStatus = (res: Response) => RETRYABLE_STATUS.has(res.status) || res.ok
+
 export const emptyUsage = (): Usage => ({ prompt: 0, completion: 0, reasoning: 0, total: 0, cost: 0 })
 
 export function addUsage(a: Usage, b: Usage): Usage {
@@ -120,13 +127,16 @@ export async function chat(req: ChatRequest): Promise<ChatResult> {
   }
 
   const ms = performance.now() - started
-  const retryable = RETRYABLE_STATUS.has(res.status)
+  const retryable = retryableStatus(res)
   let json: any
   try {
     json = JSON.parse(raw)
   } catch {
-    // Almost always a gateway's HTML error page rather than the provider.
-    throw new ChatError(`HTTP ${res.status}: ${raw.slice(0, 200)}`, retryable)
+    // Almost always a gateway's HTML error page rather than the provider — or,
+    // when the connection dropped after the headers, nothing at all. Say which,
+    // since a bare status and a colon reads like the provider explained itself.
+    const body = raw.trim() ? raw.slice(0, 200) : 'empty response body'
+    throw new ChatError(`HTTP ${res.status}: ${body}`, retryable)
   }
   if (!res.ok || json.error) {
     const msg = json?.error?.message ?? json?.message ?? raw.slice(0, 200)

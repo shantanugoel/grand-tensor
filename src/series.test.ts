@@ -142,6 +142,32 @@ describe('connection failures', () => {
     expect(series.stats[0].moves).toBe(1)
   })
 
+  test('an empty body under a 200 is ridden out, not treated as a bad request', async () => {
+    const opening = openingMoves()
+    // A connection dropped after the headers: the status says success and the
+    // body never arrives. Status alone can't see it, so it used to stall.
+    const calls = stubCalls((call) => (call <= 2 ? new Response('', { status: 200 }) : opening()))
+
+    const { series, logs } = await run(settings({ maxPlies: 2, networkRetries: 3 }))
+
+    expect(series.status).toBe('done')
+    expect(calls()).toBe(4)
+    const warn = logs.find((l) => l.kind === 'warn' && l.text.startsWith('Connection failed'))
+    expect(warn?.detail).toContain('empty response body')
+  })
+
+  test('an error relayed under a 200 is ridden out too', async () => {
+    const opening = openingMoves()
+    const calls = stubCalls((call) =>
+      call <= 2 ? new Response(JSON.stringify({ error: { message: 'Provider returned error' } })) : opening(),
+    )
+
+    const { series } = await run(settings({ maxPlies: 2, networkRetries: 3 }))
+
+    expect(series.status).toBe('done')
+    expect(calls()).toBe(4)
+  })
+
   test('a rejected key stalls at once instead of burning the retry budget', async () => {
     const calls = stubCalls(() => new Response(JSON.stringify({ error: { message: 'invalid key' } }), { status: 401 }))
 
