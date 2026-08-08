@@ -1,6 +1,7 @@
 import { expect, test, describe } from 'bun:test'
 import { Chess } from 'chess.js'
-import { engineAvailable, Engine, negate, toCp } from './engine'
+import { negate, toCp } from './engine'
+import { engineAvailable, stockfishEngine } from './stdio'
 import { classify, CPL_CAP, Grader, toUci } from './cpl'
 import { comparePaired, summarize } from './stats'
 import { generate, fromPgn } from './positions'
@@ -288,7 +289,7 @@ const hasEngine = await engineAvailable()
 
 describe.if(hasEngine)('engine grading', () => {
   test('grades a sound move at zero and a bad one well above it', async () => {
-    const engine = new Engine({ depth: 10 })
+    const engine = stockfishEngine({ depth: 10 })
     await engine.ready()
     const grader = new Grader(engine, 10)
     try {
@@ -304,7 +305,7 @@ describe.if(hasEngine)('engine grading', () => {
   }, 120_000)
 
   test('an illegal move is refused rather than scored', async () => {
-    const engine = new Engine({ depth: 8 })
+    const engine = stockfishEngine({ depth: 8 })
     await engine.ready()
     try {
       await expect(new Grader(engine, 8).grade(START, 'Qh5')).rejects.toThrow('not legal')
@@ -317,7 +318,7 @@ describe.if(hasEngine)('engine grading', () => {
     // Regression: the engine is one process behind one stdio pipe with no request
     // ids, so overlapping searches used to steal each other's output and return
     // confident, wrong scores rather than failing.
-    const engine = new Engine({ depth: 10 })
+    const engine = stockfishEngine({ depth: 10 })
     await engine.ready()
     const grader = new Grader(engine, 10)
     const moves = ['e4', 'd4', 'Nf3', 'Nc3', 'c4', 'g3', 'b3', 'a4', 'h4', 'Nh3']
@@ -325,7 +326,7 @@ describe.if(hasEngine)('engine grading', () => {
       const serial: number[] = []
       for (const san of moves) serial.push((await grader.grade(START, san)).cpl)
 
-      const fresh = new Engine({ depth: 10 })
+      const fresh = stockfishEngine({ depth: 10 })
       await fresh.ready()
       try {
         const freshGrader = new Grader(fresh, 10)
@@ -340,7 +341,7 @@ describe.if(hasEngine)('engine grading', () => {
   }, 180_000)
 
   test('generated positions are legal, playable and reproducible from the seed', async () => {
-    const engine = new Engine({ depth: 8 })
+    const engine = stockfishEngine({ depth: 8 })
     await engine.ready()
     try {
       const a = await generate(engine, { seed: 7, games: 2, playDepth: 4, atPlies: [9, 14] })

@@ -1,9 +1,13 @@
-/** A UCI engine driven over stdio.
+/** A UCI engine driven over a line-oriented transport.
  *
  *  Deliberately not a general UCI client — it does exactly what grading a move
  *  needs: set a position, search to a fixed depth, report the score. Fixed depth
  *  rather than fixed time, because a benchmark that changes its mind depending on
- *  how busy the laptop was is not a benchmark. */
+ *  how busy the laptop was is not a benchmark.
+ *
+ *  The transport is an interface rather than a spawned process so the same UCI
+ *  layer can drive a native binary over stdio (the harness) and a wasm build over
+ *  worker postMessage (the browser). Nothing below this comment knows which. */
 
 const MATE_CP = 10_000
 
@@ -29,9 +33,20 @@ export function toCp(s: Score): number {
   return s.mate > 0 ? MATE_CP - s.mate : -MATE_CP - s.mate
 }
 
+/** One UCI conversation, in whole lines.
+ *
+ *  Implementations own their own framing: `onLine` must be called once per
+ *  complete engine line, already trimmed and never empty — except for the single
+ *  empty line that signals the engine is gone. That sentinel is what stops a
+ *  missing binary or a failed wasm load from hanging every pending search
+ *  forever. */
+export interface UciTransport {
+  send(line: string): void
+  onLine(cb: (line: string) => void): void
+  close(): void | Promise<void>
+}
+
 export type EngineOptions = {
-  /** Binary to spawn. Defaults to whatever `stockfish` resolves to on PATH. */
-  path?: string
   /** Search depth. 12 is a sound floor for grading; 16+ is slower and rarely
    *  changes how a 4B model's move is classified. */
   depth?: number
@@ -40,62 +55,42 @@ export type EngineOptions = {
 }
 
 export class Engine {
-  private proc: ReturnType<typeof Bun.spawn>
-  private stdin: import('bun').FileSink
-  private buffer = ''
   private lines: string[] = []
   private waiters: ((line: string) => void)[] = []
-  private reading: Promise<void>
   /** Tail of the queue of in-flight searches. See `analyse`. */
   private turnstile: Promise<unknown> = Promise.resolve()
+  private dead = false
   readonly depth: number
 
-  constructor(opts: EngineOptions = {}) {
+  constructor(
+    private transport: UciTransport,
+    opts: EngineOptions = {},
+  ) {
     this.depth = opts.depth ?? 12
-    this.proc = Bun.spawn([opts.path ?? 'stockfish'], {
-      stdin: 'pipe',
-      stdout: 'pipe',
-      stderr: 'ignore',
+    // UCI replies are strictly ordered, so a queue of one-shot waiters is enough.
+    this.transport.onLine((line) => {
+      if (!line) {
+        // The engine is gone. Anyone still waiting would hang forever otherwise.
+        this.dead = true
+        for (const waiter of this.waiters.splice(0)) waiter('')
+        return
+      }
+      const waiter = this.waiters.shift()
+      if (waiter) waiter(line)
+      else this.lines.push(line)
     })
-    this.stdin = this.proc.stdin as import('bun').FileSink
-    this.reading = this.pump()
     this.send(`setoption name Threads value ${opts.threads ?? 1}`)
     this.send(`setoption name Hash value ${opts.hashMb ?? 128}`)
   }
 
-  /** Splits stdout into lines and hands them to whoever is waiting. UCI replies
-   *  are strictly ordered, so a queue of one-shot waiters is enough. */
-  private async pump(): Promise<void> {
-    const decoder = new TextDecoder()
-    const reader = (this.proc.stdout as ReadableStream<Uint8Array>).getReader()
-    for (;;) {
-      const { done, value } = await reader.read()
-      if (done) break
-      this.buffer += decoder.decode(value, { stream: true })
-      let nl: number
-      while ((nl = this.buffer.indexOf('\n')) !== -1) {
-        const line = this.buffer.slice(0, nl).trim()
-        this.buffer = this.buffer.slice(nl + 1)
-        if (!line) continue
-        const waiter = this.waiters.shift()
-        if (waiter) waiter(line)
-        else this.lines.push(line)
-      }
-    }
-    // The process died. Anyone still waiting would hang forever otherwise.
-    for (const waiter of this.waiters.splice(0)) waiter('')
-  }
-
-  /** Flushed on every command: a UCI engine that never sees the newline reach it
-   *  simply sits there, which reads exactly like a hung search. */
   private send(cmd: string): void {
-    this.stdin.write(cmd + '\n')
-    this.stdin.flush()
+    this.transport.send(cmd)
   }
 
   private nextLine(): Promise<string> {
     const buffered = this.lines.shift()
     if (buffered !== undefined) return Promise.resolve(buffered)
+    if (this.dead) return Promise.resolve('')
     return new Promise((resolve) => this.waiters.push(resolve))
   }
 
@@ -127,13 +122,13 @@ export class Engine {
    *  themselves, so this refuses rather than guesses. */
   /** Serialised against every other search on this engine.
    *
-   *  One process, one stdio pipe, and a protocol with no request ids: two
-   *  overlapping searches interleave their commands and then steal each other's
-   *  `info`/`bestmove` lines off the same queue. That does not fail loudly — it
-   *  quietly returns one search's score for the other's position, which in a
-   *  grader means wrong centipawn numbers with no indication anything went wrong.
-   *  Callers are free to run their *model* calls concurrently; the engine is the
-   *  one part that must go one at a time. */
+   *  One engine, one line-oriented channel, and a protocol with no request ids:
+   *  two overlapping searches interleave their commands and then steal each
+   *  other's `info`/`bestmove` lines off the same queue. That does not fail
+   *  loudly — it quietly returns one search's score for the other's position,
+   *  which in a grader means wrong centipawn numbers with no indication anything
+   *  went wrong. Callers are free to run their *model* calls concurrently; the
+   *  engine is the one part that must go one at a time. */
   analyse(fen: string, depth = this.depth, only?: string): Promise<Analysis> {
     const run = this.turnstile.then(() => this.search(fen, depth, only))
     // The queue must not break on a failed search, so the tail swallows errors;
@@ -173,24 +168,11 @@ export class Engine {
   async close(): Promise<void> {
     try {
       this.send('quit')
-      await this.stdin.end()
     } catch {
-      // Already gone; nothing to shut down.
+      // Already gone; nothing to tell it.
     }
-    this.proc.kill()
-    await this.reading.catch(() => {})
-  }
-}
-
-/** Whether a usable engine binary is on PATH, so the runner can fail with a
- *  useful install hint instead of a spawn stack trace. */
-export async function engineAvailable(path = 'stockfish'): Promise<boolean> {
-  try {
-    const probe = Bun.spawn([path], { stdin: 'pipe', stdout: 'pipe', stderr: 'ignore' })
-    probe.kill()
-    await probe.exited
-    return true
-  } catch {
-    return false
+    await this.transport.close()
+    this.dead = true
+    for (const waiter of this.waiters.splice(0)) waiter('')
   }
 }

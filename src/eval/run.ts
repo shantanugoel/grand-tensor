@@ -9,7 +9,7 @@
 import { Chess } from 'chess.js'
 import { chat, ChatError, type ChatRequest, type ChatResult, fetchModels, type ModelInfo } from '../llm'
 import { parseMove, type LegalMove } from '../prompt'
-import { Engine, engineAvailable } from './engine'
+import { engineAvailable, stockfishEngine } from './stdio'
 import { Grader } from './cpl'
 import { generate, load, save, type Position, type PositionSet } from './positions'
 import { comparePaired, summarize, type Summary } from './stats'
@@ -178,7 +178,7 @@ async function main() {
     .split(',')
     .map((v) => byName(v.trim()))
 
-  const engine = new Engine({ path: enginePath, depth, threads: Number(args.threads ?? 2) })
+  const engine = stockfishEngine({ path: enginePath, depth, threads: Number(args.threads ?? 2) })
   await engine.ready()
 
   // Build or reuse the position set. Reuse is the default because comparing two
