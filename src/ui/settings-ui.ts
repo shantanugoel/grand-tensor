@@ -105,7 +105,13 @@ export function renderSettings(s: Settings) {
   form.addEventListener('change', refreshEligibility)
   refreshEligibility()
 
-  void refreshCatalog(s)
+  // The catalog has to track the endpoint too, for the same reason: a base URL
+  // is something you paste in while the dialog is open.
+  form.addEventListener('input', () => scheduleCatalog(s, 400))
+  form.addEventListener('change', () => scheduleCatalog(s, 400))
+
+  catalogEndpoint = ''
+  scheduleCatalog(s, 0, [s.players[0].effort, s.players[1].effort])
 }
 
 /** Marks every field the ranked protocol objects to, and summarises which
@@ -178,12 +184,46 @@ function renderEfforts(i: number, preferred?: string) {
   select.title = noneOffered ? `${model} does not expose reasoning effort levels` : ''
 }
 
-async function refreshCatalog(s: Settings) {
-  known = await fetchModels(s.baseUrl, s.apiKey)
+/** The endpoint the catalog on screen belongs to, and a token for the request in
+ *  flight. Both live outside the fetch so a slow answer can be recognised as
+ *  stale rather than applied over a newer one. */
+let catalogEndpoint = ''
+let catalogRun = 0
+let catalogTimer: ReturnType<typeof setTimeout> | undefined
+
+/** Refetches the catalog whenever the endpoint in the form changes.
+ *
+ *  It used to be fetched once, from the settings the modal opened with, so
+ *  pasting a new base URL kept the previous provider's catalog on screen: no
+ *  autocomplete for the endpoint you just entered, and an effort dropdown
+ *  offering levels belonging to a provider you are no longer pointed at. Both
+ *  only corrected themselves the next time the modal was opened. */
+function scheduleCatalog(initial: Settings, delay: number, preferred?: [string, string]) {
+  const baseUrl = $<HTMLInputElement>('[name="baseUrl"]')?.value.trim() || initial.baseUrl
+  const apiKey = $<HTMLInputElement>('[name="apiKey"]')?.value.trim() ?? initial.apiKey
+  const endpoint = `${baseUrl}\n${apiKey}`
+  if (endpoint === catalogEndpoint) return
+  catalogEndpoint = endpoint
+
+  // Typing a URL fires an event per keystroke, and every one of them would be a
+  // request to a host that is still half-typed.
+  clearTimeout(catalogTimer)
+  catalogTimer = setTimeout(() => void refreshCatalog(baseUrl, apiKey, ++catalogRun, preferred), delay)
+}
+
+async function refreshCatalog(baseUrl: string, apiKey: string, run: number, preferred?: [string, string]) {
+  const found = await fetchModels(baseUrl, apiKey)
+  // An answer for an endpoint that has since been replaced must not overwrite
+  // the current one — /models latency varies by seconds between providers.
+  if (run !== catalogRun) return
+  known = found
+
   const list = document.querySelector('#model-list')
   if (list) list.innerHTML = [...known.keys()].sort().map((id) => `<option value="${escapeAttr(id)}"></option>`).join('')
   // The form may have been closed and reopened while this was in flight.
-  if (document.querySelector('[data-model="0"]')) [0, 1].forEach((i) => renderEfforts(i, s.players[i].effort))
+  // `preferred` is the saved effort, and only applies to the catalog this modal
+  // opened with; after that the dropdown's own value is the newer intent.
+  if (document.querySelector('[data-model="0"]')) [0, 1].forEach((i) => renderEfforts(i, preferred?.[i]))
 }
 
 export function readSettings(current: Settings): Settings {
