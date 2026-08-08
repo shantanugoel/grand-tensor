@@ -9,6 +9,7 @@
     "preview": "bun run preview.ts",
     "test": "bun test",
     "eval": "bun run src/eval/run.ts",
+    "harness": "bun run harness/server.ts",
     "typecheck:worker": "tsc -p worker/tsconfig.json",
     "cloudflare:check": "bun run typecheck:worker && bun test && bun run build",
     "cloudflare:dev": "bun run build && wrangler dev",

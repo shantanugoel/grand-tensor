@@ -32,6 +32,12 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # ...except the committed template of what those files must contain.
 !.dev.vars.example
 
+# harness mode: the operator's own config, and the scratch directory the agent
+# CLIs are pointed at so a chess move can't inherit a repo's instructions.
+harness/harnesses.toml
+harness/harnesses.json
+harness/sandbox
+
 # IntelliJ based IDEs
 .idea
 

@@ -1,0 +1,135 @@
+# Grand Tensor harness config — a REFERENCE, not a starting point.
+#
+# YOU DO NOT NEED THIS FILE. All seven harnesses below are built into
+# config.ts and work with no config at all; this file exists only to override
+# them or to add an eighth. Every block is commented out on purpose — copying
+# it with the blocks live would override working built-ins with worse versions
+# of themselves, which is exactly how pi's model list once got broken.
+#
+# Copy to harnesses.toml (loaded automatically) or pass --config. Blocks merge
+# over the built-in with the same id, so you only restate the field you want
+# different. JSON works too.
+#
+# ---------------------------------------------------------------------------
+# THE SEVEN BUILT-INS — type these into the "Model id" field in Settings.
+#
+# The field is <harness>/<model>, split on the FIRST slash, so the model may
+# itself contain slashes (pi/anthropic/claude-opus-5). Listed models are
+# ADVISORY: they fill the autocomplete, they do not gate what you can type, so
+# a model released after this was written works without any config.
+#
+#   id            binary        type e.g.              reasoning effort
+#   ------------- ------------- ---------------------- ------------------------
+#   claude-code   claude        claude-code/opus       low/medium/high/xhigh/max
+#                               claude-code/sonnet     (bare "claude-code"
+#                               claude-code/haiku       means sonnet)
+#   codex         codex         codex/gpt-5.6-codex    none — locks to default
+#                               codex/gpt-5.6
+#   gemini        gemini        gemini/gemini-3-pro    none — locks to default
+#                               gemini/gemini-3-flash
+#   amp           amp           amp/smart  amp/deep    none — locks to default
+#                               amp/large  amp/rush    (mode IS the model here;
+#                               amp/free     bare "amp" means smart)
+#   pi            pi            pi/<provider>/<model>  minimal→xhigh, plus off
+#                               (53 discovered live)
+#   prime-agent   prime-agent   prime-agent/<model>    minimal→max, plus off
+#                               (discovered live)
+#   hermes        hermes        hermes/<model>         none — locks to default
+#
+# A "locks to default" dropdown is the CLI having exactly one setting, not a
+# bug: those binaries have no effort flag to pass. A harness whose binary is
+# not on PATH is marked with · at startup and simply never appears.
+#
+# Placeholders available in `args` and `stdin`:
+#   {{system}}   the system message on its own
+#   {{user}}     everything that is not the system message
+#   {{messages}} system + the rest, flattened — for CLIs with no system flag
+#   {{model}}    whatever followed the first slash in the model field
+#   {{effort}}   the reasoning level, already mapped through effort_map
+#   {{temperature}} {{maxTokens}}
+#   {{outfile}}  a temp path to read the reply back from (needs outfile = true)
+#
+# A flag whose placeholder does not apply is dropped together with the flag in
+# front of it, so `--thinking {{effort}}` disappears cleanly on "default".
+
+# ---------------------------------------------------------------------------
+# Overriding a built-in: one field, the rest inherited.
+# ---------------------------------------------------------------------------
+# [[harness]]
+# id = "pi"
+# timeout_ms = 120000
+
+# ---------------------------------------------------------------------------
+# Model discovery. Only touch this if a CLI's listing format has changed.
+#
+# NOTE: pi's built-in already discovers correctly. `pi --list-models` prints a
+# table whose id spans two columns, so it needs models_parse = "regex" — setting
+# "lines" here instead yields ids like "pi/provider" and "pi/github-copilot",
+# which is exactly what an earlier version of this example did.
+#
+# Models are ADVISORY either way: they populate the autocomplete, they do not
+# gate what you can type. `pi/some-model-released-today` works regardless.
+# ---------------------------------------------------------------------------
+# [[harness]]
+# id = "pi"
+# models_command = ["pi", "--list-models"]
+# models_parse = "regex"        # "lines" | "json" | "regex"
+# models_pattern = "^(\\S+)\\s+(\\S+)"
+# models_replace = "$1/$2"
+# models_skip = 1               # header row
+# models = ["anthropic/claude-opus-5"]   # unioned with what is discovered
+
+# The rare model that does not reason, on a harness where the others do.
+# [harness.model_overrides."google/gemini-3-flash"]
+# efforts = []
+
+# ---------------------------------------------------------------------------
+# Turning one off without deleting it. A disabled harness disappears from
+# /models and cannot be selected.
+# ---------------------------------------------------------------------------
+# [[harness]]
+# id = "hermes"
+# enabled = false
+
+# ---------------------------------------------------------------------------
+# A new harness. Needs at least id, command and args.
+#
+# Leave this commented unless the binary exists — an entry for a command that
+# is not installed adds rows to the model list that can never answer.
+# ---------------------------------------------------------------------------
+# [[harness]]
+# id = "my-agent"
+# command = "my-agent"
+# args = [
+#   "--print",
+#   "--model", "{{model}}",
+#   "--system", "{{system}}",
+#   "--reasoning", "{{effort}}",
+# ]
+# stdin = "{{user}}"
+# cwd = "sandbox"               # relative to this file; created if missing
+# timeout_ms = 300000
+# default_model = "fast"
+# models = ["fast", "slow"]
+# efforts = ["low", "medium", "high"]
+# effort_off = "none"           # what this CLI calls disabled reasoning
+# env = { MY_AGENT_QUIET = "1" }
+#
+# How to read the reply back. mode is "text" (stdout verbatim), "json" (one
+# object anywhere in stdout), or "jsonl-last" (last JSON line whose type matches
+# `select`). `where` narrows further, as path → value: needed when an event type
+# covers more than the reply, as pi's message_end covers the prompt too. Every
+# usage path is optional and a missing one reads 0; `error` is where the harness
+# explains a failure, and is reported instead of raw stdout when there is no
+# reply.
+#
+# [harness.extract]
+# mode = "jsonl-last"
+# select = "final"
+# where = { "message.role" = "assistant" }
+# text = "message.content"
+# input = "usage.input_tokens"
+# output = "usage.output_tokens"
+# reasoning = "usage.reasoning_tokens"
+# cost = "usage.cost"
+# error = "message.errorMessage"
