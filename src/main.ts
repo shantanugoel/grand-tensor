@@ -448,10 +448,14 @@ function reset() {
   setControls()
 }
 
-/** Reset throws a live match away, and on a phone the button sits a thumb's
- *  width from Pause — so a match still in progress asks first. An idle board has
+/** Reset interrupts a live match, and on a phone the button sits a thumb's width
+ *  from Pause — so a match still in progress asks first. An idle board has
  *  nothing to lose, and a finished one keeps its result card until it is
- *  deliberately cleared, so neither is worth a dialog. */
+ *  deliberately cleared, so neither is worth a dialog.
+ *
+ *  It is no longer the one-way door it was: the match goes to History and can be
+ *  resumed from the move it was on. The dialog says so, because a warning that
+ *  overstates the damage is the kind people learn to click through. */
 async function requestReset() {
   const live = series?.status === 'running' || series?.status === 'paused' || series?.status === 'stalled'
   if (!live) return reset()
@@ -462,7 +466,7 @@ async function requestReset() {
     title: 'Reset the match?',
     body: `Game ${s.gameIndex + 1} of ${s.totalGames} is still live${
       played ? ` — ${played} move${played === 1 ? '' : 's'} in` : ''
-    }. Resetting clears the board, the score and the battle log, and none of it can be brought back.`,
+    }. Resetting clears the board for a new match. This one is kept in History, where you can pick it back up from the move it stopped on.`,
     confirm: '↺ Reset anyway',
     cancel: 'Keep playing',
   })
