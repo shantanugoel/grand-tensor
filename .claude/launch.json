@@ -4,15 +4,33 @@
     {
       "name": "grand-tensor",
       "runtimeExecutable": "bun",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 5177,
       "autoPort": true
     },
     {
       "name": "grand-tensor-preview",
       "runtimeExecutable": "bun",
-      "runtimeArgs": ["run", "preview"],
+      "runtimeArgs": [
+        "run",
+        "preview"
+      ],
       "port": 5178,
+      "autoPort": true
+    },
+    {
+      "name": "grand-tensor-cloudflare",
+      "runtimeExecutable": "bunx",
+      "runtimeArgs": [
+        "wrangler",
+        "dev",
+        "--port",
+        "8787"
+      ],
+      "port": 8787,
       "autoPort": true
     }
   ]

@@ -44,9 +44,19 @@ export const GRADE_DEPTH = 14
  *
  *  A search that never returns would otherwise wedge the queue behind it and
  *  quietly stop every later verdict, which looks exactly like the feature not
- *  working. Generous against a measured worst case, because a slow verdict
- *  still arrives and a timed-out one never does. */
-const GRADE_TIMEOUT_MS = 20_000
+ *  working. So there is a limit — but it is deliberately far past anything the
+ *  search itself costs, because a slow verdict still arrives and a timed-out one
+ *  never does.
+ *
+ *  The number is set by the browser rather than by the engine. A depth-14 search
+ *  is around 60ms of engine time, and on a visible tab a whole grade lands in a
+ *  fraction of a second. Background the tab and Chrome throttles the worker's
+ *  messages rather than its arithmetic: the search finishes as fast as ever and
+ *  the reply queues, which was measured pushing a round trip past ten seconds.
+ *  Since people leave a match running in another tab for exactly as long as the
+ *  models take to think, a budget tight enough to catch a hung search would
+ *  instead spend its time discarding good ones. */
+const GRADE_TIMEOUT_MS = 60_000
 
 /** Downloading and compiling 7 MB of wasm, on whatever connection the page
  *  arrived over. */

@@ -8,13 +8,22 @@
          has to stay wide because the endpoint is whatever the user configures,
          localhost included for a locally hosted model.
 
-         `wasm-unsafe-eval` is the one addition, and it is narrower than it
-         sounds: it permits compiling WebAssembly and nothing else — not eval,
-         not new Function, not an inline script. It is what the Stockfish build
-         behind the move commentary needs. Deliberately no COOP/COEP to go with
-         it: `require-corp` would cut off the Turnstile frame and the Google
-         Fonts stylesheet, which is why the engine is the single-threaded
-         build that never asks for SharedArrayBuffer. -->
+         `wasm-unsafe-eval` is narrower than it sounds: it permits compiling
+         WebAssembly and nothing else — not eval, not new Function, not an
+         inline script. It is what the Stockfish build behind the move
+         commentary needs. Deliberately no COOP/COEP to go with it:
+         `require-corp` would cut off the Turnstile frame and the Google Fonts
+         stylesheet, which is why the engine is the single-threaded build that
+         never asks for SharedArrayBuffer.
+
+         static.cloudflareinsights.com is Cloudflare Web Analytics, which the
+         edge injects into the HTML itself — so leaving it out did not disable
+         it, it just had it blocked on every page load. This is the one entry
+         here that buys nothing for the app: it is a third-party script with the
+         same reach over localStorage as our own, and the honest way to be rid
+         of that risk is to turn Web Analytics off for the zone rather than to
+         keep refusing a script Cloudflare keeps adding. The beacon reports to
+         cloudflareinsights.com, which `connect-src https:` already allows. -->
 
     <meta
       http-equiv="Content-Security-Policy"
@@ -22,7 +31,8 @@
                base-uri 'none';
                object-src 'none';
                form-action 'none';
-               script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com;
+               script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com
+                          https://static.cloudflareinsights.com;
                style-src 'self' https://fonts.googleapis.com;
                font-src https://fonts.gstatic.com;
                img-src 'self' data:;
