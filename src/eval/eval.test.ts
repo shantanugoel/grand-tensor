@@ -283,6 +283,17 @@ describe('position sets', () => {
   })
 })
 
+describe('finding an engine', () => {
+  // Regression: this used to report anything that spawned as an engine, so on a
+  // machine with no Stockfish the `stockfish` shim `bun install` drops into
+  // node_modules/.bin answered for one — and the whole engine suite failed on CI
+  // instead of skipping. Nothing short of a UCI handshake settles the question.
+  test('is not fooled by something that merely runs', async () => {
+    expect(await engineAvailable('/bin/echo')).toBe(false)
+    expect(await engineAvailable('definitely-not-an-engine')).toBe(false)
+  }, 30_000)
+})
+
 // The engine is an external binary, so these degrade to a skip rather than a
 // failure on a machine that has not installed it.
 const hasEngine = await engineAvailable()

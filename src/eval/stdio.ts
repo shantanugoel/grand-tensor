@@ -75,15 +75,32 @@ export function stockfishEngine(opts: StdioOptions = {}): Engine {
   return new Engine(new StdioTransport(opts.path), opts)
 }
 
-/** Whether a usable engine binary is on PATH, so the runner can fail with a
- *  useful install hint instead of a spawn stack trace. */
+/** How long the probe waits for `uciok` before calling it not an engine. */
+const PROBE_MS = 5000
+
+/** Whether a usable engine is on PATH, so the runner can fail with a useful
+ *  install hint instead of a spawn stack trace — and so the tests that need one
+ *  skip rather than fail on a machine without it.
+ *
+ *  This asks for a UCI handshake rather than merely checking that something
+ *  spawns, because something usually does. `bun install` puts a `stockfish`
+ *  shim in node_modules/.bin, and on a machine with no engine that shim is what
+ *  a bare name resolves to: it spawns happily, exits immediately, and used to
+ *  be reported as an engine. What followed was every engine test failing on CI
+ *  with "engine exited while waiting for uciok" — the right error, from the
+ *  wrong place, because the question had already been answered wrongly here. */
 export async function engineAvailable(path = 'stockfish'): Promise<boolean> {
+  let engine: Engine | null = null
   try {
-    const probe = Bun.spawn([path], { stdin: 'pipe', stdout: 'pipe', stderr: 'ignore' })
-    probe.kill()
-    await probe.exited
-    return true
+    engine = stockfishEngine({ path })
+    return await Promise.race([
+      engine.ready().then(() => true),
+      new Promise<boolean>((resolve) => setTimeout(() => resolve(false), PROBE_MS)),
+    ])
   } catch {
+    // Nothing to spawn, or something that spawned and died. Either way, no engine.
     return false
+  } finally {
+    await engine?.close().catch(() => {})
   }
 }
