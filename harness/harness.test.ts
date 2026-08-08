@@ -92,6 +92,21 @@ describe('argument rendering', () => {
     expect(renderArgs(['{{unknown}}'], { model: 'x' })).toEqual(['{{unknown}}'])
   })
 
+  test('the documented ssh pattern degrades to the command that was proven to work', () => {
+    // harnesses.example.toml tells people to run a remote harness as
+    //   ssh … host "hermes -z" "\"$(cat)\"" -m {{model}}
+    // and promises that naming no model leaves exactly `hermes -z "$(cat)"`,
+    // which is the invocation measured against Hermes v0.20.0. If argument
+    // dropping ever changes, that promise is what breaks.
+    const ssh = ['-T', '-o', 'BatchMode=yes', 'user@hostname', 'hermes -z', '"$(cat)"', '-m', '{{model}}']
+    const remote = (model: string) => {
+      const rendered = renderArgs(ssh, { model })
+      return rendered.slice(rendered.indexOf('user@hostname') + 1).join(' ')
+    }
+    expect(remote('hermes-4-405b')).toBe('hermes -z "$(cat)" -m hermes-4-405b')
+    expect(remote('')).toBe('hermes -z "$(cat)"')
+  })
+
   test('every built-in renders without a stray placeholder', () => {
     for (const h of BUILTINS) {
       const args = renderArgs(h.args, {

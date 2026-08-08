@@ -246,16 +246,17 @@ export const BUILTINS: HarnessDef[] = [
   def({
     id: 'hermes',
     command: 'hermes',
+    // `-z` is the programmatic entry point: prompt in, final text out, nothing
+    // else on stdout. Measured at 28 bytes of answer and 0 of stderr.
+    //
+    // Not `chat -q`, which is the subcommand the docs point at but which starts
+    // the interactive agent: given a piped prompt it ignored it, printed a
+    // 6 KB banner of tool and skill listings, and exited 0 having answered
+    // nothing. `-Q` did not suppress any of it.
+    //
     // No JSON output and no system-prompt flag, so: raw stdout, and the system
     // message is prepended to the prompt like the other flagless agents.
-    args: [
-      'chat',
-      '-q', '{{messages}}',
-      '-m', '{{model}}',
-      '-Q',
-      '--ignore-user-config',
-      '--ignore-rules',
-    ],
+    args: ['-z', '{{messages}}', '-m', '{{model}}'],
   }),
 ]
 

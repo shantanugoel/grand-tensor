@@ -64,9 +64,16 @@ A harness whose binary isn't on `PATH` is listed with a `·` at startup and simp
 never selected. Where usage isn't reported the HUD shows `$0.00` — that means
 "not measured", not "free".
 
-Verified against the installed CLIs: `claude`, `codex`, `gemini`, `amp`, `pi`.
-`prime-agent` and `hermes` are configured from their published docs; check their
-flags against your build before trusting them.
+Verified against the installed CLIs: `claude`, `codex`, `gemini`, `amp`, `pi`,
+and `hermes` (v0.20.0, over ssh). `prime-agent` is configured from its published
+docs; check its flags against your build before trusting them.
+
+Hermes uses `-z`, its programmatic entry point, rather than the `chat -q` the
+docs steer you towards — `chat` given a piped prompt ignored it, printed a 6 KB
+banner and exited 0 having answered nothing.
+
+To run a harness on another machine over ssh, see the worked block in
+[harnesses.example.toml](harnesses.example.toml).
 
 ## Configuration
 
