@@ -1096,6 +1096,34 @@ body {
   margin-top: 18px;
 }
 
+.help-modal-body {
+  width: min(560px, 100%);
+}
+
+.help-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 11px;
+  line-height: 1.65;
+  color: var(--dim);
+}
+
+.help-list b {
+  color: var(--text);
+}
+
+.help-list code {
+  color: var(--p0);
+}
+
+.help-list a {
+  color: var(--p0);
+}
+
 .settings {
   display: flex;
   flex-direction: column;
@@ -1197,7 +1225,8 @@ body {
   flex-wrap: wrap;
 }
 
-.field.check .field-verdict {
+.field.check .field-verdict,
+.field.check .field-help {
   flex-basis: 100%;
 }
 

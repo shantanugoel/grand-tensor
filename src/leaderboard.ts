@@ -352,7 +352,8 @@ export class Leaderboard {
     $('#leaderboard-modal').classList.remove('hidden')
   }
 
-  private close() {
+  /** Public so the one Escape handler in main.ts can reach it. */
+  close() {
     ;(document.activeElement as HTMLElement | null)?.blur()
     $('#leaderboard-modal').classList.add('hidden')
   }

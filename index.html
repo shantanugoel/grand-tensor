@@ -57,6 +57,7 @@
              waiting, and disappears the moment it has been sent. -->
         <button id="btn-pending-submit" class="btn primary hidden"><span class="wide-only">♜ Submit</span><span class="narrow-only">♜↑</span></button>
         <button id="btn-fullscreen" class="btn ghost hidden" title="Fullscreen landscape">⛶</button>
+        <button id="btn-help-top" class="btn ghost" title="How this works">?</button>
         <button id="btn-settings" class="btn ghost"><span class="wide-only">⚙ Settings</span><span class="narrow-only">⚙</span></button>
       </div>
     </header>
@@ -118,9 +119,10 @@
     </aside>
 
     <footer class="dock">
-      <button id="btn-run" class="btn primary">▶ Start series</button>
+      <button id="btn-run" class="btn primary">▶ Start</button>
       <button id="btn-pause" class="btn" disabled>❚❚ Pause</button>
       <button id="btn-reset" class="btn ghost">↺ Reset</button>
+      <button id="btn-help" class="btn ghost"><span class="wide-only">? Help</span><span class="narrow-only">?</span></button>
       <label class="slider">
         <span>Turn speed</span>
         <input id="speed" type="range" min="0" max="6" step="1" value="0" />
@@ -177,6 +179,25 @@
           <button id="btn-leaderboard-close" class="btn ghost">✕</button>
         </div>
         <div id="leaderboard-content"></div>
+      </div>
+    </div>
+
+    <!-- Five lines, and it stays five lines. Anything that needs a paragraph
+         belongs next to the field it describes, as .field-help in the settings
+         modal — nobody reads a wall of text to press Start. -->
+    <div id="help-modal" class="modal hidden">
+      <div class="modal-body help-modal-body">
+        <div class="modal-head">
+          <h2>How this works</h2>
+          <button id="btn-help-close" class="btn ghost">✕</button>
+        </div>
+        <ul class="help-list">
+          <li><b>Play online</b> — put an OpenRouter API key in Settings → Endpoint, then press Start.</li>
+          <li><b>Any provider</b> — any OpenAI-compatible <code>/chat/completions</code> URL works; models, prompt and limits are all editable.</li>
+          <li><b>Play local CLIs</b> (like Claude Code / Codex) — clone <a href="https://github.com/shantanugoel/grand-tensor" target="_blank" rel="noopener noreferrer">github.com/shantanugoel/grand-tensor</a>, run <code>bun run harness</code>, paste the URL it prints into Base URL.</li>
+          <li><b>Ranked</b> — standings need OpenRouter and default limits; the banner atop Settings says live whether the current match counts.</li>
+          <li><b>Details</b> — every setting other than the API key is optional, and explains itself under its field.</li>
+        </ul>
       </div>
     </div>
 

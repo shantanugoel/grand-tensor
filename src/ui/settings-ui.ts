@@ -33,10 +33,10 @@ function playerFieldset(i: number, s: Settings) {
     <fieldset class="fieldset">
       <legend>PLAYER ${i + 1}</legend>
       <div class="grid">
-        ${text(`p${i}_label`, 'Display name', p.label)}
+        ${text(`p${i}_label`, 'Display name', p.label, 'text', '', 'What this side is called on the vitality bar and in the battle log.')}
         ${text(`p${i}_model`, 'Model id', p.model, 'text', `list="model-list" autocomplete="off" data-model="${i}"`, 'Use <code>random</code> for a local, no-API demo.')}
-        <label class="field">Reasoning effort<select name="p${i}_effort"></select></label>
-        ${num(`p${i}_temperature`, 'Temperature', p.temperature, 0, 2, 0.1)}
+        <label class="field">Reasoning effort<select name="p${i}_effort"></select><span class="field-help">Rebuilt from what this model says it accepts. <code>off</code> is a real setting, not a low level — some models only play at a sane speed and cost with it.</span></label>
+        ${num(`p${i}_temperature`, 'Temperature', p.temperature, 0, 2, 0.1, 'Higher wanders further from the move it thinks is best. <code>0</code> is the steadiest play.')}
       </div>
     </fieldset>`
 }
@@ -64,10 +64,12 @@ export function renderSettings(s: Settings) {
         <label class="field check">
           <input name="commentary" type="checkbox" ${s.commentary ? 'checked' : ''}/>
           <span>Ask for trash talk with each move</span>
+          <span class="field-help">One line of in-character banter alongside each move, shown in the battle log. Costs a few extra tokens per move.</span>
         </label>
         <label class="field check">
           <input name="includePreviousGames" type="checkbox" ${s.includePreviousGames ? 'checked' : ''}/>
           <span>Include previous games' moves and results</span>
+          <span class="field-help">Lets a model see how the earlier games of the series went. Grows the prompt, and the cost, with every game played.</span>
         </label>
       </div>
     </fieldset>

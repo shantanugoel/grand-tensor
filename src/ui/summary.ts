@@ -49,9 +49,10 @@ export class SummaryModal {
       // Backdrop click dismisses the final card; between rounds it skips ahead.
       if (e.target === this.el) this.close()
     })
-    addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !this.el.classList.contains('hidden')) this.close()
-    })
+    // Escape is deliberately not handled here. Every modal shares one z-index,
+    // so a listener per modal would have one press dismiss all of them at once —
+    // a game ending behind an open Settings dialog closed both. main.ts owns the
+    // single handler and closes only the topmost.
   }
 
   get isOpen() {

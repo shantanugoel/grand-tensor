@@ -339,6 +339,41 @@ $('#modal').addEventListener('click', (e) => {
   if (e.target === $('#modal')) closeModal()
 })
 
+/* ---------- help modal ---------- */
+
+// Static content, so it only needs showing and hiding — and it deliberately
+// does not touch the series, which may well be mid-game behind it.
+const closeHelp = () => $('#help-modal').classList.add('hidden')
+const openHelp = () => $('#help-modal').classList.remove('hidden')
+
+$('#btn-help').addEventListener('click', openHelp)
+$('#btn-help-top').addEventListener('click', openHelp)
+$('#btn-help-close').addEventListener('click', closeHelp)
+$('#help-modal').addEventListener('click', (e) => {
+  if (e.target === $('#help-modal')) closeHelp()
+})
+
+/* ---------- escape ---------- */
+
+// Listed in reverse document order. Every modal shares one z-index, so the last
+// one in the DOM is the one on top — and only that one closes. A listener per
+// modal would instead have a single press dismiss all of them, which is what a
+// game ending behind an open Settings dialog used to do.
+const MODAL_CLOSERS: [string, () => void][] = [
+  ['#help-modal', closeHelp],
+  ['#leaderboard-modal', () => leaderboard.close()],
+  ['#summary-modal', () => summary.close()],
+  ['#modal', closeModal],
+]
+
+addEventListener('keydown', (e: KeyboardEvent) => {
+  if (e.key !== 'Escape') return
+  const topmost = MODAL_CLOSERS.find(([sel]) => !$(sel).classList.contains('hidden'))
+  if (!topmost) return
+  e.preventDefault()
+  topmost[1]()
+})
+
 $('#btn-save').addEventListener('click', () => {
   Object.assign(settings, readSettings(settings))
   saveSettings(settings)
