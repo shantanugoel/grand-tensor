@@ -229,6 +229,21 @@
       </div>
     </div>
 
+    <!-- Last modal in the document on purpose: they all share one z-index, so
+         this one asks its question on top of whatever is already open. -->
+    <div id="confirm-modal" class="modal hidden">
+      <div class="modal-body confirm-modal-body">
+        <div class="modal-head">
+          <h2 id="confirm-title">Are you sure?</h2>
+        </div>
+        <p id="confirm-body" class="confirm-body"></p>
+        <div class="modal-foot">
+          <button id="btn-confirm-cancel" class="btn ghost">Cancel</button>
+          <button id="btn-confirm-ok" class="btn primary">Confirm</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Owns the only way to stop a running video export, so it outranks the
          dock it replaces. -->
     <div id="video-progress" class="video-progress hidden">

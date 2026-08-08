@@ -1293,6 +1293,17 @@ body {
   width: min(560px, 100%);
 }
 
+.confirm-modal-body {
+  width: min(420px, 100%);
+}
+
+.confirm-body {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.65;
+  color: var(--dim);
+}
+
 .help-list {
   margin: 0;
   padding: 0;

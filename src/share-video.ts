@@ -21,6 +21,7 @@
  *  follows what came out. */
 
 import { Chess } from 'chess.js'
+import { material, MAX_MATERIAL } from './adjudication'
 import {
   CARD_MS,
   cardMsFor,
@@ -101,7 +102,20 @@ type HudView = {
   /** "MOVE 17", or empty where there is no move to count. */
   move: string
   white: PlayerIdx
+  /** Remaining material per player — the vitality bars' "health". */
+  hp: [number, number]
+  totalGames: number
 }
+
+/* The vitality bars, the same arcade read as the live overlay: a socket holding
+   a slow red "chip damage" layer under the fast vitality layer. The DOM does the
+   lag with CSS transitions; here it is a per-frame decay, since the recorder
+   only ever sees what this canvas was told to paint. */
+const BAR = { w: 420, h: 18, y: 78, x: 44 }
+/** Held after a capture before the red starts to drain, then material a second. */
+const CHIP_HOLD_MS = 350
+const CHIP_RATE = 15 / 1000
+const DANGER = 0.25
 
 const FONT: Record<CardSize, string> = {
   hero: `38px ${PIXEL}`,
@@ -124,15 +138,27 @@ class Frame {
   readonly canvas = document.createElement('canvas')
   private ctx: CanvasRenderingContext2D
   private card: { view: CardView; start: number; ms: number } | null = null
+  /** The trailing red layer, and when it may start catching up. */
+  private chip: [number, number]
+  private chipAt: [number, number] = [0, 0]
+  private chipTs = performance.now()
 
   constructor(private hud: HudView) {
     this.canvas.width = W
     this.canvas.height = H
     this.ctx = this.canvas.getContext('2d', { alpha: false })!
+    this.chip = [...hud.hp]
   }
 
   setHud(patch: Partial<HudView>) {
+    const before = this.hud.hp
     this.hud = { ...this.hud, ...patch }
+    this.hud.hp.forEach((hp, i) => {
+      // A capture opens a gap the red drains across; a reset back up to a full
+      // board is a new game, not damage, so the chip snaps with it.
+      if (hp > before[i]) this.chip[i] = hp
+      else if (hp < before[i]) this.chipAt[i] = performance.now() + CHIP_HOLD_MS
+    })
   }
 
   showCard(view: CardView, ms: number) {
@@ -170,11 +196,12 @@ class Frame {
     const ctx = this.ctx
     const hud = this.hud
 
-    const top = ctx.createLinearGradient(0, 0, 0, 108)
-    top.addColorStop(0, 'rgba(6, 8, 16, 0.82)')
+    const top = ctx.createLinearGradient(0, 0, 0, 176)
+    top.addColorStop(0, 'rgba(6, 8, 16, 0.86)')
+    top.addColorStop(0.6, 'rgba(6, 8, 16, 0.6)')
     top.addColorStop(1, 'rgba(6, 8, 16, 0)')
     ctx.fillStyle = top
-    ctx.fillRect(0, 0, W, 108)
+    ctx.fillRect(0, 0, W, 176)
 
     const bottom = ctx.createLinearGradient(0, H - 160, 0, H)
     bottom.addColorStop(0, 'rgba(6, 8, 16, 0)')
@@ -196,6 +223,8 @@ class Frame {
     ctx.fillStyle = COLORS.dim
     ctx.textAlign = 'right'
     ctx.fillText(hud.chapter, W - 44, 44)
+
+    this.drawKoMeter()
 
     const nameY = H - 86
     ctx.font = `16px ${PIXEL}`
@@ -225,6 +254,104 @@ class Frame {
     }
   }
 
+  /** Vitality bars and win stars, mirroring the live overlay's arcade header. */
+  private drawKoMeter() {
+    const ctx = this.ctx
+    const now = performance.now()
+    const dt = Math.max(0, Math.min(200, now - this.chipTs))
+    this.chipTs = now
+
+    for (const i of [0, 1] as const) {
+      const hp = this.hud.hp[i]
+      if (now >= this.chipAt[i]) this.chip[i] = Math.max(hp, this.chip[i] - CHIP_RATE * dt)
+      const left = i === 0
+      const x = left ? BAR.x : W - BAR.x - BAR.w
+      const frac = clamp01(hp / MAX_MATERIAL)
+      const chipFrac = clamp01(this.chip[i] / MAX_MATERIAL)
+
+      ctx.font = `10px ${PIXEL}`
+      ctx.fillStyle = COLORS.dim
+      ctx.textAlign = left ? 'right' : 'left'
+      ctx.fillText(String(hp), left ? x + BAR.w : x, BAR.y - 12)
+
+      // Socket, then the red under the vitality layer — both grow from the
+      // player's own outer edge, so the two bars drain towards the middle.
+      ctx.fillStyle = '#10152a'
+      ctx.fillRect(x, BAR.y, BAR.w, BAR.h)
+
+      const band = (fraction: number, stops: [number, string][]) => {
+        const w = BAR.w * fraction
+        if (w <= 0) return
+        const grad = ctx.createLinearGradient(0, BAR.y, 0, BAR.y + BAR.h)
+        for (const [at, color] of stops) grad.addColorStop(at, color)
+        ctx.fillStyle = grad
+        ctx.fillRect(left ? x : x + BAR.w - w, BAR.y, w, BAR.h)
+      }
+
+      band(chipFrac, [
+        [0, '#ff8a8a'],
+        [1, '#e03636'],
+      ])
+      band(
+        frac,
+        frac < DANGER
+          ? [
+              [0, '#ff9a6a'],
+              [0.45, '#ff4d4d'],
+              [1, '#b81616'],
+            ]
+          : [
+              [0, '#ffe97a'],
+              [0.42, '#ffc93c'],
+              [0.43, '#f59218'],
+              [1, '#e0620c'],
+            ],
+      )
+
+      // Under a quarter health the bar flashes, on the same two-step beat the
+      // overlay's CSS animation runs at.
+      if (frac < DANGER && Math.floor(now / 275) % 2) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.22)'
+        ctx.fillRect(left ? x : x + BAR.w - BAR.w * frac, BAR.y, BAR.w * frac, BAR.h)
+      }
+
+      ctx.strokeStyle = COLORS.line
+      ctx.lineWidth = 2
+      ctx.strokeRect(x - 1, BAR.y - 1, BAR.w + 2, BAR.h + 2)
+
+      // Half a point is a draw, and rounding it away would lose the only mark a
+      // drawn game leaves on the header.
+      const score = Number(this.hud.score[i]) || 0
+      const full = Math.floor(score)
+      const half = score % 1 !== 0
+      const starY = BAR.y + BAR.h + 10
+      for (let n = 0; n < this.hud.totalGames; n++) {
+        const sx = left
+          ? x + n * 15
+          : x + BAR.w - 11 - (this.hud.totalGames - 1 - n) * 15
+        const state = n < full ? 'won' : n === full && half ? 'half' : 'empty'
+        ctx.fillStyle = state === 'empty' ? 'rgba(255, 255, 255, 0.16)' : COLORS.gold
+        if (state === 'half') {
+          ctx.save()
+          ctx.beginPath()
+          ctx.rect(sx, starY, 5.5, 11)
+          ctx.clip()
+          drawStar(ctx, sx, starY, 11)
+          ctx.restore()
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.16)'
+          ctx.save()
+          ctx.beginPath()
+          ctx.rect(sx + 5.5, starY, 5.5, 11)
+          ctx.clip()
+          drawStar(ctx, sx, starY, 11)
+          ctx.restore()
+        } else {
+          drawStar(ctx, sx, starY, 11)
+        }
+      }
+    }
+  }
+
   private drawCard(view: CardView, alpha: number) {
     const ctx = this.ctx
     ctx.save()
@@ -248,6 +375,26 @@ class Frame {
     }
     ctx.restore()
   }
+}
+
+const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
+
+/** The same five-pointed outline the overlay's stars are clipped to. */
+const STAR = [
+  [50, 0], [61, 35], [98, 35], [68, 57], [79, 91],
+  [50, 70], [21, 91], [32, 57], [2, 35], [39, 35],
+] as const
+
+function drawStar(ctx: CanvasRenderingContext2D, x: number, y: number, size: number) {
+  ctx.beginPath()
+  STAR.forEach(([px, py], i) => {
+    const sx = x + (px / 100) * size
+    const sy = y + (py / 100) * size
+    if (i === 0) ctx.moveTo(sx, sy)
+    else ctx.lineTo(sx, sy)
+  })
+  ctx.closePath()
+  ctx.fill()
 }
 
 /** Ramp in, hold, ramp out. */
@@ -290,6 +437,8 @@ export async function recordSeriesVideo(req: RecordRequest): Promise<Blob | null
     chapter: `BEST OF ${story.totalGames}`,
     move: '',
     white: 0,
+    hp: [MAX_MATERIAL, MAX_MATERIAL],
+    totalGames: story.totalGames,
   })
 
   const stream = frame.canvas.captureStream(FPS)
@@ -371,6 +520,7 @@ async function play(req: RecordRequest, frame: Frame) {
       score: game.scoreBefore,
       chapter: `GAME ${game.index + 1} / ${story.totalGames}`,
       move: '',
+      hp: [MAX_MATERIAL, MAX_MATERIAL],
     })
     label = `Game ${game.index + 1} of ${story.games.length}`
     await card(game.intro, CARD_MS.gameIntro, () => arena.setPosition(chess))
@@ -386,7 +536,10 @@ async function play(req: RecordRequest, frame: Frame) {
       } catch {
         break
       }
-      frame.setHud({ move: `MOVE ${Math.ceil((i + 1) / 2)}` })
+      const hp: [number, number] = [0, 0]
+      hp[game.white] = material(chess, 'w')
+      hp[1 - game.white] = material(chess, 'b')
+      frame.setHud({ move: `MOVE ${Math.ceil((i + 1) / 2)}`, hp })
       await arena.animateMove(move, chess, { check: chess.isCheck(), mate: chess.isCheckmate() })
       label = `Game ${game.index + 1} of ${story.games.length} · move ${Math.ceil((i + 1) / 2)}`
       report(perPly)
