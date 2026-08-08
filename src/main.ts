@@ -24,6 +24,7 @@ import { buildStoryboard, cardMsFor, estimateMs, paceFor, POST_LIMIT_MS } from '
 import { canRecordVideo, extensionFor, recordSeriesVideo } from './share-video'
 import { dismissRotateHint, setupMobile } from './ui/mobile'
 import { SummaryModal, type SummaryRow, type SummaryView } from './ui/summary'
+import { ConfirmModal } from './ui/confirm'
 import { VideoProgress } from './ui/video-progress'
 import { Leaderboard } from './leaderboard'
 
@@ -41,6 +42,7 @@ const fromLink = applyMatchHash(settings)
 const arena = new Arena($('#stage'))
 const hud = new Hud(settings)
 const summary = new SummaryModal()
+const confirm = new ConfirmModal()
 const leaderboard = new Leaderboard((message) => hud.toast(message))
 const videoProgress = new VideoProgress()
 let series: Series | null = null
@@ -302,7 +304,30 @@ function reset() {
   setControls()
 }
 
-$('#btn-reset').addEventListener('click', reset)
+/** Reset throws a live match away, and on a phone the button sits a thumb's
+ *  width from Pause — so a match still in progress asks first. An idle board has
+ *  nothing to lose, and a finished one keeps its result card until it is
+ *  deliberately cleared, so neither is worth a dialog. */
+async function requestReset() {
+  const live = series?.status === 'running' || series?.status === 'paused' || series?.status === 'stalled'
+  if (!live) return reset()
+
+  const s = series!
+  const played = s.stats[0].moves + s.stats[1].moves
+  const ok = await confirm.ask({
+    title: 'Reset the match?',
+    body: `Game ${s.gameIndex + 1} of ${s.totalGames} is still live${
+      played ? ` — ${played} move${played === 1 ? '' : 's'} in` : ''
+    }. Resetting clears the board, the score and the battle log, and none of it can be brought back.`,
+    confirm: '↺ Reset anyway',
+    cancel: 'Keep playing',
+  })
+  // The series may well have finished — or been reset another way — while the
+  // question sat on screen, but a yes still means the same thing: fresh board.
+  if (ok) reset()
+}
+
+$('#btn-reset').addEventListener('click', () => void requestReset())
 
 const speedInput = $<HTMLInputElement>('#speed')
 function applySpeed() {
@@ -360,6 +385,7 @@ $('#help-modal').addEventListener('click', (e) => {
 // modal would instead have a single press dismiss all of them, which is what a
 // game ending behind an open Settings dialog used to do.
 const MODAL_CLOSERS: [string, () => void][] = [
+  ['#confirm-modal', () => confirm.close()],
   ['#help-modal', closeHelp],
   ['#leaderboard-modal', () => leaderboard.close()],
   ['#summary-modal', () => summary.close()],
