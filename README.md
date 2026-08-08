@@ -210,6 +210,7 @@ changes; the dev server reports `dev`.
 | [src/series.ts](src/series.ts) | Runs the series: alternates colors, calls the models, applies moves, keeps the score. Knows nothing about the DOM or three.js |
 | [src/llm.ts](src/llm.ts) | One `fetch` to `/chat/completions`, plus token/cost accounting |
 | [src/prompt.ts](src/prompt.ts) | Builds the position prompt and reads the move out of the JSON object the model was asked for |
+| [src/tiny-eval.ts](src/tiny-eval.ts) | The client-side move verdicts: a small classical evaluation, and the rules for when it is allowed an opinion |
 | [src/three/voxels.ts](src/three/voxels.ts) | Pieces authored as 7-wide side profiles, revolved or extruded into cubes and merged into one geometry per type |
 | [src/three/arena.ts](src/three/arena.ts) | Board, lights, bloom, camera framing, and the move choreography |
 | [src/three/fx.ts](src/three/fx.ts) | Debris, shockwave rings, floating pixel text, screen shake |
@@ -254,6 +255,22 @@ supports the variables shown beside the editor; restoring defaults restores the 
 
 The board is rebuilt from the authoritative `chess.js` position after every move, so castling,
 en passant and promotion stay correct without needing bespoke animations.
+
+Moves are graded as they land, and the loud ones get a tag in the battle log — `INACCURACY`,
+`MISTAKE`, `BLUNDER`, `CATASTROPHIC`, `CRUSHING` — with the swing in pawns beside it, and a matching
+shout thrown up over the board. The grader is a compact classical evaluation running in the page:
+tapered material and piece-square tables, a few pawn, rook and king-safety terms, and one ply of
+"what is hanging?", which is the term that catches a model leaving a queen en prise. It costs tens
+of microseconds a move, so it never competes with the arena for a frame, and it is purely for the
+show — the result, the adjudication and the leaderboard all still run on material, which the Worker
+can recompute. Nothing about the evaluation is sent anywhere.
+
+It is a static evaluation, so it cannot read a combination, and it says so by staying quiet: a
+checking move, a reply to check and a recapture are all left unjudged rather than labelled wrongly,
+because a one-ply grader calls every queen sacrifice a catastrophe. What survives that filter is
+what it is genuinely good at, and what language models do constantly — leaving something loose in a
+quiet position, and walking straight past something the opponent left loose. The same grading runs
+during the video export, which is why the verdicts are in the file as well as on screen.
 
 A game that reaches the ply limit is adjudicated on material rather than declared drawn. Models
 are bad at converting won endgames, and an automatic draw paid the same half point for a

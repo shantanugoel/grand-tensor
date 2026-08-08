@@ -69,7 +69,7 @@ function newSeries(): Series {
       persistNow()
     },
     onMove: async (e) => {
-      await arena.animateMove(e.move, series!.chess, { check: e.check, mate: e.mate })
+      await arena.animateMove(e.move, series!.chess, { check: e.check, mate: e.mate, eval: e.eval })
       persist()
     },
     onGameEnd: async (rec) => {

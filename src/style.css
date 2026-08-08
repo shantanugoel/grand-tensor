@@ -1094,9 +1094,44 @@ body {
 
 .log .detail {
   display: block;
+  /* Past the floated score, so a move's commentary starts under it rather than
+     wrapping around it. */
+  clear: both;
   color: var(--dim);
   font-size: 10.5px;
   opacity: 0.9;
+}
+
+/* The verdict on a move, sitting out to the right of the move it belongs to.
+   Only the moves that earned one carry it, which is what keeps it loud. */
+.log .verdict {
+  float: right;
+  margin-left: 6px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  font-variant-numeric: tabular-nums;
+  color: #080c18;
+  background: var(--dim);
+  white-space: nowrap;
+}
+
+.log .verdict.inaccuracy { background: var(--gold); }
+.log .verdict.mistake { background: #ffa14a; }
+.log .verdict.blunder { background: var(--bad); color: #180608; }
+.log .verdict.brilliant { background: var(--ok); }
+
+.log .verdict.catastrophe {
+  background: #ff2f6d;
+  color: #12000a;
+  box-shadow: 0 0 12px rgba(255, 47, 109, 0.6);
+}
+
+.log .verdict.mate {
+  background: var(--gold);
+  box-shadow: 0 0 10px rgba(255, 213, 74, 0.55);
 }
 
 /* ---------- dock ---------- */

@@ -7,6 +7,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import type { Chess, Color, Move, PieceSymbol, Square } from 'chess.js'
+import { TAG_COLOR, TAG_SHOUT, TAG_VOLUME, fmtSwing, type MoveEval } from '../tiny-eval'
 import { Fx } from './fx'
 import { pieceGeometry, pieceHeight, pieceVoxels, VOXEL, voxelGeometry } from './voxels'
 
@@ -57,6 +58,9 @@ export class Arena {
   private baseCamPos = new THREE.Vector3(-9.6, 10.6, 9.6)
   private running = true
   private lowPower: boolean
+  /** When the verdict currently on the board fades, and how loud it was. */
+  private shoutUntil = 0
+  private shoutVolume = 0
 
   /** Multiplier on animation length; the UI shrinks it in turbo mode. */
   speed = 1
@@ -295,8 +299,13 @@ export class Arena {
     })
   }
 
-  /** Animate one move, including the capture spectacle. Resolves when settled. */
-  async animateMove(move: Move, chess: Chess, opts: { check: boolean; mate: boolean }) {
+  /** Animate one move, including the capture spectacle. Resolves when settled.
+   *
+   *  `eval` is what the client-side evaluation made of the move, passed in
+   *  rather than computed here so the live match and the video replay each
+   *  spend exactly one evaluation per ply. Without it the move simply plays
+   *  with no verdict over it. */
+  async animateMove(move: Move, chess: Chess, opts: { check: boolean; mate: boolean; eval?: MoveEval }) {
     const attacker = this.pieces.get(move.from)
     const from = squarePos(move.from)
     const to = squarePos(move.to)
@@ -347,6 +356,10 @@ export class Arena {
       attacker.scale.set(1, 1, 1)
     }
 
+    // Thrown up as the piece lands, ahead of the check and mate fanfare, so a
+    // move that is both a blunder and a check reads as one beat.
+    if (opts.eval) this.shoutVerdict(opts.eval, to)
+
     if (opts.mate) {
       this.fx.shake(1.2)
       this.fx.shockwave(to, new THREE.Color('#ffd54a'), 8)
@@ -364,6 +377,54 @@ export class Arena {
 
     // Castling and promotion are easier to just re-sync than to choreograph.
     this.setPosition(chess)
+  }
+
+  /** The arcade half of the evaluation: a verdict thrown up over the square the
+   *  move landed on, and gone a second and a half later.
+   *
+   *  Deliberately silent the rest of the time. A label on every move is a label
+   *  on none of them, and a shallow evaluation has not earned the right to be
+   *  that loud — so only the swings a spectator would gasp at get anything, and
+   *  what they get scales with how bad it was. */
+  private shoutVerdict(verdict: MoveEval, at: THREE.Vector3) {
+    const shouts = TAG_SHOUT[verdict.tag]
+    if (shouts.length === 0) return
+
+    // Short-lived on purpose: at Blitz — which is what the video replay runs at
+    // — a ply is half a second, and a verdict that outlived two of them would
+    // spend the match stacked on top of the next one.
+    const life = 1.1
+    // Two models throwing pieces at each other every ply would otherwise cover
+    // the board in verdicts. While one is still on screen only a louder one gets
+    // through, so a catastrophe is never crowded out by the mistake before it.
+    const now = performance.now()
+    const volume = TAG_VOLUME[verdict.tag]
+    if (now < this.shoutUntil && volume <= this.shoutVolume) return
+    this.shoutUntil = now + life * 1000
+    this.shoutVolume = volume
+
+    const color = TAG_COLOR[verdict.tag]
+    const hue = new THREE.Color(color)
+    this.fx.floatText(at.clone().setY(BOARD_TOP + 2.9), shouts[Math.floor(Math.random() * shouts.length)], color, 0.58, {
+      rise: 1.5,
+      life,
+    })
+    this.fx.floatText(at.clone().setY(BOARD_TOP + 2.3), fmtSwing(verdict.loss), color, 0.46, { rise: 1.5, life })
+
+    // A wobble for a mistake; a ring and a shove for a blunder; the full
+    // treatment for a move that lost the game.
+    if (verdict.tag === 'mistake') return this.fx.shake(0.25)
+
+    this.fx.shockwave(at.clone().setY(BOARD_TOP), hue, verdict.tag === 'catastrophe' ? 7 : 4.5, {
+      life: 0.55,
+      thickness: 0.18,
+    })
+    this.fx.shake(verdict.tag === 'catastrophe' ? 0.9 : 0.5)
+
+    if (verdict.tag !== 'catastrophe') return
+    this.fx.shockwave(at.clone().setY(BOARD_TOP), hue, 4, { delay: 0.14, life: 0.5, upright: true })
+    this.fx.sparks(at.clone().setY(BOARD_TOP), hue, 26, 10)
+    this.fx.flash(at, hue, 70, 0.4)
   }
 
   announce(text: string, color = '#7df9ff') {
