@@ -78,6 +78,11 @@
 # models_replace = "$1/$2"
 # models_skip = 1               # header row
 # models = ["anthropic/claude-opus-5"]   # unioned with what is discovered
+#
+# For a harness on another machine (see the ssh section below), wrap the listing
+# command the same way. Safe as a single string, unlike a prompt: no untrusted
+# text is involved, so the remote shell has nothing to mangle.
+# models_command = ["ssh", "-T", "-o", "BatchMode=yes", "user@hostname", "pi --list-models"]
 
 # The rare model that does not reason, on a harness where the others do.
 # [harness.model_overrides."google/gemini-3-flash"]
@@ -94,45 +99,69 @@
 # ---------------------------------------------------------------------------
 # A HARNESS ON ANOTHER MACHINE, OVER SSH.
 #
-# Copy the block below, change user@hostname, uncomment. Nothing else is
-# needed: extract, timeout_ms and efforts all inherit from the hermes built-in.
+# Copy the block at the bottom of this section, change user@hostname, uncomment.
+# It is complete: extract, efforts and the rest inherit from the hermes built-in.
+# Verified against Hermes Agent v0.20.0 — exit 0, the reply alone on stdout
+# (28 bytes for a one-line answer), nothing on stderr. That clean stdout is what
+# lets the inherited extract.mode = "text" work unchanged.
 #
-# Three rules make this work, and all three are easy to get wrong.
+# Four things make it work, and each is easy to get wrong.
 #
-#  1. THE PROMPT TRAVELS ON STDIN AND THE REMOTE SHELL LIFTS IT INTO THE
-#     ARGUMENT, via "$(cat)".
+#  1. THE PROMPT TRAVELS ON STDIN, AND THE REMOTE SHELL LIFTS IT INTO THE
+#     ARGUMENT VIA "$(cat)".
 #     `ssh host a b c` joins its trailing arguments with spaces and hands the
 #     result to the REMOTE shell, which re-parses it. A move prompt full of
 #     newlines, quotes and {"move":"e4"} put in args would be word-split, its
 #     braces eaten and its $-signs expanded. So it goes down the pipe instead,
 #     which ssh forwards byte for byte, and `"$(cat)"` — double-quoted, so no
-#     word splitting and no globbing — puts it back together on the far side in
-#     one piece. Only short shell-safe values, like a model id, belong in args.
+#     word splitting and no globbing — reassembles it on the far side in one
+#     piece. Only short shell-safe values, like a model id, belong in args.
 #
-#     `hermes -z` alone does not work: it requires a prompt argument (exit 2),
-#     and when given one it consumes stdin and discards it. Hence "$(cat)".
-#     The only cost is the remote ARG_MAX, ~2 MB against a ~10 KB move prompt,
-#     and stripped trailing newlines.
+#     `hermes -z` alone will not do: it requires a prompt argument (exit 2), and
+#     when given one it consumes stdin and discards it. Hence "$(cat)". The only
+#     costs are the remote ARG_MAX — ~2 MB against a ~10 KB move prompt — and
+#     stripped trailing newlines.
 #
-#  2. KEEP {{model}} IN ITS OWN ARGUMENT, next to its flag.
-#     A placeholder that resolves to nothing voids the whole argument it sits
-#     in, and the flag before it is dropped as the pair. Written as separate
-#     args, an empty model cleanly removes `-m` and the remote falls back to its
-#     own default. Folded into one string — "hermes -z -m {{model}}" — the whole
-#     argument would vanish instead, taking `user@hostname` with it as its
-#     "flag". ssh rejoins the pieces with spaces either way, so nothing is lost.
+#  2. EVERY PLACEHOLDER SITS IN ITS OWN ARGUMENT, next to its flag.
+#     A placeholder that resolves to nothing voids the whole argument it sits in,
+#     and the flag before it drops as the pair — which is exactly what you want
+#     from an optional -m or --provider. Folded into one string instead, as
+#     "hermes -z -m {{model}}", the entire argument would vanish and take
+#     `user@hostname` with it as its "flag", leaving a bare ssh login that hangs
+#     until timeout_ms. ssh rejoins the pieces with spaces either way.
 #
-#  3. -T so no tty is allocated, BatchMode=yes so a missing key fails fast
+#  3. -m COMES AFTER THE PROMPT, matching the documented
+#     `hermes -z "…" -m <model>`. With no model named the pair drops and what is
+#     left is `hermes -z "$(cat)"` — byte for byte the command proven to work.
+#
+#  4. -T so no tty is allocated, BatchMode=yes so a missing key fails fast
 #     instead of hanging until timeout_ms. NEVER -n: it points stdin at
 #     /dev/null, which would send an empty prompt on every move.
 #
 # args REPLACES the built-in array wholesale — only `extract` merges field by
-# field — so the remote flags are spelled out here in full.
-# ---------------------------------------------------------------------------
-# Verified against Hermes Agent v0.20.0 over ssh: exit 0, the reply alone on
-# stdout (28 bytes for a one-line answer), nothing on stderr. That clean stdout
-# is what lets the inherited extract.mode = "text" work unchanged.
+# field — so the remote flags are spelled out in full below.
 #
+# PROVIDER AND MODEL AS SEPARATE FLAGS: model_pattern.
+#
+# The model field is normally one value, but hermes wants `-m <name>` and
+# `--provider <id>` separately. model_pattern is a regex whose NAMED GROUPS
+# become placeholders: a group called `model` refines {{model}}, any other name
+# is a new placeholder usable in args. Prompt placeholders (system, user,
+# messages, outfile) cannot be claimed. One entry then covers every provider:
+#
+#   hermes/portal/deepseek-v4-flash     → -m deepseek-v4-flash --provider portal
+#   hermes/openrouter/deepseek-v4-flash → -m deepseek-v4-flash --provider openrouter
+#   hermes/deepseek-v4-flash            → -m deepseek-v4-flash
+#   hermes                              → -m <default_model>
+#
+# The last two are why the prefix is written optional, `(?:…)?`: a pattern that
+# does not match leaves every group empty, each flag drops with its value, and
+# the plain form keeps working. Adding model_pattern cannot break an id you
+# already type.
+#
+# Not every CLI wants this. pi's --model takes `provider/id` as ONE argument, so
+# pi has no model_pattern and the whole string passes through untouched.
+# ---------------------------------------------------------------------------
 # [[harness]]
 # id = "hermes"
 # enabled = true
@@ -145,32 +174,25 @@
 #   "hermes -z",
 #   "\"$(cat)\"",
 #   "-m", "{{model}}",
+#   "--provider", "{{provider}}",
 # ]
-#
-# -m goes AFTER the prompt, matching the documented `hermes -z "…" -m <model>`.
-# It also means that with no model named the pair drops and what is left is
-# `hermes -z "$(cat)"` — byte for byte the command proven to work.
 # stdin = "{{messages}}"
+# model_pattern = "^(?:(?<provider>[^/]+)/)?(?<model>.+)$"
 # timeout_ms = 300000
 #
-# With no model named, the -m pair drops and the remote picks — which is exactly
-# how this was tested. Set default_model only once you know an id that works;
-# it is also what makes a bare "hermes" selectable in the Model id field.
-# default_model = "hermes-4-405b"
+# default_model is what makes a bare "hermes" selectable in the Model id field.
+# Set it once you know an id that works; without it, a bare "hermes" sends no
+# -m at all and the remote picks — which is how this was first tested.
+# default_model = "portal/deepseek-v4-flash"
 #
-# No models_command: `hermes model` is an INTERACTIVE picker, and on a tty-less
-# ssh channel it would hang until the timeout. List the ids you use by hand.
-# They are advisory either way, so an unlisted model still works if you type it.
-# models = ["hermes-4-405b", "deepseek-v4"]
+# List models WITH the provider prefix so autocomplete offers the full form.
+# No models_command: `hermes model` is an INTERACTIVE picker and would hang on a
+# tty-less ssh channel. These are advisory, so an unlisted id you type still works.
+# models = ["portal/deepseek-v4-flash", "openrouter/deepseek-v4-flash"]
 #
-# For a remote harness that DOES have a non-interactive listing, wrap the
-# listing the same way — no prompt data is involved, so this one is safe as a
-# single string:
-# models_command = ["ssh", "-T", "-o", "BatchMode=yes", "user@hostname", "pi --list-models"]
-#
-# Caveats worth knowing, none of them fatal:
-#   cwd and env are applied to the LOCAL ssh process and do not cross. Put
-#     anything the remote needs in the command string: "cd ~/work && FOO=1 hermes -z".
+# Caveats, none of them fatal:
+#   cwd and env apply to the LOCAL ssh process and do not cross. Put anything the
+#     remote needs in the command string: "cd ~/work && FOO=1 hermes -z".
 #   outfile = true cannot work remotely — {{outfile}} is a local temp path the
 #     remote cannot write to. That rules ssh out for `codex` specifically.
 #   On timeout the local ssh client is killed; the remote usually gets SIGHUP

@@ -41,6 +41,13 @@ Listed models are **advisory, not a whitelist**. Anything after the harness id i
 passed through, so a model released after this was written works without touching
 any config. The list only decides what autocompletes.
 
+A CLI that wants the provider as a *separate flag* — hermes takes
+`-m <name> --provider <id>` — can split the field further with `model_pattern`,
+a regex whose named groups become placeholders. One entry then covers every
+provider: `hermes/portal/deepseek-v4-flash` and
+`hermes/openrouter/deepseek-v4-flash` differ only in a flag. See
+[harnesses.example.toml](harnesses.example.toml).
+
 ## The seven
 
 | id | binary | effort axis | usage reported |

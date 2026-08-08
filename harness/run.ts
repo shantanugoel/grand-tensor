@@ -4,7 +4,7 @@ import { mkdir, readFile, rm } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { extract, type Extracted } from './extract'
-import { resolveEffort, type HarnessDef } from './config'
+import { resolveEffort, splitModel, type HarnessDef } from './config'
 
 export type ChatMessage = { role: string; content: string }
 
@@ -105,6 +105,11 @@ export async function run(req: RunRequest): Promise<RunResult> {
     maxTokens: req.maxTokens == null ? null : String(req.maxTokens),
     outfile,
   }
+
+  // A harness may carve the model field into further placeholders — a provider
+  // and a model, say. Applied over the defaults, so a `model` group refines the
+  // raw string while an unmatched pattern leaves it exactly as it was.
+  for (const [name, value] of Object.entries(splitModel(harness, req.model))) vars[name] = value || null
 
   const args = renderArgs(harness.args, vars)
   const stdin = harness.stdin ? render(harness.stdin, vars) : null

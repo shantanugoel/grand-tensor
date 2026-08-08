@@ -1,6 +1,6 @@
 import { expect, test, describe } from 'bun:test'
 import { readFile } from 'node:fs/promises'
-import { BUILTINS, mergeHarnesses, resolveEffort, resolveModel, type HarnessDef } from './config'
+import { BUILTINS, mergeHarnesses, resolveEffort, resolveModel, splitModel, type HarnessDef } from './config'
 import { extract, jsonLines, pick, pickText } from './extract'
 import { flatten, renderArgs, run, HarnessError } from './run'
 import { Catalog, parseJson, parseLines, parseRegex } from './catalog'
@@ -50,6 +50,49 @@ describe('model resolution', () => {
   test('a disabled harness is refused', () => {
     const off = new Map([['x', harness({ id: 'x', enabled: false })]])
     expect(resolveModel(off, 'x/model')).toBeNull()
+  })
+})
+
+describe('splitting the model field into named placeholders', () => {
+  // Optional provider in front: "portal/deepseek-v4-flash" or just the model.
+  const pattern = '^(?:(?<provider>[^/]+)/)?(?<model>.+)$'
+  const h = harness({ modelPattern: pattern })
+
+  test('a provider prefix becomes its own placeholder', () => {
+    expect(splitModel(h, 'portal/deepseek-v4-flash')).toEqual({
+      provider: 'portal',
+      model: 'deepseek-v4-flash',
+    })
+  })
+
+  test('the prefix is optional, and its flag drops when absent', () => {
+    expect(splitModel(h, 'deepseek-v4-flash')).toEqual({ provider: null, model: 'deepseek-v4-flash' })
+    const args = renderArgs(['-m', '{{model}}', '--provider', '{{provider}}'], {
+      model: 'deepseek-v4-flash',
+      provider: null,
+    })
+    expect(args).toEqual(['-m', 'deepseek-v4-flash'])
+  })
+
+  test('a declared group survives a pattern that does not match at all', () => {
+    // Otherwise a literal "{{provider}}" reaches the command line.
+    const strict = harness({ modelPattern: '^(?<provider>[^/]+)/(?<model>.+)$' })
+    expect(splitModel(strict, 'no-slash-here')).toEqual({ provider: null, model: null })
+  })
+
+  test('no pattern means no change to the ordinary single-model case', () => {
+    expect(splitModel(harness({}), 'anything/at/all')).toEqual({})
+  })
+
+  test('a malformed pattern is ignored rather than thrown', () => {
+    expect(splitModel(harness({ modelPattern: '([unclosed' }), 'x')).toEqual({})
+  })
+
+  test('a group cannot hijack a prompt placeholder', () => {
+    // A group named `system` would otherwise replace the system prompt with a
+    // fragment of a model id, silently.
+    const evil = harness({ modelPattern: '^(?<system>[^/]+)/(?<model>.+)$' })
+    expect(splitModel(evil, 'pwned/model')).toEqual({ model: 'model' })
   })
 })
 

@@ -67,6 +67,11 @@ export type HarnessDef = {
   effortOff: string | null
   /** Renames, for a CLI whose spelling differs from the dropdown's. */
   effortMap: Record<string, string>
+  /** Splits the model field into more than one placeholder, via named capture
+   *  groups. Some CLIs want provider and model as separate flags — hermes takes
+   *  `-m <name> --provider <id>` — and without this each provider needs its own
+   *  near-identical harness block. */
+  modelPattern?: string
   /** The agent writes its final message to a file rather than stdout, and the
    *  args reference it as {{outfile}}. Usage still comes from stdout. */
   outfile: boolean
@@ -269,6 +274,49 @@ export function resolveEffort(harness: HarnessDef, effort: string | undefined): 
   if (!effort) return null
   if (effort === 'none' || effort === 'off') return harness.effortOff
   return harness.effortMap[effort] ?? effort
+}
+
+/** Placeholders carrying prompt text. A capture group may not claim one of
+ *  these: a regex group named `system` would silently replace the system prompt
+ *  with a fragment of a model id, and nothing downstream could tell. */
+export const RESERVED_VARS = new Set(['system', 'user', 'messages', 'outfile'])
+
+/** Every `(?<name>…)` a pattern declares, matched or not.
+ *
+ *  Collected from the pattern rather than the match, because a group that did
+ *  not participate still has to resolve — to nothing, so its flag drops — and a
+ *  pattern that failed outright must not leave `{{provider}}` on a command line.
+ */
+const groupNames = (pattern: string): string[] =>
+  [...pattern.matchAll(/\(\?<([A-Za-z_$][\w$]*)>/g)].map((m) => m[1])
+
+/** Breaks the model field into named placeholders for a harness that asked for
+ *  it. Returns nothing at all when no pattern is configured, so the ordinary
+ *  single-`{{model}}` case is untouched.
+ *
+ *  A pattern that does not match is not an error: every group resolves to null,
+ *  each optional flag drops with it, and `{{model}}` keeps the raw string. That
+ *  is what makes `hermes/deepseek-v4-flash` still work under a harness whose
+ *  pattern expects an optional `provider/` in front. */
+export function splitModel(harness: HarnessDef, model: string): Record<string, string | null> {
+  if (!harness.modelPattern) return {}
+
+  let regex: RegExp
+  try {
+    regex = new RegExp(harness.modelPattern)
+  } catch {
+    return {}
+  }
+
+  const out: Record<string, string | null> = {}
+  for (const name of groupNames(harness.modelPattern)) if (!RESERVED_VARS.has(name)) out[name] = null
+
+  const match = regex.exec(model)
+  if (match?.groups)
+    for (const [name, value] of Object.entries(match.groups))
+      if (!RESERVED_VARS.has(name)) out[name] = value ?? null
+
+  return out
 }
 
 /** Splits `pi/anthropic/claude-opus-5` into its harness and everything after.
