@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { DEFAULTS, effectiveSpeedIndex, normalizeReasoningEffort } from './settings'
+import { DEFAULTS, effectiveSpeedIndex, normalizeReasoningEffort, SPEEDS } from './settings'
 
 test('normalizes the provider spelling for disabled reasoning', () => {
   expect(normalizeReasoningEffort('none')).toBe('off')
@@ -24,4 +24,9 @@ describe('effectiveSpeedIndex', () => {
     demo.players[1].model = 'random'
     expect(effectiveSpeedIndex(demo)).toBe(2)
   })
+})
+
+test('every match speed keeps piece movement visible', () => {
+  expect(SPEEDS.every((speed) => speed.anim > 0)).toBe(true)
+  expect(SPEEDS.map((speed) => speed.anim)).toEqual([...SPEEDS.map((speed) => speed.anim)].sort((a, b) => a - b))
 })

@@ -122,6 +122,8 @@ export class Series {
   /** What the endpoint says about each model: pricing and supported efforts. */
   private models = new Map<string, ModelInfo>()
   private effort: [string, string] = [NO_EFFORT, NO_EFFORT]
+  /** Avoid flooding the Battle log if a provider repeatedly ignores `off`. */
+  private reportedReasoningWhileOff: [boolean, boolean] = [false, false]
 
   constructor(private settings: Settings, private events: SeriesEvents) {}
 
@@ -401,6 +403,19 @@ export class Series {
       this.stats[player].usage = addUsage(this.stats[player].usage, result.usage)
       this.stats[player].calls++
       this.stats[player].lastMs = performance.now() - turnStarted
+      if (
+        this.effort[player] === REASONING_OFF &&
+        result.usage.reasoning > 0 &&
+        !this.reportedReasoningWhileOff[player]
+      ) {
+        this.reportedReasoningWhileOff[player] = true
+        this.events.onLog({
+          kind: 'warn',
+          player,
+          text: `${cfg.model} reported reasoning tokens even though reasoning is off`,
+          detail: `The provider reported ${result.usage.reasoning.toLocaleString('en-US')} reasoning tokens for this call.`,
+        })
+      }
       this.events.onUpdate()
 
       const parsed = parseMove(result.text, legal)

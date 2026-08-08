@@ -35,7 +35,7 @@ class InstantSeries extends Series {
   }
 }
 
-type Reply = { content?: string | null; reasoning?: string; finish?: string }
+type Reply = { content?: string | null; reasoning?: string; reasoningTokens?: number; finish?: string }
 
 /** A provider that answers each move by consulting `reply`, and plays a real
  *  legal move whenever that returns nothing — so a game can actually progress
@@ -70,7 +70,12 @@ function provider(reply: (model: string, call: number) => Reply | null, models: 
           finish_reason: answer.finish ?? 'stop',
         },
       ],
-      usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+      usage: {
+        prompt_tokens: 10,
+        completion_tokens: 20,
+        total_tokens: 30,
+        completion_tokens_details: { reasoning_tokens: answer.reasoningTokens ?? 0 },
+      },
     })
   }) as typeof fetch
 
@@ -215,8 +220,35 @@ describe('what the provider is sent', () => {
 
     expect(series.resolvedEffort).toEqual(['off', 'off'])
     expect(logs.some((entry) => entry.kind === 'warn')).toBe(false)
-    expect(sent[0].reasoning).toEqual({ enabled: false })
-    expect(sent[1].reasoning).toEqual({ enabled: false })
+    expect(sent[0].reasoning).toEqual({ effort: 'none' })
+    expect(sent[1].reasoning).toEqual({ effort: 'none' })
+  })
+
+  test('warns once if a provider reports reasoning tokens while off', async () => {
+    const models = [
+      { id: 'alpha', reasoning: { supported_efforts: ['high', 'low'], mandatory: false } },
+      { id: 'beta', reasoning: { supported_efforts: ['high', 'low'], mandatory: false } },
+    ]
+    provider(
+      (model, call) =>
+        model === 'alpha' && call <= 2
+          ? { content: '', finish: 'stop', reasoningTokens: 12 }
+          : null,
+      models,
+    )
+    const configured = settings({
+      retries: 1,
+      players: [
+        { label: 'Alpha', model: 'alpha', effort: 'off', temperature: 0.2 },
+        { label: 'Beta', model: 'beta', effort: 'off', temperature: 0.2 },
+      ],
+    })
+
+    const { logs } = await run(configured)
+    const violations = logs.filter((entry) => entry.text.includes('reported reasoning tokens'))
+
+    expect(violations).toHaveLength(1)
+    expect(violations[0].detail).toContain('12 reasoning tokens')
   })
 
   test('replays finished games into later prompts without their result token', async () => {

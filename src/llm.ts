@@ -101,10 +101,10 @@ export async function chat(req: ChatRequest): Promise<ChatResult> {
   }
 
   if (req.effort === REASONING_OFF) {
-    // Switching reasoning off is its own request shape, not an effort level —
-    // OpenRouter takes an `enabled` flag, while a plain OpenAI-compatible server
-    // has no such field and expects the effort itself to say "none".
-    if (isOpenRouter(req.baseUrl)) body.reasoning = { enabled: false }
+    // OpenRouter documents `none` as the effort that disables reasoning. Its
+    // `enabled` switch is documented only for turning the default configuration
+    // on; sending `enabled: false` can be ignored and fall back to model defaults.
+    if (isOpenRouter(req.baseUrl)) body.reasoning = { effort: 'none' }
     else body.reasoning_effort = 'none'
   } else if (req.effort !== NO_EFFORT) {
     // OpenRouter normalises effort under `reasoning`; plain OpenAI uses a flat field.

@@ -60,9 +60,11 @@ export const DEFAULT_PROMPT_TEMPLATE = [
 
 /** Turn-speed presets: pause between moves, and how leisurely pieces animate. */
 export const SPEEDS = [
-  { label: 'Turbo', delay: 0, anim: 0 },
-  { label: 'Blitz', delay: 0, anim: 0.35 },
-  { label: 'Fast', delay: 200, anim: 0.6 },
+  // Even Turbo keeps enough frames for the piece to visibly cross the board.
+  // Its speed comes from removing the pause between moves, not teleporting them.
+  { label: 'Turbo', delay: 0, anim: 0.55 },
+  { label: 'Blitz', delay: 0, anim: 0.7 },
+  { label: 'Fast', delay: 200, anim: 0.85 },
   { label: 'Normal', delay: 600, anim: 1 },
   { label: 'Slow', delay: 1300, anim: 1.3 },
   { label: 'Very slow', delay: 2400, anim: 1.7 },
@@ -108,7 +110,7 @@ export const DEFAULTS: Settings = {
     { label: 'DeepSeek V4 Flash', model: 'deepseek/deepseek-v4-flash-0731', effort: 'default', temperature: 0.2 },
     { label: 'GPT-5.6 Luna', model: 'openai/gpt-5.6-luna', effort: 'default', temperature: 0.2 },
   ],
-  games: 4,
+  games: 2,
   maxPlies: 200,
   // The move parser no longer scrapes a move out of free prose, so a reply that
   // misses the JSON shape now costs an attempt instead of being silently turned
