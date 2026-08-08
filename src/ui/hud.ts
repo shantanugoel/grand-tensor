@@ -11,9 +11,15 @@ const fmtCost = (n: number) => (n > 0 ? `$${n < 0.01 ? n.toFixed(5) : n.toFixed(
 const fmtMs = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}s` : `${Math.round(n)}ms`)
 
 
+/** Battle-log lines held in the DOM, and mirrored for the saved match. */
+const LOG_LIMIT = 300
+
 export class Hud {
   private cards: HTMLElement[] = []
   private logEl = $('#log')
+  /** The same lines the log is showing, kept in order so a match can be saved
+   *  with its commentary and read back exactly as it was. */
+  private entries: LogEntry[] = []
   private thinking: PlayerIdx | null = null
   private toastTimer: ReturnType<typeof setTimeout> | undefined
   private announceTimer: ReturnType<typeof setTimeout> | undefined
@@ -201,7 +207,20 @@ export class Hud {
     this.announceTimer = setTimeout(() => el.classList.add('hidden'), 2000)
   }
 
+  get logEntries(): LogEntry[] {
+    return this.entries
+  }
+
+  /** Repopulates the log from a saved match, oldest line first. */
+  restoreLog(entries: LogEntry[]) {
+    this.clearLog()
+    for (const entry of entries) this.log(entry)
+  }
+
   log(entry: LogEntry) {
+    this.entries.push(entry)
+    while (this.entries.length > LOG_LIMIT) this.entries.shift()
+
     const li = document.createElement('li')
     const cls = entry.kind === 'move' ? (entry.player === 0 ? 'p0' : 'p1') : entry.kind
     li.className = cls
@@ -211,11 +230,12 @@ export class Hud {
       ? `${label}<span class="detail">${escapeHtml(entry.detail)}</span>`
       : label
     this.logEl.appendChild(li)
-    while (this.logEl.childElementCount > 300) this.logEl.removeChild(this.logEl.firstChild!)
+    while (this.logEl.childElementCount > LOG_LIMIT) this.logEl.removeChild(this.logEl.firstChild!)
     this.logEl.scrollTop = this.logEl.scrollHeight
   }
 
   clearLog() {
+    this.entries = []
     this.logEl.innerHTML = ''
   }
 

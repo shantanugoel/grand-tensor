@@ -220,6 +220,105 @@ describe('token-capped replies', () => {
   })
 })
 
+describe('saving and restoring a series', () => {
+  test('snapshots the game in progress, and picks it back up on the same board', async () => {
+    // Four plies, then the limit adjudicates. The reload lands after two.
+    const first = ['e4', 'e5']
+    let played = 0
+    stubCalls(() => answer(first[played++] ?? 'Nf3'))
+
+    // Cut the series off the way closing the tab does: mid-game, nothing tidied.
+    const { series } = build(settings({ maxPlies: 4 }), (s) => {
+      if (s.chess.history().length >= 2) s.stop()
+    })
+    await series.run()
+
+    const state = series.state()
+    expect(state.gameIndex).toBe(0)
+    expect(state.pgn).toContain('e4')
+    expect(state.games).toHaveLength(0)
+
+    const { series: revived } = build(settings({ maxPlies: 4 }))
+    revived.restore(state)
+    expect(revived.resumable).toBe(true)
+    expect(revived.chess.history()).toEqual(['e4', 'e5'])
+
+    const rest = ['Nf3', 'Nc6']
+    let resumed = 0
+    stubCalls(() => answer(rest[resumed++]))
+    await revived.run()
+
+    expect(revived.status).toBe('done')
+    // The opening survived the reload rather than being replayed from move one.
+    expect(revived.games[0].pgn).toContain('1. e4 e5')
+    expect(revived.games[0].plies).toBe(4)
+  })
+
+  test('resumes at the next game when the reload landed between rounds', async () => {
+    stubCalls(() => answer('e4'))
+
+    const { series } = build(settings({ games: 2, maxPlies: 1 }))
+    await series.run()
+    const state = series.state()
+
+    // Nothing is under way between rounds, so there is no board to carry over.
+    expect(state.games).toHaveLength(2)
+    expect(state.pgn).toBe('')
+
+    const midway: typeof state = { ...state, status: 'running', games: state.games.slice(0, 1), gameIndex: 1 }
+    const { series: revived, logs } = build(settings({ games: 2, maxPlies: 1 }))
+    revived.restore(midway)
+
+    expect(revived.resumable).toBe(true)
+    expect(revived.gameIndex).toBe(1)
+    // Game one's final position is what should be on screen, but it is finished.
+    expect(revived.chess.history().length).toBeGreaterThan(0)
+
+    await revived.run()
+
+    expect(revived.games).toHaveLength(2)
+    expect(revived.games[1].plies).toBe(1)
+    expect(logs.some((l) => l.text === 'Series resumed at game 2 of 2')).toBe(true)
+  })
+
+  test('a finished series comes back done, showing its last position', async () => {
+    stubCalls(() => answer('e4'))
+    const { series } = await run(settings({ games: 2, maxPlies: 1 }))
+
+    const { series: revived } = build(settings({ games: 2, maxPlies: 1 }))
+    revived.restore(series.state())
+
+    expect(revived.status).toBe('done')
+    expect(revived.resumable).toBe(false)
+    expect(revived.stats[0].score + revived.stats[1].score).toBe(2)
+    expect(revived.chess.history()).toEqual(['e4'])
+  })
+
+  test('a record whose PGN no longer parses costs its board and nothing else', () => {
+    const { series } = build(settings({ games: 2 }))
+    series.restore({
+      status: 'running',
+      stats: series.stats,
+      games: [],
+      gameIndex: 0,
+      pgn: '1. Qz9 ??',
+      lastSay: ['', ''],
+      resolvedEffort: null,
+    })
+
+    expect(series.chess.history()).toEqual([])
+    // Still resumable — it just deals a fresh board for the game it was on.
+    expect(series.resumable).toBe(true)
+  })
+
+  test('a fresh series is not resumable, and offers nothing to restore', () => {
+    const { series } = build(settings())
+    expect(series.resumable).toBe(false)
+    expect(series.state().pgn).toBe('')
+    expect(series.state().gameIndex).toBe(0)
+  })
+})
+
 describe('illegal replies', () => {
   test('labels a move-less nonempty reply invalid but charges the illegal budget', async () => {
     const sent = stubEndpoint(() => ({
