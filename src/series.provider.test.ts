@@ -86,6 +86,7 @@ function build(s: Settings) {
   const logs: LogEntry[] = []
   const series: Series = new InstantSeries(s, {
     onMove: () => {},
+    onVerdict: () => {},
     onGameStart: () => {},
     onGameEnd: () => {},
     onThinking: () => {},

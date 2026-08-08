@@ -9,6 +9,7 @@ import { Chess } from 'chess.js'
 import type { GameRecord, PlayerIdx } from './series'
 import { fmtScore } from './share'
 import { SPEEDS } from './settings'
+import type { StoredEval } from './verdict'
 
 /** Semantic type scale for a title card. share-video maps these to faces and
  *  pixel sizes; the storyboard only says how loud a line is. */
@@ -23,6 +24,11 @@ export type StoryGame = {
   white: PlayerIdx
   /** SAN moves, replayed straight back through Arena.animateMove. */
   moves: string[]
+  /** The verdict on each move, as the live match recorded it — indexed to match
+   *  `moves`. The export throws these up over the board exactly as they were
+   *  called at the time, without an engine anywhere near the render loop. A
+   *  hole, or a match played before verdicts were stored, simply goes uncalled. */
+  evals: (StoredEval | null)[]
   /** Shown over the reset board before the first move. */
   intro: CardView
   /** Shown over the final position once the last move has landed. */
@@ -148,6 +154,7 @@ export function buildStoryboard(input: {
       index: rec.index,
       white: rec.white,
       moves,
+      evals: rec.evals ?? [],
       scoreBefore: fmtPair(scores[i]),
       scoreAfter: fmtPair(scores[i + 1]),
       intro: {

@@ -8,6 +8,7 @@
 
 import { $ } from 'bun'
 import { buildId } from './build-id'
+import { ENGINE_ASSETS, ENGINE_DIR, ENGINE_SOURCE } from './src/engine-assets'
 
 /** The placeholder index.html ships with, and that the dev server keeps. */
 const PLACEHOLDER = '<meta name="build" content="dev" />'
@@ -38,6 +39,22 @@ if (!result.success) {
 for (const output of result.outputs)
   console.log(`  ${output.path.split('/').pop()}  ${(output.size / 1024).toFixed(1)} KB`)
 
+// The engine is copied rather than bundled: it is a wasm blob and its own
+// emscripten glue, which loads the .wasm by deriving the URL from its own
+// script — a hashed name from the bundler would break that pairing. Nothing
+// imports it, so nothing fetches it until the commentary asks for it.
+// Stockfish is GPLv3 and this ships a copy of it, so its licence ships beside
+// it. Nothing links against it — it is a separate binary in its own Worker —
+// but conveying the program means conveying the terms.
+await Bun.write(`dist${ENGINE_DIR}/LICENSE.txt`, Bun.file(`${ENGINE_SOURCE}/../Copying.txt`))
+
+for (const name of ENGINE_ASSETS) {
+  const from = Bun.file(`${ENGINE_SOURCE}/${name}`)
+  if (!(await from.exists())) throw new Error(`Missing engine asset ${name} — run \`bun install\``)
+  await Bun.write(`dist${ENGINE_DIR}/${name}`, from)
+  console.log(`  ${name}  ${(from.size / 1024).toFixed(1)} KB`)
+}
+
 const html = await Bun.file('dist/index.html').text()
 // A silent miss here would ship an unstamped build that still looks fine, so
 // this fails the build instead.
@@ -65,6 +82,9 @@ await Bun.write(
   Cache-Control: public, max-age=31536000, immutable
 
 /*.css
+  Cache-Control: public, max-age=31536000, immutable
+
+/engine/*
   Cache-Control: public, max-age=31536000, immutable
 `,
 )

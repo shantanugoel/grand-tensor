@@ -198,3 +198,33 @@ describe('buildStoryboard', () => {
     expect(intro.find((l) => l.text === 'BETA')?.tone).toBe('p1')
   })
 })
+
+describe('verdicts on the storyboard', () => {
+  test('travel with the game, so the export never searches anything', () => {
+    // Scholar's mate: the last move is the mate, the one before it the blunder
+    // that allowed it. Both were called live and both ride along.
+    const evals: ([number, number] | null)[] = [
+      [20, 5], [10, 30], [25, 12], [15, 40], [30, 8], [-900, 620], [30000, 0],
+    ]
+    const [story] = buildStoryboard({
+      games: [game({ evals })],
+      names: ['Alpha', 'Beta'],
+      totalGames: 1,
+      url: 'https://example.test',
+    }).games
+    expect(story.evals).toHaveLength(story.moves.length)
+    expect(story.evals[5]).toEqual([-900, 620])
+  })
+
+  test('a match saved before verdicts existed replays uncalled rather than broken', () => {
+    const [story] = buildStoryboard({
+      games: [game()],
+      names: ['Alpha', 'Beta'],
+      totalGames: 1,
+      url: 'https://example.test',
+    }).games
+    expect(story.evals).toEqual([])
+    // The moves still replay; only the commentary is missing.
+    expect(story.moves).toHaveLength(7)
+  })
+})

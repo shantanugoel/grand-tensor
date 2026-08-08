@@ -57,6 +57,7 @@ function build(s: Settings, onUpdate: (series: Series) => void = () => {}) {
   const logs: LogEntry[] = []
   const series: Series = new InstantSeries(s, {
     onMove: () => {},
+    onVerdict: () => {},
     onGameStart: () => {},
     onGameEnd: () => {},
     onThinking: () => {},
@@ -385,5 +386,129 @@ describe('illegal replies', () => {
     expect(series.stats[0].illegal).toBe(1)
     expect(series.stats[0].capped).toBe(1)
     expect(series.games[0].reason).toBe('Alpha forfeits (illegal moves)')
+  })
+})
+
+describe('stored verdicts', () => {
+  /** A grader that gives every move the same recognisable numbers. */
+  const flatGrader = async () => ({ cpl: 340, rawCpl: 340, severity: 'blunder' as const, best: 'd4', bestCp: 100, playedCp: -240 })
+
+  const gradedSeries = (s: Settings, onUpdate: (series: Series) => void = () => {}) => {
+    const series: Series = new InstantSeries(
+      s,
+      {
+        onMove: () => {},
+        onVerdict: () => {},
+        onGameStart: () => {},
+        onGameEnd: () => {},
+        onThinking: () => {},
+        onLog: () => {},
+        onUpdate: () => onUpdate(series),
+      },
+      flatGrader,
+    )
+    return series
+  }
+
+  /** Four legal plies, so the ply limit ends the game rather than an illegal move. */
+  const fourPlies = () => {
+    const moves = ['e4', 'e5', 'Nf3', 'Nc6']
+    let played = 0
+    return () => answer(moves[played++] ?? 'a3')
+  }
+
+  test('ride along with the game they belong to, one per ply', async () => {
+    stubCalls(fourPlies())
+    const series = gradedSeries(settings({ maxPlies: 4, games: 1 }))
+    await series.run()
+    const game = series.games[0]
+    expect(game.evals).toHaveLength(game.plies)
+    // [cp after the move from white's point of view, centipawns lost].
+    expect(game.evals![0]).toEqual([-240, 340])
+    // White's score is flipped for black's moves, so consecutive plies differ.
+    expect(game.evals![1]).toEqual([240, 340])
+  })
+
+  test('survive the reload that interrupted the game', async () => {
+    stubCalls(fourPlies())
+    const series = gradedSeries(settings({ maxPlies: 4, games: 1 }), (s) => {
+      if (s.chess.history().length >= 2) s.stop()
+    })
+    await series.run()
+
+    const state = series.state()
+    expect(state.evals).toHaveLength(2)
+
+    const rest = ['Nf3', 'Nc6']
+    let resumed = 0
+    stubCalls(() => answer(rest[resumed++] ?? 'a3'))
+    const revived = gradedSeries(settings({ maxPlies: 4, games: 1 }))
+    revived.restore(state)
+    await revived.run()
+    // Four plies of commentary, of which the first two were paid for before the
+    // reload and were not searched again.
+    expect(revived.games[0].evals).toHaveLength(4)
+    expect(revived.games[0].evals!.every((e) => e !== null)).toBe(true)
+  })
+
+  test('a game nobody could grade keeps its holes rather than inventing numbers', async () => {
+    stubCalls(fourPlies())
+    const series: Series = new InstantSeries(
+      settings({ maxPlies: 2, games: 1 }),
+      {
+        onMove: () => {},
+        onVerdict: () => {},
+        onGameStart: () => {},
+        onGameEnd: () => {},
+        onThinking: () => {},
+        onLog: () => {},
+        onUpdate: () => {},
+      },
+      async () => null,
+    )
+    await series.run()
+    expect(series.games[0].evals?.filter(Boolean)).toEqual([])
+  })
+})
+
+describe('late verdicts', () => {
+  // Regression: the verdict used to be kicked off before the move was logged
+  // and after the board animation was awaited, so a fast engine could answer
+  // before the line it belonged to existed. It showed up only in the production
+  // build, where the search beat the animation home, and it was silent — the
+  // patch found no line and simply did nothing.
+  test('a move is logged before its verdict can arrive', async () => {
+    const s = settings({ maxPlies: 6 })
+    const seen: string[] = []
+    const ids: number[] = []
+    // A grader that answers on the next tick — the shape of a fast engine, and
+    // exactly the timing that used to beat the log line to the punch.
+    const grader = async () => ({ cpl: 250, rawCpl: 250, severity: 'mistake' as const, best: 'd4', bestCp: 30, playedCp: -220 })
+    const series: Series = new InstantSeries(s, {
+      onMove: () => {},
+      onVerdict: (id) => {
+        seen.push(`verdict:${id}`)
+        ids.push(id)
+      },
+      onGameStart: () => {},
+      onGameEnd: () => {},
+      onThinking: () => {},
+      onLog: (entry) => {
+        if (entry.kind === 'move') seen.push(`log:${entry.id}`)
+      },
+      onUpdate: () => {},
+    }, grader)
+    globalThis.fetch = (async (url: any) =>
+      String(url).endsWith('/models') ? new Response(JSON.stringify({ data: [] })) : answer('e4')) as typeof fetch
+    await series.run()
+    expect(ids.length).toBeGreaterThan(0)
+    // Every verdict that landed did so after the line carrying its id.
+    for (const id of ids) {
+      expect(seen.indexOf(`log:${id}`)).toBeGreaterThanOrEqual(0)
+      expect(seen.indexOf(`log:${id}`)).toBeLessThan(seen.indexOf(`verdict:${id}`))
+    }
+    // Ids are handed out per move, so no line can share one with another.
+    const logged = seen.filter((e) => e.startsWith('log:'))
+    expect(new Set(logged).size).toBe(logged.length)
   })
 })

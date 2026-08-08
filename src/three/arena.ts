@@ -7,7 +7,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import type { Chess, Color, Move, PieceSymbol, Square } from 'chess.js'
-import { TAG_COLOR, TAG_SHOUT, TAG_VOLUME, fmtSwing, type MoveEval } from '../tiny-eval'
+import { TAG_COLOR, TAG_SHOUT, TAG_VOLUME, fmtSwing, type MoveEval } from '../verdict'
 import { Fx } from './fx'
 import { pieceGeometry, pieceHeight, pieceVoxels, VOXEL, voxelGeometry } from './voxels'
 
@@ -377,6 +377,13 @@ export class Arena {
 
     // Castling and promotion are easier to just re-sync than to choreograph.
     this.setPosition(chess)
+  }
+
+  /** Throws a verdict up over a square after the move that earned it has already
+   *  been played. A real search takes longer than the animation, so the label
+   *  arrives on its own rather than as part of the move. */
+  shoutAt(square: string, verdict: MoveEval) {
+    this.shoutVerdict(verdict, squarePos(square as Square))
   }
 
   /** The arcade half of the evaluation: a verdict thrown up over the square the

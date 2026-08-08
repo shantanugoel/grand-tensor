@@ -6,7 +6,8 @@ import { adjudicate, adjudicationReason } from './adjudication'
 import { addUsage, chat, ChatError, emptyUsage, fetchModels, type ChatResult, type ModelInfo, type Usage } from './llm'
 import { capRetryPrompt, cleanPgn, movePrompt, parseMove, retryPrompt, systemPrompt, type LegalMove } from './prompt'
 import { NO_EFFORT, normalizeReasoningEffort, REASONING_OFF, SPEEDS, type PlayerConfig, type Settings } from './settings'
-import { Commentator, type MoveEval } from './tiny-eval'
+import { classifyLoss, MATE_CP, storeEval, type MoveEval, type StoredEval } from './verdict'
+import { gradeInBrowser, type MoveGrade } from './browser-engine'
 
 export type PlayerIdx = 0 | 1
 
@@ -39,16 +40,34 @@ export type GameRecord = {
   reason: string
   plies: number
   pgn: string
+  /** The engine's verdict on each move of this game, indexed by ply.
+   *
+   *  Stored with the game so nothing is ever searched twice: the video export
+   *  and every later replay read the numbers the live match already paid for,
+   *  instead of standing up an engine of their own on a frame budget that has
+   *  no room for one. A hole is a move whose search did not land — an engine
+   *  that failed to load, or a match played before any of this existed — and
+   *  reads as no verdict rather than as a wrong one.
+   *
+   *  Never submitted to the leaderboard. `gamesForSubmission` names the fields
+   *  it sends one by one, and this is not among them: a client-side engine
+   *  score is a claim the Worker cannot check. */
+  evals?: (StoredEval | null)[]
 }
 
 export type LogEntry = {
   kind: 'move' | 'info' | 'warn' | 'error'
+  /** Identifies the line so a verdict that arrives after it was printed can be
+   *  patched into it. Unique within a run, absent on restored lines — a saved
+   *  match already has whatever verdict it ended up with. */
+  id?: number
   player?: PlayerIdx
   text: string
   detail?: string
   /** What the client-side evaluation made of the move. Only ever on a `move`
    *  line, and absent on matches saved before the verdicts existed — which is
-   *  why the log has to render happily without it. */
+   *  why the log has to render happily without it. Also absent at the moment
+   *  the line is printed: the engine is still searching. See `onVerdict`. */
   eval?: MoveEval
 }
 
@@ -60,14 +79,20 @@ export type MoveEvent = {
   ply: number
   check: boolean
   mate: boolean
-  /** The verdict on the move, so the arena can throw it up over the board
-   *  without evaluating the same position a second time. */
-  eval: MoveEval
 }
 
 export type SeriesEvents = {
   /** Awaited, so the board animation finishes before the next request goes out. */
   onMove: (e: MoveEvent) => Promise<void> | void
+  /** The verdict on a move that has already been played and logged.
+   *
+   *  Split out from `onMove` because a real search takes far longer than the
+   *  board animation, and an arena that waited for one would stutter on every
+   *  ply. The move goes up immediately and the label lands when it lands —
+   *  usually within a second, and always long before the next turn, which is a
+   *  model call measured in minutes. `square` is where the move finished, so
+   *  the shout still knows where to appear. */
+  onVerdict: (id: number, verdict: MoveEval, square: string) => void
   onGameStart: (gameIndex: number, white: PlayerIdx) => Promise<void> | void
   onGameEnd: (rec: GameRecord) => Promise<void> | void
   onThinking: (player: PlayerIdx | null) => void
@@ -109,6 +134,11 @@ export type SeriesState = {
    *  which is how a resume tells "carry on with this board" from "deal a new
    *  one" — the board itself still shows the last finished position either way. */
   pgn: string
+  /** Verdicts for the game under way, the same shape a finished game stores.
+   *  Without it a match resumed mid-game would come back with a hole where its
+   *  first half's commentary was. Absent on matches saved before verdicts were
+   *  stored at all. */
+  evals?: (StoredEval | null)[]
   lastSay: [string, string]
   resolvedEffort: [string, string] | null
 }
@@ -150,9 +180,12 @@ export class Series {
   /** Set by `restore`. A series that came off the shelf offers Resume instead of
    *  dealing a fresh match. */
   private restored = false
-  /** Scores each move as it lands, for the battle log and the arena. Pointed at
-   *  the board at the top of every game, restored ones included. */
-  private commentator = new Commentator()
+  /** Verdicts for the game under way, indexed by ply.
+   *
+   *  Handed to the `GameRecord` by reference when the game ends, so a search
+   *  still in flight at that moment lands in the record rather than nowhere.
+   *  A new game gets a new array, which is what keeps the two apart. */
+  private gameEvals: (StoredEval | null)[] = []
 
   private abort = new AbortController()
   private resumeWaiters: (() => void)[] = []
@@ -164,7 +197,17 @@ export class Series {
   /** Avoid flooding the Battle log if a provider repeatedly ignores `off`. */
   private reportedReasoningWhileOff: [boolean, boolean] = [false, false]
 
-  constructor(private settings: Settings, private events: SeriesEvents) {}
+  /** Hands each logged move a name the late verdict can find it by. */
+  private nextVerdictId = 0
+
+  /** How a move gets its real grade. Injectable so a test can drive the late
+   *  verdict path without a browser, and so the engine stays one swappable
+   *  thing rather than an import baked into the move loop. */
+  constructor(
+    private settings: Settings,
+    private events: SeriesEvents,
+    private grade: (fen: string, san: string) => Promise<MoveGrade | null> = gradeInBrowser,
+  ) {}
 
   get totalGames() {
     return this.settings.games
@@ -192,6 +235,7 @@ export class Series {
       // the one at `games.length` — which is also where a resume restarts.
       gameIndex: this.games.length,
       pgn: this.liveBoard ? this.chess.pgn() : '',
+      evals: this.liveBoard ? [...this.gameEvals] : [],
       lastSay: [...this.lastSay],
       resolvedEffort: this.resolvedEffort ? [...this.resolvedEffort] : null,
     }
@@ -207,6 +251,7 @@ export class Series {
     this.gameIndex = Math.min(Math.max(state.gameIndex, 0), this.settings.games)
     this.white = (this.gameIndex % 2) as PlayerIdx
     this.lastSay = [...state.lastSay]
+    this.gameEvals = state.evals ? [...state.evals] : []
     this.resolvedEffort = state.resolvedEffort ? [...state.resolvedEffort] : null
     this.restored = true
     this.status = state.status === 'done' || this.gameIndex >= this.settings.games ? 'done' : 'idle'
@@ -340,14 +385,16 @@ export class Series {
   private async playGame() {
     // A restored series carries on with the board the reload interrupted, and
     // keeps the commentary that was on the cards when it did.
-    if (!this.liveBoard) {
+    const resumed = this.liveBoard
+    if (!resumed) {
       this.chess = new Chess()
       this.lastSay = ['', '']
       this.liveBoard = true
     }
-    // Fresh board or resumed one, the commentary starts from what is on it —
-    // a restored game has no earlier read to score its next move against.
-    this.commentator.reset(this.chess)
+    // A resumed game keeps the verdicts it already earned — `restore` put them
+    // back; a fresh one starts with none. Either way the array belongs to this
+    // game alone, and the record it ends up in holds this same reference.
+    if (!resumed) this.gameEvals = []
     await this.events.onGameStart(this.gameIndex, this.white)
     this.events.onUpdate()
 
@@ -381,11 +428,29 @@ export class Series {
         break
       }
 
+      // The position the move was played from — the node both searches are
+      // rooted at. Taken before the move lands, because after it there is no
+      // way back to it.
+      const from = this.chess.fen()
       const move = this.chess.move(outcome.san)
-      const verdict = this.commentator.judge(this.chess, move)
       plies++
       this.stats[player].moves++
       this.lastSay[player] = outcome.say
+
+      // Logged before the search starts, and before the animation is awaited.
+      // A grade can beat the board home — it is a hundred milliseconds against
+      // an animation plus a frame or two — and a verdict that arrives before the
+      // line it belongs to has nothing to attach itself to.
+      const verdictId = this.nextVerdictId++
+      const ply = plies
+      this.events.onLog({
+        kind: 'move',
+        id: verdictId,
+        player,
+        text: `${Math.ceil(plies / 2)}${move.color === 'w' ? '.' : '...'} ${move.san}`,
+        detail: outcome.say,
+      })
+      void this.gradeMove(verdictId, ply, from, move)
 
       await this.events.onMove({
         player,
@@ -395,14 +460,6 @@ export class Series {
         ply: plies,
         check: this.chess.isCheck(),
         mate: this.chess.isCheckmate(),
-        eval: verdict,
-      })
-      this.events.onLog({
-        kind: 'move',
-        player,
-        text: `${Math.ceil(plies / 2)}${move.color === 'w' ? '.' : '...'} ${move.san}`,
-        detail: outcome.say,
-        eval: verdict,
       })
       this.events.onUpdate()
 
@@ -421,6 +478,33 @@ export class Series {
     this.events.onUpdate()
   }
 
+  /** Puts a real engine's verdict on a move that has already been played.
+   *
+   *  Never awaited by the move loop. A search is orders of magnitude slower than
+   *  the shallow evaluation it replaces, and blocking on it would make the arena
+   *  wait on the commentary — so the move is shown, and this catches up.
+   *
+   *  Nothing here can influence the game: it reads a position it was handed and
+   *  emits a label. The result, the adjudication and the standings are decided
+   *  by `adjudicate()` on material alone, which is what makes them something the
+   *  Worker can recompute from the PGN. An engine verdict is a claim only this
+   *  browser can make, so it never gets a vote. */
+  private async gradeMove(id: number, ply: number, fen: string, move: Move): Promise<void> {
+    // The board state is read now rather than when the search returns, by which
+    // time `this.chess` has moved on several plies. `isDraw` is asked once, here,
+    // rather than per frame — it replays the game to answer about repetition.
+    const ended = { mate: this.chess.isCheckmate(), draw: this.chess.isDraw() }
+    const grade = await this.grade(fen, move.san)
+    // No verdict at all rather than a worse one from somewhere else. A move the
+    // engine could not reach keeps its line in the log, unlabelled.
+    if (!grade || this.abort.signal.aborted) return
+    const verdict = verdictFrom(grade, move, ended)
+    // Kept for the video and every later replay, so this search is the only one
+    // this move ever costs.
+    this.gameEvals[ply - 1] = storeEval(verdict)
+    this.events.onVerdict(id, verdict, move.to)
+  }
+
   private recordFromPosition(plies: number): GameRecord {
     const c = this.chess
     if (c.isCheckmate()) {
@@ -436,7 +520,9 @@ export class Series {
   }
 
   private finish(result: GameRecord['result'], reason: string, plies: number): GameRecord {
-    return { index: this.gameIndex, white: this.white, result, reason, plies, pgn: this.chess.pgn() }
+    // The array is handed over by reference on purpose: a search still running
+    // when the game ends writes into the record rather than into nothing.
+    return { index: this.gameIndex, white: this.white, result, reason, plies, pgn: this.chess.pgn(), evals: this.gameEvals }
   }
 
   private applyResult(rec: GameRecord) {
@@ -680,5 +766,26 @@ export class Series {
   private waitIfPaused() {
     if (this.status !== 'paused') return Promise.resolve()
     return new Promise<void>((resolve) => this.resumeWaiters.push(resolve))
+  }
+}
+
+/** An engine grade in the arcade's own vocabulary.
+ *
+ *  Centipawn loss is already exactly what `MoveEval.loss` means — what the mover
+ *  gave up — so the bands are the ones the log has always used and the numbers
+ *  underneath them are finally real. The one thing that does not survive the
+ *  translation is `brilliant`: a loss against the engine's best move cannot be
+ *  negative, so a move can no longer beat the evaluation that judges it. */
+function verdictFrom(grade: MoveGrade, move: Move, ended: { mate: boolean; draw: boolean }): MoveEval {
+  // `playedCp` is the score of the move from the point of view of whoever played
+  // it, so white's books need it flipped for black.
+  const cp = move.color === 'w' ? grade.playedCp : -grade.playedCp
+  if (ended.mate) return { cp: move.color === 'w' ? MATE_CP : -MATE_CP, mate: true, draw: false, loss: 0, tag: 'mate' }
+  return {
+    cp: ended.draw ? 0 : cp,
+    mate: false,
+    draw: ended.draw,
+    loss: grade.cpl,
+    tag: classifyLoss(grade.cpl),
   }
 }

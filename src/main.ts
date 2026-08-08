@@ -4,6 +4,7 @@ import { Chess } from 'chess.js'
 import { Arena } from './three/arena'
 import { material, MAX_MATERIAL } from './adjudication'
 import { Series, type GameRecord, type PlayerStats } from './series'
+import { warmEngine } from './browser-engine'
 import { loadSettings, saveSettings, isFirstVisit, DEFAULTS, SPEEDS, effectiveSpeedIndex, type Settings } from './settings'
 import { Hud } from './ui/hud'
 import { readSettings, renderSettings } from './ui/settings-ui'
@@ -62,6 +63,9 @@ let statsAtGameStart: [PlayerStats, PlayerStats] | null = null
 function newSeries(): Series {
   return new Series(settings, {
     onGameStart: (index, white) => {
+      // Starts the engine download on the first game rather than on page load:
+      // it is 7 MB, and a visitor who never starts a match never pays for it.
+      warmEngine()
       statsAtGameStart = structuredClone(series!.stats)
       arena.setPosition(series!.chess)
       hud.log({ kind: 'info', text: `Game ${index + 1} — ${settings.players[white].label} has white` })
@@ -69,7 +73,12 @@ function newSeries(): Series {
       persistNow()
     },
     onMove: async (e) => {
-      await arena.animateMove(e.move, series!.chess, { check: e.check, mate: e.mate, eval: e.eval })
+      await arena.animateMove(e.move, series!.chess, { check: e.check, mate: e.mate })
+      persist()
+    },
+    onVerdict: (id, verdict, square) => {
+      hud.patchVerdict(id, verdict)
+      arena.shoutAt(square, verdict)
       persist()
     },
     onGameEnd: async (rec) => {
