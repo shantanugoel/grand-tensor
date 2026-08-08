@@ -85,6 +85,26 @@ const newStats = (): PlayerStats => ({
 
 export type Status = 'idle' | 'running' | 'paused' | 'stalled' | 'done' | 'error'
 
+/** Everything needed to put a series back on the board after a reload.
+ *
+ *  The pending API conversation is deliberately not part of it. `requestMove`
+ *  rebuilds the entire prompt from the position on every turn, so a restored
+ *  series has nothing to replay — it simply asks for the same move again. */
+export type SeriesState = {
+  status: Status
+  stats: [PlayerStats, PlayerStats]
+  games: GameRecord[]
+  /** The game to play next. Always `games.length` for a series played in order,
+   *  and the point a resumed run picks up from. */
+  gameIndex: number
+  /** Moves of the game under way. Empty between games and once the series ends,
+   *  which is how a resume tells "carry on with this board" from "deal a new
+   *  one" — the board itself still shows the last finished position either way. */
+  pgn: string
+  lastSay: [string, string]
+  resolvedEffort: [string, string] | null
+}
+
 /** Backoff between connection retries: 2s, 4s, 8s… up to a minute. The ceiling
  *  matters more than the growth — an unattended series should keep knocking on
  *  a provider that is down, not drift out to hour-long gaps. */
@@ -115,6 +135,14 @@ export class Series {
    *  series has run that check — the HUD falls back to the configured value. */
   resolvedEffort: [string, string] | null = null
 
+  /** Whether the board holds a game that is actually under way, as opposed to
+   *  the last finished position left on screen between rounds. Only a live board
+   *  is worth snapshotting, and only a live board is picked back up on resume. */
+  private liveBoard = false
+  /** Set by `restore`. A series that came off the shelf offers Resume instead of
+   *  dealing a fresh match. */
+  private restored = false
+
   private abort = new AbortController()
   private resumeWaiters: (() => void)[] = []
   /** Resolved with true by `retry()`, false if the series is abandoned. */
@@ -136,6 +164,58 @@ export class Series {
     const [a, b] = this.stats
     if (a.score === b.score) return null
     return a.score > b.score ? 0 : 1
+  }
+
+  /** A restored series with games left in it. */
+  get resumable() {
+    return this.restored && this.status === 'idle' && this.gameIndex < this.settings.games
+  }
+
+  /** A point to come back to. Cheap enough to call after every move. */
+  state(): SeriesState {
+    return {
+      status: this.status,
+      stats: structuredClone(this.stats),
+      games: structuredClone(this.games),
+      // Completed games are pushed in order, so the game being played is always
+      // the one at `games.length` — which is also where a resume restarts.
+      gameIndex: this.games.length,
+      pgn: this.liveBoard ? this.chess.pgn() : '',
+      lastSay: [...this.lastSay],
+      resolvedEffort: this.resolvedEffort ? [...this.resolvedEffort] : null,
+    }
+  }
+
+  /** Puts a stored series back. Must be called before `run`.
+   *
+   *  Whatever the state was saved under, it comes back parked: `run` is what
+   *  starts play again, so nothing here can be left claiming to be running. */
+  restore(state: SeriesState) {
+    this.stats = structuredClone(state.stats)
+    this.games = structuredClone(state.games)
+    this.gameIndex = Math.min(Math.max(state.gameIndex, 0), this.settings.games)
+    this.white = (this.gameIndex % 2) as PlayerIdx
+    this.lastSay = [...state.lastSay]
+    this.resolvedEffort = state.resolvedEffort ? [...state.resolvedEffort] : null
+    this.restored = true
+    this.status = state.status === 'done' || this.gameIndex >= this.settings.games ? 'done' : 'idle'
+
+    // The board shows the game in progress, or — between rounds and at the end
+    // of a series — the position the last game finished on. Only the first of
+    // those is picked back up; the other is just what should be on screen.
+    this.liveBoard = state.pgn !== ''
+    this.chess = new Chess()
+    const board = state.pgn || this.games[this.games.length - 1]?.pgn || ''
+    if (board) {
+      try {
+        this.chess.loadPgn(board)
+      } catch {
+        // A record that no longer parses costs its position and nothing else:
+        // the score and the games already in the book are still good.
+        this.chess = new Chess()
+        this.liveBoard = false
+      }
+    }
   }
 
   pause() {
@@ -171,14 +251,22 @@ export class Series {
   }
 
   async run() {
+    const resuming = this.resumable && (this.gameIndex > 0 || this.liveBoard)
     this.status = 'running'
-    this.events.onLog({ kind: 'info', text: `Series started — best of ${this.settings.games}` })
+    this.events.onLog({
+      kind: 'info',
+      text: resuming
+        ? `Series resumed at game ${this.gameIndex + 1} of ${this.settings.games}`
+        : `Series started — best of ${this.settings.games}`,
+    })
     this.models = await fetchModels(this.settings.baseUrl, this.settings.apiKey)
     this.effort = this.settings.players.map((p, i) => this.resolveEffort(p, i as PlayerIdx)) as [string, string]
     this.resolvedEffort = this.effort
     this.events.onUpdate()
     try {
-      for (this.gameIndex = 0; this.gameIndex < this.settings.games; this.gameIndex++) {
+      // Not initialised here: a restored series starts from the game it was left
+      // on, and a fresh one is already sitting at zero.
+      for (; this.gameIndex < this.settings.games; this.gameIndex++) {
         this.white = (this.gameIndex % 2) as PlayerIdx
         await this.playGame()
         if (this.abort.signal.aborted) break
@@ -239,12 +327,17 @@ export class Series {
   }
 
   private async playGame() {
-    this.chess = new Chess()
-    this.lastSay = ['', '']
+    // A restored series carries on with the board the reload interrupted, and
+    // keeps the commentary that was on the cards when it did.
+    if (!this.liveBoard) {
+      this.chess = new Chess()
+      this.lastSay = ['', '']
+      this.liveBoard = true
+    }
     await this.events.onGameStart(this.gameIndex, this.white)
     this.events.onUpdate()
 
-    let plies = 0
+    let plies = this.chess.history().length
     let record: GameRecord | null = null
 
     while (!record) {
@@ -302,6 +395,9 @@ export class Series {
 
     if (!record) return
     this.games.push(record)
+    // The position stays on screen until the next game is dealt, but it is a
+    // finished one now — a resume must not pick it back up.
+    this.liveBoard = false
     this.applyResult(record)
     this.events.onLog({ kind: 'info', text: `Game ${record.index + 1}: ${record.result} — ${record.reason}` })
     await this.events.onGameEnd(record)

@@ -118,17 +118,27 @@
       </section>
     </aside>
 
+    <!-- Transport on the left, everything that only changes how the match looks
+         folded into one View popover on the right. The dock had grown to six
+         controls plus a slider, which wrapped to two rows on a phone and left
+         no room for History. -->
     <footer class="dock">
       <button id="btn-run" class="btn primary">▶ Start</button>
       <button id="btn-pause" class="btn" disabled>❚❚ Pause</button>
       <button id="btn-reset" class="btn ghost">↺ Reset</button>
-      <button id="btn-help" class="btn ghost"><span class="wide-only">? Help</span><span class="narrow-only">?</span></button>
-      <label class="slider">
-        <span>Turn speed</span>
-        <input id="speed" type="range" min="0" max="6" step="1" value="0" />
-        <b id="speed-label">Turbo</b>
-      </label>
-      <label class="toggle"><input id="rotate" type="checkbox" checked /> <span>Orbit</span></label>
+      <button id="btn-history" class="btn ghost" title="Past and unfinished matches"><span class="wide-only">🕘 History</span><span class="narrow-only">🕘</span></button>
+      <div class="dock-menu">
+        <button id="btn-view" class="btn ghost" title="Turn speed and camera" aria-expanded="false" aria-controls="view-panel"><span class="wide-only">👁 View</span><span class="narrow-only">👁</span><span class="caret">▾</span></button>
+        <div id="view-panel" class="view-panel hidden">
+          <label class="slider">
+            <span>Turn speed</span>
+            <input id="speed" type="range" min="0" max="6" step="1" value="0" />
+            <b id="speed-label">Turbo</b>
+          </label>
+          <label class="toggle"><input id="rotate" type="checkbox" checked /> <span>Orbit the arena</span></label>
+        </div>
+      </div>
+      <button id="btn-help" class="btn ghost" title="How this works"><span class="wide-only">? Help</span><span class="narrow-only">?</span></button>
     </footer>
 
     <div id="modal" class="modal hidden">
@@ -179,6 +189,24 @@
           <button id="btn-leaderboard-close" class="btn ghost">✕</button>
         </div>
         <div id="leaderboard-content"></div>
+      </div>
+    </div>
+
+    <!-- Every series this browser has played, the live one included. -->
+    <div id="history-modal" class="modal hidden">
+      <div class="modal-body history-modal-body">
+        <div class="modal-head">
+          <h2>Match history</h2>
+          <div class="modal-head-actions">
+            <button id="btn-history-clear" class="btn ghost tiny hidden">Clear history</button>
+            <button id="btn-history-close" class="btn ghost">✕</button>
+          </div>
+        </div>
+        <p class="modal-note">
+          Saved on this device only — nothing here is uploaded, and API keys are never written. Open a match to put
+          it back on the board, resume an unfinished one where it left off, or export the card and the video from it.
+        </p>
+        <div id="history-list" class="history-list"></div>
       </div>
     </div>
 

@@ -27,6 +27,8 @@ import { SummaryModal, type SummaryRow, type SummaryView } from './ui/summary'
 import { ConfirmModal } from './ui/confirm'
 import { VideoProgress } from './ui/video-progress'
 import { Leaderboard } from './leaderboard'
+import { History, type SeriesSnapshot } from './history'
+import { HistoryModal, type HistoryAction } from './ui/history-ui'
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string) => document.querySelector(sel) as T
 
@@ -45,7 +47,11 @@ const summary = new SummaryModal()
 const confirm = new ConfirmModal()
 const leaderboard = new Leaderboard((message) => hud.toast(message))
 const videoProgress = new VideoProgress()
+const history = new History()
 let series: Series | null = null
+/** Which row in the history file the series on screen belongs to. Null for a
+ *  board that has never been started — an empty match is not worth a record. */
+let currentId: string | null = null
 /** A video export drives the arena and the speed dial itself, so everything that
  *  would fight it over either is locked out for the duration. */
 let exporting = false
@@ -60,9 +66,14 @@ function newSeries(): Series {
       arena.setPosition(series!.chess)
       hud.log({ kind: 'info', text: `Game ${index + 1} — ${settings.players[white].label} has white` })
       hud.render(series!)
+      persistNow()
     },
-    onMove: (e) => arena.animateMove(e.move, series!.chess, { check: e.check, mate: e.mate }),
+    onMove: async (e) => {
+      await arena.animateMove(e.move, series!.chess, { check: e.check, mate: e.mate })
+      persist()
+    },
     onGameEnd: async (rec) => {
+      persistNow()
       if (rec.result === '1/2-1/2') {
         arena.announce('DRAW', '#8fa5d6')
         hud.announce('DRAW')
@@ -97,9 +108,117 @@ function newSeries(): Series {
       // Stalls and retries both arrive mid-run, so the buttons can't wait for
       // the series to finish to catch up with the status.
       setControls()
+      persist()
     },
   })
 }
+
+/* ---------- saved matches ---------- */
+
+/** How long a burst of updates is allowed to coalesce.
+ *
+ *  `onUpdate` fires several times per turn and a write serialises the whole
+ *  archive, so this wants to be generous rather than eager. What it costs is the
+ *  last second and a half of a match if the tab dies without warning — and a
+ *  real turn takes minutes, so in practice that is nothing. Everything that
+ *  marks actual progress (a game starting or ending, pause, the tab going away)
+ *  flushes on the spot regardless. */
+const PERSIST_MS = 1500
+let persistTimer: ReturnType<typeof setTimeout> | undefined
+
+function persistNow() {
+  clearTimeout(persistTimer)
+  persistTimer = undefined
+  if (!series || !currentId) return
+  history.save({ id: currentId, settings, log: hud.logEntries, ...series.state() })
+}
+
+function persist() {
+  if (!series || !currentId) return
+  persistTimer ??= setTimeout(persistNow, PERSIST_MS)
+}
+
+// A phone backgrounding the tab may never come back to it, and `pagehide` is
+// the only one of these that fires reliably on iOS.
+addEventListener('pagehide', persistNow)
+addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') persistNow()
+})
+
+/** Puts a saved match back on the board.
+ *
+ *  The matchup comes with it. A series is only meaningful alongside the settings
+ *  it was played under — the labels on the cards, the models in the share card,
+ *  and the endpoint a resumed move goes out to — so opening one adopts them,
+ *  keeping the live API key and the viewer's current speed preference. */
+function loadSnapshot(snap: SeriesSnapshot) {
+  series?.stop()
+  summary.close()
+  card = null
+  leaderboard.idle()
+
+  Object.assign(settings, structuredClone(snap.settings), { apiKey: settings.apiKey, speed: settings.speed })
+  saveSettings(settings)
+  hud.setSettings(settings)
+
+  currentId = snap.id
+  history.setCurrent(snap.id)
+  series = newSeries()
+  series.restore(snap)
+  hud.restoreLog(snap.log)
+  hud.setThinking(null)
+  arena.setPosition(series.chess)
+  hud.render(series)
+  syncStatus()
+  setControls()
+}
+
+const historyModal = new HistoryModal({
+  list: () => history.list(),
+  currentId: () => currentId,
+  isPlaying: () =>
+    series?.status === 'running' || series?.status === 'paused' || series?.status === 'stalled',
+  canRecordVideo: canRecordVideo(),
+  act: (action, id) => void historyAction(action, id),
+  clearAll: () => {
+    currentId = null
+    history.clear()
+    reset()
+    hud.toast('Match history cleared.')
+  },
+})
+
+async function historyAction(action: HistoryAction, id: string) {
+  if (action === 'delete') {
+    const wasCurrent = id === currentId
+    // Cleared first, or the reset below would save the row straight back.
+    if (wasCurrent) currentId = null
+    history.remove(id)
+    if (wasCurrent) reset()
+    historyModal.refresh()
+    return
+  }
+
+  const snap = history.get(id)
+  if (!snap) return
+  // Every export reads the live arena and the live series, so the match has to
+  // be on the board before any of them can speak for it.
+  if (id !== currentId) loadSnapshot(snap)
+
+  if (action === 'open') {
+    historyModal.close()
+    return
+  }
+  if (action === 'resume') {
+    historyModal.close()
+    await startSeries()
+    return
+  }
+  historyModal.close()
+  await share(action)
+}
+
+$('#btn-history').addEventListener('click', () => historyModal.open())
 
 /* ---------- round & series summaries ---------- */
 
@@ -218,6 +337,9 @@ function showSeriesSummary() {
 
 function syncStatus() {
   if (!series) return hud.setStatus('IDLE')
+  // A restored series is parked, not idle: it has a score and a board, and the
+  // only thing missing is someone pressing Resume.
+  if (series.resumable) return hud.setStatus(`GAME ${series.gameIndex + 1}/${series.totalGames} PAUSED`)
   switch (series.status) {
     case 'running':
       return hud.setStatus(`GAME ${series.gameIndex + 1}/${series.totalGames} LIVE`, 'live')
@@ -246,11 +368,16 @@ function setControls() {
   $<HTMLButtonElement>('#btn-reset').disabled = exporting
   $('#btn-pause').textContent = stalled ? '↻ Retry' : series?.status === 'paused' ? '▶ Resume' : '❚❚ Pause'
   $('#btn-pause').classList.toggle('primary', stalled)
+  // A match restored from history carries on rather than starting over, and the
+  // button has to say so — pressing Start on it would otherwise read as a threat
+  // to the score already on the board.
+  $('#btn-run').textContent = series?.resumable ? '▶ Resume' : '▶ Start'
 }
 
 /* ---------- controls ---------- */
 
-$('#btn-run').addEventListener('click', async () => {
+async function startSeries() {
+  if (series?.status === 'running' || series?.status === 'paused' || series?.status === 'stalled') return
   const needsKey = settings.players.some((p) => p.model.trim().toLowerCase() !== 'random')
   if (needsKey && !settings.apiKey) {
     hud.toast('Add an API key in Settings, or set a model to "random" to watch a demo match.')
@@ -258,16 +385,24 @@ $('#btn-run').addEventListener('click', async () => {
     return
   }
   dismissRotateHint()
-  hud.clearLog()
-  card = null
-  series = newSeries()
+  // A restored match keeps its board, its score and its battle log — only a
+  // genuinely new one gets dealt from scratch.
+  if (!series?.resumable) {
+    hud.clearLog()
+    card = null
+    series = newSeries()
+    currentId = crypto.randomUUID()
+    history.setCurrent(currentId)
+  }
   const leaderboardRun = leaderboard.prepare(settings)
   arena.setPosition(series.chess)
   hud.render(series)
   const finished = series.run()
   setControls()
+  persistNow()
   await finished
   if (series.status === 'error') hud.toast(series.errorMessage)
+  persistNow()
   setControls()
   syncStatus()
   // Let the round's K.O. slam clear before the match verdict lands on top of it.
@@ -279,7 +414,9 @@ $('#btn-run').addEventListener('click', async () => {
     await sleep(VERDICT_MS + 900)
     if (series === finishedSeries) showSeriesSummary()
   }
-})
+}
+
+$('#btn-run').addEventListener('click', () => void startSeries())
 
 $('#btn-pause').addEventListener('click', () => {
   if (!series) return
@@ -287,14 +424,21 @@ $('#btn-pause').addEventListener('click', () => {
   else series.status === 'paused' ? series.resume() : series.pause()
   setControls()
   syncStatus()
+  persistNow()
 })
 
 function reset() {
+  // Clearing the board is about the next match, not a decision to throw away
+  // the last one — so whatever was on it is written out first, and stays in
+  // History to be resumed or exported later.
+  persistNow()
   series?.stop()
   // Frees whatever round is parked on the countdown before the series is swapped.
   summary.close()
   card = null
   leaderboard.idle()
+  currentId = null
+  history.setCurrent(null)
   series = newSeries()
   hud.clearLog()
   hud.setThinking(null)
@@ -304,10 +448,14 @@ function reset() {
   setControls()
 }
 
-/** Reset throws a live match away, and on a phone the button sits a thumb's
- *  width from Pause — so a match still in progress asks first. An idle board has
+/** Reset interrupts a live match, and on a phone the button sits a thumb's width
+ *  from Pause — so a match still in progress asks first. An idle board has
  *  nothing to lose, and a finished one keeps its result card until it is
- *  deliberately cleared, so neither is worth a dialog. */
+ *  deliberately cleared, so neither is worth a dialog.
+ *
+ *  It is no longer the one-way door it was: the match goes to History and can be
+ *  resumed from the move it was on. The dialog says so, because a warning that
+ *  overstates the damage is the kind people learn to click through. */
 async function requestReset() {
   const live = series?.status === 'running' || series?.status === 'paused' || series?.status === 'stalled'
   if (!live) return reset()
@@ -318,7 +466,7 @@ async function requestReset() {
     title: 'Reset the match?',
     body: `Game ${s.gameIndex + 1} of ${s.totalGames} is still live${
       played ? ` — ${played} move${played === 1 ? '' : 's'} in` : ''
-    }. Resetting clears the board, the score and the battle log, and none of it can be brought back.`,
+    }. Resetting clears the board for a new match. This one is kept in History, where you can pick it back up from the move it stopped on.`,
     confirm: '↺ Reset anyway',
     cancel: 'Keep playing',
   })
@@ -345,6 +493,30 @@ const rotateInput = $<HTMLInputElement>('#rotate')
 rotateInput.addEventListener('change', (e) => {
   arena.autoRotate = (e.target as HTMLInputElement).checked
 })
+
+/* ---------- view popover ---------- */
+
+// Turn speed and the orbit toggle are the only dock controls that change nothing
+// about the match, so they fold away together behind one button. On a phone that
+// is the difference between a one-row dock and a two-row one — and the orbit
+// toggle, which the compact layout used to hide outright, comes back.
+const viewPanel = $('#view-panel')
+const viewBtn = $('#btn-view')
+
+function setViewOpen(open: boolean) {
+  viewPanel.classList.toggle('hidden', !open)
+  viewBtn.setAttribute('aria-expanded', String(open))
+}
+
+const closeView = () => setViewOpen(false)
+
+viewBtn.addEventListener('click', (e) => {
+  e.stopPropagation()
+  setViewOpen(viewPanel.classList.contains('hidden'))
+})
+// Anywhere outside dismisses it, but a click on the slider itself must not.
+viewPanel.addEventListener('click', (e) => e.stopPropagation())
+addEventListener('click', closeView)
 
 /* ---------- settings modal ---------- */
 
@@ -387,9 +559,13 @@ $('#help-modal').addEventListener('click', (e) => {
 const MODAL_CLOSERS: [string, () => void][] = [
   ['#confirm-modal', () => confirm.close()],
   ['#help-modal', closeHelp],
+  ['#history-modal', () => historyModal.close()],
   ['#leaderboard-modal', () => leaderboard.close()],
   ['#summary-modal', () => summary.close()],
   ['#modal', closeModal],
+  // Last: it sits under every modal, so it is only ever the topmost thing open
+  // when nothing else is.
+  ['#view-panel', closeView],
 ]
 
 addEventListener('keydown', (e: KeyboardEvent) => {
@@ -439,8 +615,11 @@ const fmtDuration = (ms: number) => {
  *  capture of the match as it was played. */
 async function exportVideo() {
   if (exporting) return
-  if (!series || series.status !== 'done' || series.games.length === 0)
-    return hud.toast('The video is a replay of a finished series — run one to the end first.')
+  // Every finished game in the book is worth replaying, whether or not the
+  // series they belong to ever reached its last round — an abandoned match in
+  // History is exactly the sort of thing someone wants the video of.
+  if (!series || series.games.length === 0)
+    return hud.toast('The video is a replay of finished games — play at least one to the end first.')
   if (!canRecordVideo()) return hud.toast('This browser can’t record the canvas to a video file.')
 
   const active = series
@@ -561,5 +740,28 @@ if (canNativeShare())
 if (!canRecordVideo())
   document.querySelectorAll('[data-share="video"]').forEach((el) => el.classList.add('hidden'))
 setupMobile()
-reset()
+
+/** Puts back whatever was on the board when the page last went away.
+ *
+ *  A shared link outranks it: arriving on `#a=…&b=…` is an explicit request for
+ *  that matchup, and silently replacing it with last night's match would make
+ *  the link look broken. The saved series is still in History either way. */
+function restoreLastMatch(): boolean {
+  if (fromLink) return false
+  const id = history.currentId
+  const snap = id ? history.get(id) : null
+  if (!snap) return false
+  loadSnapshot(snap)
+  return true
+}
+
+if (restoreLastMatch()) {
+  hud.toast(
+    series!.resumable
+      ? 'Picked your match back up where it left off — press Resume to carry on.'
+      : 'Restored your last match. 🕘 History has the rest.',
+  )
+} else {
+  reset()
+}
 if (firstVisit || fromLink) openModal()
