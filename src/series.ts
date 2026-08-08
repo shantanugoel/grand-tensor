@@ -6,6 +6,7 @@ import { adjudicate, adjudicationReason } from './adjudication'
 import { addUsage, chat, ChatError, emptyUsage, fetchModels, type ChatResult, type ModelInfo, type Usage } from './llm'
 import { capRetryPrompt, cleanPgn, movePrompt, parseMove, retryPrompt, systemPrompt, type LegalMove } from './prompt'
 import { NO_EFFORT, normalizeReasoningEffort, REASONING_OFF, SPEEDS, type PlayerConfig, type Settings } from './settings'
+import { Commentator, type MoveEval } from './tiny-eval'
 
 export type PlayerIdx = 0 | 1
 
@@ -45,6 +46,10 @@ export type LogEntry = {
   player?: PlayerIdx
   text: string
   detail?: string
+  /** What the client-side evaluation made of the move. Only ever on a `move`
+   *  line, and absent on matches saved before the verdicts existed — which is
+   *  why the log has to render happily without it. */
+  eval?: MoveEval
 }
 
 export type MoveEvent = {
@@ -55,6 +60,9 @@ export type MoveEvent = {
   ply: number
   check: boolean
   mate: boolean
+  /** The verdict on the move, so the arena can throw it up over the board
+   *  without evaluating the same position a second time. */
+  eval: MoveEval
 }
 
 export type SeriesEvents = {
@@ -142,6 +150,9 @@ export class Series {
   /** Set by `restore`. A series that came off the shelf offers Resume instead of
    *  dealing a fresh match. */
   private restored = false
+  /** Scores each move as it lands, for the battle log and the arena. Pointed at
+   *  the board at the top of every game, restored ones included. */
+  private commentator = new Commentator()
 
   private abort = new AbortController()
   private resumeWaiters: (() => void)[] = []
@@ -334,6 +345,9 @@ export class Series {
       this.lastSay = ['', '']
       this.liveBoard = true
     }
+    // Fresh board or resumed one, the commentary starts from what is on it —
+    // a restored game has no earlier read to score its next move against.
+    this.commentator.reset(this.chess)
     await this.events.onGameStart(this.gameIndex, this.white)
     this.events.onUpdate()
 
@@ -368,6 +382,7 @@ export class Series {
       }
 
       const move = this.chess.move(outcome.san)
+      const verdict = this.commentator.judge(this.chess, move)
       plies++
       this.stats[player].moves++
       this.lastSay[player] = outcome.say
@@ -380,12 +395,14 @@ export class Series {
         ply: plies,
         check: this.chess.isCheck(),
         mate: this.chess.isCheckmate(),
+        eval: verdict,
       })
       this.events.onLog({
         kind: 'move',
         player,
         text: `${Math.ceil(plies / 2)}${move.color === 'w' ? '.' : '...'} ${move.san}`,
         detail: outcome.say,
+        eval: verdict,
       })
       this.events.onUpdate()
 

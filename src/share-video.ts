@@ -34,6 +34,7 @@ import {
 } from './replay'
 import { COLORS, fit, MONO, PIXEL } from './share-image'
 import type { PlayerIdx } from './series'
+import { Commentator } from './tiny-eval'
 import type { Arena } from './three/arena'
 
 const W = 1280
@@ -480,6 +481,7 @@ async function play(req: RecordRequest, frame: Frame) {
   const cardMs = cardMsFor(story.games.length)
   const totalMs = estimateMs(story.totalPlies, cardMs, anim)
   const perPly = plyMs(anim)
+  const commentator = new Commentator()
   let elapsed = 0
   let label = 'Setting the scene…'
 
@@ -526,6 +528,12 @@ async function play(req: RecordRequest, frame: Frame) {
     await card(game.intro, CARD_MS.gameIntro, () => arena.setPosition(chess))
     if (signal.aborted) return
 
+    // The commentary is replayed alongside the moves, so the blunder calls in
+    // the video are the same ones the live match threw up. It costs one
+    // evaluation per ply — tens of microseconds against a per-ply budget of tens
+    // of milliseconds.
+    commentator.reset(chess)
+
     for (const [i, san] of game.moves.entries()) {
       // chess.js throws on a move the position doesn't allow. A stored PGN that
       // stops matching is a corrupt record, not a reason to abandon the file —
@@ -536,11 +544,16 @@ async function play(req: RecordRequest, frame: Frame) {
       } catch {
         break
       }
+      const verdict = commentator.judge(chess, move)
       const hp: [number, number] = [0, 0]
       hp[game.white] = material(chess, 'w')
       hp[1 - game.white] = material(chess, 'b')
       frame.setHud({ move: `MOVE ${Math.ceil((i + 1) / 2)}`, hp })
-      await arena.animateMove(move, chess, { check: chess.isCheck(), mate: chess.isCheckmate() })
+      await arena.animateMove(move, chess, {
+        check: chess.isCheck(),
+        mate: chess.isCheckmate(),
+        eval: verdict,
+      })
       label = `Game ${game.index + 1} of ${story.games.length} · move ${Math.ceil((i + 1) / 2)}`
       report(perPly)
       if (signal.aborted) return
