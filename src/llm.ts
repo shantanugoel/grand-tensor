@@ -10,6 +10,13 @@ export type Usage = {
   total: number
   /** USD, only if the provider reports it (OpenRouter does). */
   cost: number
+  /** Prompt tokens served from a cache, at roughly a tenth of list price.
+   *  Reported by OpenRouter; absent elsewhere, which reads as zero. */
+  cacheRead: number
+  /** Prompt tokens written to a cache, at a premium over list price. Paid once
+   *  and repaid by the second read, so a run where this stays high while
+   *  `cacheRead` stays at zero is one that is paying for a cache it never uses. */
+  cacheWrite: number
 }
 
 export type ChatResult = { text: string; usage: Usage; ms: number; finish: string }
@@ -35,13 +42,20 @@ export type ModelInfo = {
  *  still lets you pick something rather than locking you to the default. */
 export const FALLBACK_EFFORTS = ['minimal', 'low', 'medium', 'high', 'xhigh', 'max']
 
+/** A message body, optionally cut into parts at a cache breakpoint. Parts are
+ *  rejoined into a plain string for anything that does not need the marker, so a
+ *  caller can always pass the split form and let the transport decide. */
+export type ChatContent = string | { text: string; cacheBreakpoint?: boolean }[]
+
+export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: ChatContent }
+
 export type ChatRequest = {
   baseUrl: string
   apiKey: string
   model: string
   temperature: number
   maxTokens: number
-  messages: { role: 'system' | 'user' | 'assistant'; content: string }[]
+  messages: ChatMessage[]
   /** Used to derive a cost when the response doesn't report one itself. */
   pricing?: Pricing
   /** Sent verbatim; the caller is responsible for it being one the model takes. */
@@ -70,7 +84,7 @@ const RETRYABLE_STATUS = new Set([408, 409, 425, 429, 500, 502, 503, 504])
  *  drops the connection and leaves an empty body behind. Both pass. */
 const retryableStatus = (res: Response) => RETRYABLE_STATUS.has(res.status) || res.ok
 
-export const emptyUsage = (): Usage => ({ prompt: 0, completion: 0, reasoning: 0, total: 0, cost: 0 })
+export const emptyUsage = (): Usage => ({ prompt: 0, completion: 0, reasoning: 0, total: 0, cost: 0, cacheRead: 0, cacheWrite: 0 })
 
 export function addUsage(a: Usage, b: Usage): Usage {
   return {
@@ -79,11 +93,44 @@ export function addUsage(a: Usage, b: Usage): Usage {
     reasoning: a.reasoning + b.reasoning,
     total: a.total + b.total,
     cost: a.cost + b.cost,
+    cacheRead: a.cacheRead + b.cacheRead,
+    cacheWrite: a.cacheWrite + b.cacheWrite,
   }
 }
 
 const trimUrl = (u: string) => u.replace(/\/+$/, '')
 const isOpenRouter = (u: string) => /openrouter\.ai/i.test(u)
+
+/** Whether a model only caches when told exactly where the reusable prefix ends.
+ *
+ *  Most providers cache on their own — OpenAI, DeepSeek, Grok, Groq and friends
+ *  match the longest prefix they recognise and charge accordingly, with nothing to
+ *  opt into. Anthropic, Qwen and Gemini's explicit path cache only at a breakpoint
+ *  the request names, so without one they re-read the whole prompt every move.
+ *
+ *  Kept to a prefix match on the model id rather than a lookup, because the list
+ *  it would have to be exhaustive against is the whole OpenRouter catalogue. An
+ *  unrecognised model falls through to no marker, which is the same behaviour it
+ *  had before this existed. */
+const needsCacheBreakpoint = (model: string) => /^(anthropic|qwen|google\/gemini)\//i.test(model.trim())
+
+/** Renders a message body for the wire.
+ *
+ *  The breakpoint becomes an Anthropic-style `cache_control` part only when the
+ *  transport is OpenRouter and the model asks for one; everything else gets the
+ *  parts concatenated back into the plain string it would have sent anyway. That
+ *  keeps the marker from reaching an endpoint with no idea what to do with it —
+ *  a custom OpenAI-compatible server has no reason to accept a field OpenRouter
+ *  invented, and a rejected request is a worse outcome than an uncached one. */
+function renderContent(content: ChatContent, explicit: boolean): unknown {
+  if (typeof content === 'string') return content
+  if (!explicit) return content.map((part) => part.text).join('')
+  return content.map((part) => ({
+    type: 'text',
+    text: part.text,
+    ...(part.cacheBreakpoint ? { cache_control: { type: 'ephemeral' } } : {}),
+  }))
+}
 
 function headers(req: { baseUrl: string; apiKey: string }): Record<string, string> {
   const h: Record<string, string> = { 'Content-Type': 'application/json' }
@@ -93,9 +140,10 @@ function headers(req: { baseUrl: string; apiKey: string }): Record<string, strin
 }
 
 export async function chat(req: ChatRequest): Promise<ChatResult> {
+  const explicitCache = isOpenRouter(req.baseUrl) && needsCacheBreakpoint(req.model)
   const body: Record<string, unknown> = {
     model: req.model,
-    messages: req.messages,
+    messages: req.messages.map((m) => ({ role: m.role, content: renderContent(m.content, explicitCache) })),
     temperature: req.temperature,
     max_tokens: req.maxTokens,
   }
@@ -173,6 +221,12 @@ export async function chat(req: ChatRequest): Promise<ChatResult> {
       completion,
       reasoning: u.completion_tokens_details?.reasoning_tokens ?? 0,
       total: u.total_tokens ?? prompt + completion,
+      // Reported by OpenRouter under prompt_tokens_details. Its sibling
+      // `cache_discount` is documented alongside these two but came back absent on
+      // every provider measured, so the saving is read off `cost` instead — which
+      // is the billed figure and needs no reconstructing.
+      cacheRead: u.prompt_tokens_details?.cached_tokens ?? 0,
+      cacheWrite: u.prompt_tokens_details?.cache_write_tokens ?? 0,
       // OpenRouter bills the exact figure; elsewhere fall back to list pricing.
       cost: u.cost ?? (req.pricing ? prompt * req.pricing.prompt + completion * req.pricing.completion : 0),
     },

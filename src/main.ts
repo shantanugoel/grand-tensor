@@ -247,6 +247,14 @@ const leadLow = (a: number, b: number) => (a === b ? null : a < b ? 0 : 1)
 const cappedRow = (a: number, b: number): SummaryRow[] =>
   a || b ? [{ label: 'CAPPED', a: String(a), b: String(b), lead: leadLow(a, b) }] : []
 
+/** Prompt tokens a provider served from cache, at roughly a tenth of list price.
+ *
+ *  Shown only when there were some. Plenty of endpoints report nothing at all, and
+ *  a permanent "0" against a model whose provider simply never mentions caching
+ *  reads as a fault in the match rather than a silence in the response. */
+const cachedRow = (a: number, b: number): SummaryRow[] =>
+  a || b ? [{ label: 'CACHED', a: fmtTokens(a), b: fmtTokens(b), lead: leadHigh(a, b) }] : []
+
 /** What one game cost a player, as the difference against the series totals
  *  captured when that game kicked off. */
 function gameDelta(now: PlayerStats, before?: PlayerStats) {
@@ -312,6 +320,7 @@ function seriesView(): SummaryView {
     { label: 'MOVES', a: String(a.moves), b: String(b.moves) },
     { label: 'TOKENS', a: fmtTokens(a.usage.total), b: fmtTokens(b.usage.total) },
     { label: 'REASONING', a: fmtTokens(a.usage.reasoning), b: fmtTokens(b.usage.reasoning) },
+    ...cachedRow(a.usage.cacheRead, b.usage.cacheRead),
     { label: 'ILLEGAL', a: String(a.illegal), b: String(b.illegal), lead: leadLow(a.illegal, b.illegal) },
     ...cappedRow(a.capped, b.capped),
     { label: 'AVG THINK', a: avg(a), b: avg(b) },

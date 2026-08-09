@@ -1,5 +1,7 @@
 /** All user-tunable configuration. Persisted in localStorage, edited in the UI. */
 
+import { CACHE_BREAKPOINT } from './prompt'
+
 /** Reasoning effort. The valid set is per-model and comes from the endpoint's
  *  /models listing, so this is a plain string rather than a fixed union —
  *  `deepseek-v4-flash` takes max/high/low with no medium, `gpt-5.6-luna` adds
@@ -32,10 +34,40 @@ export type PlayerConfig = {
 }
 
 /** User-message template sent for every move. The system prompt remains fixed so
- *  models still return the JSON shape the move parser expects. */
+ *  models still return the JSON shape the move parser expects.
+ *
+ *  Ordered stable-content-first, and that ordering is load-bearing rather than
+ *  cosmetic. Caching is a byte-prefix match, so the only content that can ever be
+ *  cached is what sits above the first byte that changes between moves.
+ *
+ *  Only the identity lines and the completed games qualify: both are fixed for the
+ *  whole of a game. The movetext is *below* the breakpoint despite growing purely
+ *  by appending, which is the counter-intuitive part — a breakpoint caches the
+ *  prefix ending at it, so a section that grows underneath moves the end of that
+ *  prefix and orphans the entry written last turn. Measured against
+ *  claude-sonnet-5 across consecutive real moves: with the movetext inside the
+ *  cached region, every move after the first read 0 tokens and rewrote ~2,440.
+ *
+ *  Measured on a 20-game series: the position-first order this replaced read 0
+ *  cached tokens on every move and rewrote the whole 6,870-token prompt each time,
+ *  at $0.0173 per move; stable-first reads 5,546 of them back at $0.0039, the same
+ *  prompt in a different order for 4.4x less. On providers that cache
+ *  automatically and never see a breakpoint at all (gpt-5.4-nano, measured), the
+ *  reordering alone is worth 3.2x.
+ *
+ *  The cacheable prefix is therefore roughly the size of the completed games —
+ *  about 300 tokens each — so a series only starts caching once a few games are
+ *  behind it, and one run with `includePreviousGames` off never will. That is a
+ *  real limit of the shape of this prompt, not something a breakpoint can fix. */
 export const DEFAULT_PROMPT_TEMPLATE = [
   `You are {{player}}, playing a game of chess as {{color}} against {{opponent}}.`,
   `This is game {{gameNumber}} of {{totalGames}}.`,
+  ``,
+  `Previous games in this series:`,
+  `{{previousGames}}`,
+  CACHE_BREAKPOINT,
+  ``,
+  `Moves so far: {{moves}}`,
   ``,
   `FEN: {{fen}}`,
   ``,
@@ -44,11 +76,6 @@ export const DEFAULT_PROMPT_TEMPLATE = [
   `Move number: {{moveNumber}}`,
   `Last move: {{lastMove}}`,
   `Check status: {{inCheck}}`,
-  ``,
-  `Moves so far: {{moves}}`,
-  ``,
-  `Previous games in this series:`,
-  `{{previousGames}}`,
   ``,
   `{{threats}}`,
   ``,
@@ -140,8 +167,14 @@ export const DEFAULTS: Settings = {
  *  Bumped to :3 because `promptTemplate` and `maxTokens` are both persisted. A
  *  returning player would otherwise have kept the pre-scaffolding prompt — worth
  *  46.7 cp per move — and a 16,000 cap that no longer belongs to any circuit, so
- *  every match they ran would have been quietly unrankable. */
-const KEY = 'grand-tensor:settings:3'
+ *  every match they ran would have been quietly unrankable.
+ *
+ *  Bumped to :4 for the cache-ordered template. The saved copy is still a valid
+ *  prompt and would have gone on producing correct games, which is exactly the
+ *  problem: it carries no breakpoint and puts the position above the movetext, so
+ *  it silently reads back 0 cached tokens forever. A returning player would have
+ *  paid roughly 4x per move with nothing on screen to say why. */
+const KEY = 'grand-tensor:settings:4'
 
 export function loadSettings(): Settings {
   try {

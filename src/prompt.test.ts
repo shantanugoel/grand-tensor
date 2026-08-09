@@ -2,11 +2,14 @@ import { describe, expect, test } from 'bun:test'
 import { Chess } from 'chess.js'
 import { DEFAULT_PROMPT_TEMPLATE } from './settings'
 import {
+  CACHE_BREAKPOINT,
   capRetryPrompt,
   movePrompt,
   parseMove,
   previousGamesPrompt,
   retryPrompt,
+  splitAtCacheBreakpoint,
+  stripCacheBreakpoint,
   systemPrompt,
   type MovePromptArgs,
 } from './prompt'
@@ -121,6 +124,50 @@ describe('movePrompt', () => {
     )
     expect(text).toContain('Moves: 1. e4 e5')
     expect(text).not.toContain('e5 1-0')
+  })
+})
+
+describe('cache breakpoint', () => {
+  test('survives rendering, so the split can see filled-in values', () => {
+    const rendered = movePrompt(DEFAULT_PROMPT_TEMPLATE, args)
+    expect(rendered).toContain(CACHE_BREAKPOINT)
+  })
+
+  test('keeps every section that changes between moves below the breakpoint', () => {
+    const split = splitAtCacheBreakpoint(movePrompt(DEFAULT_PROMPT_TEMPLATE, args))
+    expect(split).not.toBeNull()
+    // A breakpoint caches the prefix ending at it, so anything that differs from
+    // one move to the next orphans the entry written last turn. The movetext is
+    // in this list despite growing purely by appending: measured against
+    // claude-sonnet-5, keeping it above the line cost a full rewrite every move.
+    for (const perMove of ['FEN:', 'test-board', 'Move number:', 'LEGAL MOVES', 'Moves so far:']) {
+      expect(split!.stable).not.toContain(perMove)
+      expect(split!.volatile).toContain(perMove)
+    }
+    // What is left above the line is fixed for the whole of a game.
+    expect(split!.stable).toContain('Previous games in this series:')
+    expect(split!.stable).toContain('playing a game of chess as white')
+  })
+
+  test('rejoins to exactly the prompt that would have been sent', () => {
+    const rendered = movePrompt(DEFAULT_PROMPT_TEMPLATE, args)
+    const split = splitAtCacheBreakpoint(rendered)!
+    expect(split.stable + split.volatile).toBe(stripCacheBreakpoint(rendered))
+  })
+
+  test('declines to split a template that carries no breakpoint', () => {
+    expect(splitAtCacheBreakpoint('FEN: {{fen}}\nChoose your move.')).toBeNull()
+  })
+
+  test('declines to split when one half would be empty', () => {
+    // A write with nothing to read back later costs the premium and returns none
+    // of it, so an edge-positioned marker is worse than no marker at all.
+    expect(splitAtCacheBreakpoint(`${CACHE_BREAKPOINT}\nEverything volatile.`)).toBeNull()
+    expect(splitAtCacheBreakpoint(`Everything stable.\n${CACHE_BREAKPOINT}  `)).toBeNull()
+  })
+
+  test('strips the marker from a prompt sent whole', () => {
+    expect(stripCacheBreakpoint(`a\n${CACHE_BREAKPOINT}\nb`)).toBe('a\n\nb')
   })
 })
 

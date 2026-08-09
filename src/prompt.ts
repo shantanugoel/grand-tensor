@@ -69,6 +69,32 @@ export function systemPrompt(color: 'white' | 'black', commentary: boolean, maxT
   ].join('\n')
 }
 
+/** Marks where a template's stable content ends and its per-move content begins.
+ *
+ *  Deliberately shaped like a variable so `movePrompt` carries it through render
+ *  untouched — it is the one placeholder meant to survive into the rendered string,
+ *  because the split can only happen once the values are in place. */
+export const CACHE_BREAKPOINT = '{{cacheBreakpoint}}'
+
+/** Splits a rendered prompt at its breakpoint, for providers that need an explicit
+ *  one. Null when the template has no breakpoint — a custom template is under no
+ *  obligation to carry one, and a prompt with no stable prefix to point at is
+ *  better sent whole than split at an arbitrary line.
+ *
+ *  A marker in the first or last position yields null too: an empty half is not a
+ *  cacheable prefix, and sending one costs a write that can never be read. */
+export function splitAtCacheBreakpoint(rendered: string): { stable: string; volatile: string } | null {
+  const at = rendered.indexOf(CACHE_BREAKPOINT)
+  if (at === -1) return null
+  const stable = rendered.slice(0, at)
+  const volatile = rendered.slice(at + CACHE_BREAKPOINT.length)
+  if (!stable.trim() || !volatile.trim()) return null
+  return { stable, volatile }
+}
+
+/** The rendered prompt as a single string, with any breakpoint removed. */
+export const stripCacheBreakpoint = (rendered: string) => rendered.replace(CACHE_BREAKPOINT, '')
+
 export const PROMPT_VARIABLES = [
   'player',
   'opponent',

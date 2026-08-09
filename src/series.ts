@@ -3,8 +3,28 @@
 
 import { Chess, type Move } from 'chess.js'
 import { adjudicate, adjudicationReason } from './adjudication'
-import { addUsage, chat, ChatError, emptyUsage, fetchModels, type ChatResult, type ModelInfo, type Usage } from './llm'
-import { capRetryPrompt, cleanPgn, movePrompt, parseMove, retryPrompt, systemPrompt, type LegalMove } from './prompt'
+import {
+  addUsage,
+  chat,
+  ChatError,
+  emptyUsage,
+  fetchModels,
+  type ChatMessage,
+  type ChatResult,
+  type ModelInfo,
+  type Usage,
+} from './llm'
+import {
+  capRetryPrompt,
+  cleanPgn,
+  movePrompt,
+  parseMove,
+  retryPrompt,
+  splitAtCacheBreakpoint,
+  stripCacheBreakpoint,
+  systemPrompt,
+  type LegalMove,
+} from './prompt'
 import { NO_EFFORT, normalizeReasoningEffort, REASONING_OFF, SPEEDS, type PlayerConfig, type Settings } from './settings'
 import { classifyLoss, MATE_CP, storeEval, type MoveEval, type StoredEval } from './verdict'
 import { gradeInBrowser, type MoveGrade } from './browser-engine'
@@ -545,7 +565,29 @@ export class Series {
     const cfg = this.settings.players[player]
     const legal: LegalMove[] = this.chess.moves({ verbose: true }).map((m) => ({ san: m.san, lan: m.lan }))
     const history = this.chess.history()
-    const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [
+    const rendered = movePrompt(this.settings.promptTemplate, {
+      fen: this.chess.fen(),
+      board: this.chess.ascii(),
+      pgn: cleanPgn(this.chess.pgn()),
+      legal,
+      inCheck: this.chess.isCheck(),
+      lastMove: history[history.length - 1],
+      moveNumber: this.chess.moveNumber(),
+      color: this.chess.turn() === 'w' ? 'white' : 'black',
+      player: cfg.label,
+      opponent: this.settings.players[1 - player].label,
+      gameNumber: this.gameIndex + 1,
+      totalGames: this.settings.games,
+      previousGames: this.settings.includePreviousGames ? this.games : [],
+      includePreviousGames: this.settings.includePreviousGames,
+      playerLabels: [this.settings.players[0].label, this.settings.players[1].label],
+    })
+
+    // Split where the template says the reusable prefix ends. The transport
+    // rejoins the halves for any provider that caches without being asked, so this
+    // is the same prompt either way — only its wire shape differs.
+    const split = splitAtCacheBreakpoint(rendered)
+    const messages: ChatMessage[] = [
       {
         role: 'system',
         content: systemPrompt(
@@ -556,23 +598,9 @@ export class Series {
       },
       {
         role: 'user',
-        content: movePrompt(this.settings.promptTemplate, {
-          fen: this.chess.fen(),
-          board: this.chess.ascii(),
-          pgn: cleanPgn(this.chess.pgn()),
-          legal,
-          inCheck: this.chess.isCheck(),
-          lastMove: history[history.length - 1],
-          moveNumber: this.chess.moveNumber(),
-          color: this.chess.turn() === 'w' ? 'white' : 'black',
-          player: cfg.label,
-          opponent: this.settings.players[1 - player].label,
-          gameNumber: this.gameIndex + 1,
-          totalGames: this.settings.games,
-          previousGames: this.settings.includePreviousGames ? this.games : [],
-          includePreviousGames: this.settings.includePreviousGames,
-          playerLabels: [this.settings.players[0].label, this.settings.players[1].label],
-        }),
+        content: split
+          ? [{ text: split.stable, cacheBreakpoint: true }, { text: split.volatile }]
+          : stripCacheBreakpoint(rendered),
       },
     ]
 
@@ -682,7 +710,7 @@ export class Series {
   private async chatWithRecovery(
     player: PlayerIdx,
     cfg: PlayerConfig,
-    messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
+    messages: ChatMessage[],
   ): Promise<ChatResult | null> {
     let tries = 0
     for (;;) {

@@ -37,7 +37,7 @@ const stats = (over: Partial<PlayerStats> = {}): PlayerStats => ({
   moves: 0,
   illegal: 0,
   capped: 0,
-  usage: { prompt: 0, completion: 0, reasoning: 0, total: 0, cost: 0 },
+  usage: { prompt: 0, completion: 0, reasoning: 0, total: 0, cost: 0, cacheRead: 0, cacheWrite: 0 },
   calls: 0,
   turns: 0,
   totalMs: 0,
